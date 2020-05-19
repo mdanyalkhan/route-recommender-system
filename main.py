@@ -26,5 +26,5 @@ if __name__ == "__main__":
         print("File not found")
         exit()
 
-    clusterData = DBSCANClusterer(targetDirectory,toRow=10)
-    print(clusterData)
+    clusterData = DBSCANClusterer(targetDirectory)
+    clusterData.createCluster()
