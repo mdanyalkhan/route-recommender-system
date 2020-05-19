@@ -1,5 +1,7 @@
-from DataParser import *
+from DBSCANClusterer import *
 from os.path import *
+from FileDirectories import *
+import pandas as pd
 
 def parentDirectoryAtLevel(level: int):
     parentPath: str = __file__
@@ -8,21 +10,22 @@ def parentDirectoryAtLevel(level: int):
 
     return parentPath
 
+
 if __name__ == "__main__":
 
     parentPath: str
     childPath: str
     targetDirectory: str
-    incomingData: DataParser
+    clusterData: DBSCANClusterer
 
     parentPath = parentDirectoryAtLevel(3)
-    print(parentPath)
-    childPath = "/Incoming/imperial_data/data_with_labels/20191002-20200130_isotrak_legs_excl_5km_test.csv"
+    childPath = FileDirectories.RAW_DATA.value
 
     if isfile(parentPath+childPath):
         targetDirectory = parentPath+childPath
     else:
+        print("File not found")
         exit()
 
-    incomingData = DataParser(targetDirectory,3)
-    print(incomingData)
+    clusterData = DBSCANClusterer(targetDirectory,toRow=10)
+    print(clusterData)
