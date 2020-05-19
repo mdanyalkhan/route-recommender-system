@@ -1,7 +1,6 @@
 from DBSCANClusterer import *
 from os.path import *
 from FileDirectories import *
-import pandas as pd
 
 def parentDirectoryAtLevel(level: int):
     parentPath: str = __file__
