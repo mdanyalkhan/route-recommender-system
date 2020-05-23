@@ -3,6 +3,7 @@ from src.ColumnNames import *
 
 class DataParser:
     def __init__(self, filePath: str, fromRow: int = 0, toRow: int = None):
+
         self.__read_in_data(filePath, fromRow, toRow)
 
     def __read_in_data(self, filePath: str, fromRow: int, toRow: int) -> None:
@@ -13,6 +14,7 @@ class DataParser:
         :param toRow: (int) reads in data from 'toRow'
         :return: null
         """
+        print("Parent")
         if toRow == None:
             self.data = pd.read_csv(filePath, skiprows=fromRow)
         else:
@@ -23,3 +25,6 @@ class DataParser:
 
     def __str__(self):
         return self.data.to_string()
+
+    def __len__(self):
+        return len(self.data)

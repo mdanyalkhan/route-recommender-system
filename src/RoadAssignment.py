@@ -12,6 +12,11 @@ class RoadAssignment:
     def __init__(self):
         self.road_threshold = 0.25
 
+    def classify_pings_to_road_data(self, isotrack_data: pd.DataFrame, roads_data: pd.DataFrame) -> pd.DataFrame:
+
+        isotrack_data = isotrack_data.reset_index()
+
+
     def assign_entity(self, clusters_df, all_locations):
         """ Add a column road that contains the closest entity to the ping
         :param clusters_df:

@@ -30,8 +30,7 @@ if __name__ == "__main__":
         print("File not found")
         exit()
 
-    data_set = IsotrackDataParser(target_path)
-    sample_data = data_set.extract_data_on_start_end_depot()
+    data_set = IsotrackDataParser(target_path, depot_sampled= True)
 
     # DBSCANObject = DBSCANClusterer(targetDirectory)
     # clusterData = DBSCANObject.createClusters()
