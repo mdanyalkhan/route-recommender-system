@@ -52,6 +52,6 @@ class IsotrackDataParser(DataParser):
         :param target_depot_col: (str) The dataframe column in which the corresponding depot pair will be chosen
         :return: (str) the depot pair
         """
-        df_with_start_depot = self.data[self.data[known_depot_col] == known_depot]
-        df_with_diff_depot = df_with_start_depot[self.data[target_depot_col] != known_depot]
-        return df_with_diff_depot.sample().item()
+        df_with_start_depot = self.data.loc[self.data[known_depot_col] == known_depot]
+        df_with_diff_depot = df_with_start_depot.loc[self.data[target_depot_col] != known_depot]
+        return df_with_diff_depot.sample()[target_depot_col].item()
