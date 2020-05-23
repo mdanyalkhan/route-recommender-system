@@ -26,4 +26,9 @@ class TestIsotrackDataParser(TestCase):
 
         #Check if number of unique to and from depot are 1
         self.assertEqual(sample_data[ColumnNames.FROM_DEPOT.value].nunique(), 1)
+        self.assertEqual(sample_data[ColumnNames.TO_DEPOT.value].nunique(), 1)
+
+        #Check that the from_depot value is not equal to the to_depot value
+        self.assertTrue(sample_data[sample_data[ColumnNames.FROM_DEPOT.value] ==
+                                     sample_data[ColumnNames.TO_DEPOT.value]].empty)
         os.remove("mock_df.csv")
