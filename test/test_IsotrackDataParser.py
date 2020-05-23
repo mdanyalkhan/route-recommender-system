@@ -16,9 +16,6 @@ class TestIsotrackDataParser(TestCase):
                                           ColumnNames.TO_DEPOT.value: "Glasgow",
                                           ColumnNames.EVENT_DTTM.value: "2019-10-02 20:30:28"}])
 
-    mock_from_depot: list  = ["London", "Birmingham", "Edinburgh"]
-    mock_to_depot: list = ["Southend", "Wolverhampton", "Glasgow"]
-
     def test_initialised_with_full_data_frame(self):
         self.mock_df.to_csv("mock_df.csv", index=False)
         full_set = IsotrackDataParser("mock_df.csv")
@@ -69,6 +66,33 @@ class TestIsotrackDataParser(TestCase):
         self.assertEqual(sample_df[ColumnNames.FROM_DEPOT.value].sample().item(), "Birmingham")
         self.assertEqual(sample_df[ColumnNames.TO_DEPOT.value].sample().item(), "Wolverhampton")
 
+    def test_returns_dataframe_only_under_no_of_legs_threshold(self):
 
+        #Set up mock dataframe
+        mock_df_duplicates = pd.DataFrame([{ColumnNames.LEG_ID.value: 1,
+                                            ColumnNames.FROM_DEPOT.value: "London",
+                                            ColumnNames.TO_DEPOT.value: "Southend",
+                                            ColumnNames.EVENT_DTTM.value: "2019-10-02 20:30:28"},
+                                           {ColumnNames.LEG_ID.value: 1,
+                                            ColumnNames.FROM_DEPOT.value: "London",
+                                            ColumnNames.TO_DEPOT.value: "Southend",
+                                            ColumnNames.EVENT_DTTM.value: "2019-10-02 20:30:28"},
+                                           {ColumnNames.LEG_ID.value: 1,
+                                            ColumnNames.FROM_DEPOT.value: "Birmingham",
+                                            ColumnNames.TO_DEPOT.value: "Wolverhampton",
+                                            ColumnNames.EVENT_DTTM.value: "2019-10-02 20:30:28"},
+                                           {ColumnNames.LEG_ID.value: 2,
+                                            ColumnNames.FROM_DEPOT.value: "Birmingham",
+                                            ColumnNames.TO_DEPOT.value: "Wolverhampton",
+                                            ColumnNames.EVENT_DTTM.value: "2019-10-02 20:30:28"},
+                                           ])
+
+        mock_df_duplicates.to_csv("mock_df_duplicates.csv", index=False)
+        sample_set = IsotrackDataParser("mock_df_duplicates.csv", depot_sampled= True, no_of_legs=1)
+        os.remove("mock_df_duplicates.csv")
+        sample_df = sample_set.get_df()
+
+        self.assertTrue(sample_df[ColumnNames.FROM_DEPOT.value].sample().item() != "Birmingham")
+        self.assertTrue(sample_df[ColumnNames.FROM_DEPOT.value].sample().item() == "London")
 
 

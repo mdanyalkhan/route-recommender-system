@@ -1,24 +1,25 @@
 import pandas as pd
 from src.ColumnNames import *
 
-class DataParser:
-    def __init__(self, filePath: str, fromRow: int = 0, toRow: int = None):
 
-        self.__read_in_data(filePath, fromRow, toRow)
+class DataParser(object):
+    def __init__(self, file_path: str, from_row: int = 0, to_row: int = None):
+        print("running parent init")
 
-    def __read_in_data(self, filePath: str, fromRow: int, toRow: int) -> None:
+        self._read_in_data(file_path, from_row, to_row)
+
+    def _read_in_data(self, file_path: str, from_row: int, to_row: int) -> None:
         """
         Extracts CSV data into a pandas dataframe.
-        :param filePath: (Str)
-        :param fromRow: (int) reads in data from 'fromRow'
-        :param toRow: (int) reads in data from 'toRow'
+        :param file_path: (Str)
+        :param from_row: (int) reads in data from 'fromRow'
+        :param to_row: (int) reads in data from 'toRow'
         :return: null
         """
-        print("Parent")
-        if toRow == None:
-            self.data = pd.read_csv(filePath, skiprows=fromRow)
+        if to_row == None:
+            self.data = pd.read_csv(file_path, skiprows=from_row)
         else:
-            self.data = pd.read_csv(filePath, skiprows=fromRow, nrows=fromRow + toRow)
+            self.data = pd.read_csv(file_path, skiprows=from_row, nrows=from_row + to_row)
 
     def get_df(self) -> pd.DataFrame:
         return self.data

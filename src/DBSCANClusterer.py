@@ -7,9 +7,9 @@ from sklearn.cluster import DBSCAN
 from scipy.spatial.distance import directed_hausdorff
 
 
-class DBSCANClusterer(DataParser):
-    def __init__(self, filePath: str, fromRow: int = 0, toRow: int = None):
-        DataParser.__init__(self,filePath,fromRow,toRow)
+class DBSCANClusterer(object):
+    def __init__(self, df: pd.DataFrame):
+        self.data = df
 
     def createClusters(self, eps = 0.06, minSamples = 1, symm = False):
         routes: pd.DataFrame = self.__find_unique_routes()

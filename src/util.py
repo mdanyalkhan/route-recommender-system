@@ -1,4 +1,5 @@
 import numpy as np
+import re
 
 def haversine_np(lon1, lat1, lon2, lat2):
     """
@@ -19,6 +20,11 @@ def haversine_np(lon1, lat1, lon2, lat2):
     km = 6367 * c
 
     return km
+
+def alpha_num_order(mystring):
+    # """ Returns all numbers on 2 digits to let sort the string with numeric order.
+    # """
+    return ''.join([format(int(x), '02d') if x.isdigit() else x for x in re.split(r'(\d+)', mystring)])
 
 def add_entity_type(row):
     if 'M' in row['road']:

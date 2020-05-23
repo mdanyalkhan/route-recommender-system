@@ -1,8 +1,9 @@
 import src.util as util
+from src.IsotrackDataParser import *
+from src.RoadDataParser import *
 import numpy as np
 import pandas as pd
 import math
-import logging
 from scipy import spatial
 from collections import defaultdict
 
@@ -12,10 +13,15 @@ class RoadAssignment:
     def __init__(self):
         self.road_threshold = 0.25
 
-    def classify_pings_to_road_data(self, isotrack_data: pd.DataFrame, roads_data: pd.DataFrame) -> pd.DataFrame:
+    def classify_pings_to_road_data(self, isotrak_data: IsotrackDataParser,
+                                    roads_data: RoadDataParser) -> pd.DataFrame:
 
-        isotrack_data = isotrack_data.reset_index()
+        isotrak_clusters_df = isotrak_data.get_df().reset_index()
+        roads_data_df = roads_data.get_df()
 
+        isotrak_clusters_df = self.assign_entity(isotrak_clusters_df, roads_data_df)
+        isotrak_clusters_df = self.cleaning_classification_impurities(isotrak_clusters_df)
+        return isotrak_clusters_df
 
     def assign_entity(self, clusters_df, all_locations):
         """ Add a column road that contains the closest entity to the ping
@@ -68,7 +74,7 @@ class RoadAssignment:
         clusters['road'] = np.where(clusters['distance_from'] <= self.road_threshold, clusters['road'],
                                     'unknown')
 
-        clusters[cn.ROAD_TYPE] = clusters.apply(util.add_entity_type, axis=1)
+        clusters[ColumnNames.ROAD_TYPE.value] = clusters.apply(util.add_entity_type, axis=1)
 
         clusters['section'] = section_col
 
