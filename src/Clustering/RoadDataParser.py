@@ -1,5 +1,5 @@
-from src.DataParser import *
-from src.ColumnNames import *
+from src.Clustering.DataParser import *
+from src.Clustering.ColumnNames import *
 
 
 class RoadDataParser(DataParser):

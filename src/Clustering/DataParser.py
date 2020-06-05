@@ -1,10 +1,8 @@
 import pandas as pd
-from src.ColumnNames import *
 
 
 class DataParser(object):
     def __init__(self, file_path: str, from_row: int = 0, to_row: int = None):
-        print("running parent init")
 
         self._read_in_data(file_path, from_row, to_row)
 

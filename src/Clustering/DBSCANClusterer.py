@@ -1,10 +1,10 @@
-from src.DataParser import *
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
 from collections import defaultdict
 from sklearn.cluster import DBSCAN
 from scipy.spatial.distance import directed_hausdorff
+from src.Clustering.ColumnNames import ColumnNames
 
 
 class DBSCANClusterer(object):
