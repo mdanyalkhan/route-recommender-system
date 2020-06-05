@@ -1,17 +1,10 @@
 from src.Clustering.DBSCANClusterer import *
+from src.util_func import parent_directory_at_level
 from os.path import *
 import os as os
 from src.FileDirectories import *
 from src.Clustering.RoadAssignment import *
 from src.Clustering.PostProcess import *
-
-def parent_directory_at_level(level: int):
-    parentPath: str = __file__
-    for i in range(0,level):
-        parentPath = dirname(parentPath)
-
-    return parentPath
-
 
 if __name__ == "__main__":
 
@@ -26,7 +19,7 @@ if __name__ == "__main__":
     road_assignment: RoadAssignment = RoadAssignment()
     post_process: PostProcess = PostProcess()
 
-    parent_path = parent_directory_at_level(5)
+    parent_path = parent_directory_at_level(__file__, 5)
     isotrak_filename = FileDirectories.RAW_DATA_TEST.value
     roads_filename = FileDirectories.HE_DATA.value
 
