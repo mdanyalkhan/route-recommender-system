@@ -1,6 +1,6 @@
-import src.Clustering.util as util
-from src.Clustering.IsotrackDataParser import *
-from src.Clustering.RoadDataParser import *
+import src.clustering.util as util
+from src.clustering.IsotrackDataParser import *
+from src.clustering.RoadDataParser import *
 import numpy as np
 import pandas as pd
 import math

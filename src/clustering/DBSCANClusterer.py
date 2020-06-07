@@ -4,7 +4,7 @@ import numpy as np
 from collections import defaultdict
 from sklearn.cluster import DBSCAN
 from scipy.spatial.distance import directed_hausdorff
-from src.Clustering.ColumnNames import ColumnNames
+from src.clustering.ColumnNames import ColumnNames
 
 
 class DBSCANClusterer(object):

@@ -1,10 +1,10 @@
-from src.Clustering.DBSCANClusterer import *
-from src.util_func import parent_directory_at_level
+from src.clustering.DBSCANClusterer import *
+from src.utilities.aux_func import parent_directory_at_level
 from os.path import *
 import os as os
-from src.FileDirectories import *
-from src.Clustering.RoadAssignment import *
-from src.Clustering.PostProcess import *
+from src.utilities.file_directories import *
+from src.clustering.RoadAssignment import *
+from src.clustering.PostProcess import *
 
 if __name__ == "__main__":
 

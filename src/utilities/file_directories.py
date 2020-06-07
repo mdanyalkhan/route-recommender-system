@@ -9,4 +9,7 @@ class FileDirectories(Enum):
     HE_DATA = "/Incoming/imperial_data/data_to_run_code_on/he_data.csv"
     HE_JUNCTIONS = "/Incoming/imperial_data/data_to_run_code_on/he_junctions_mn.csv"
     ROAD_DATA = "/Incoming/imperial_data/data_to_run_code_on/roads_data.csv"
+    HE_NETWORK = "/Incoming/imperial_data/highways_england_shapefiles/HAPMS/"
+    OUT = "/out/"
+    TEMP = "/temp/"
 

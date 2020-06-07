@@ -1,4 +1,4 @@
-from src.Clustering.ColumnNames import ColumnNames as cn
+from src.clustering.ColumnNames import ColumnNames as cn
 import numpy as np
 import pandas as pd
 import math as maths

@@ -1,5 +1,5 @@
-from src.Clustering.DataParser import *
-from src.Clustering.ColumnNames import *
+from src.clustering.DataParser import *
+from src.clustering.ColumnNames import *
 
 class IsotrackDataParser(DataParser):
 

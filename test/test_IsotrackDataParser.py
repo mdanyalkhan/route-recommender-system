@@ -1,6 +1,6 @@
 from unittest import TestCase
-from src.Clustering.IsotrackDataParser import *
-from src.Clustering.ColumnNames import *
+from src.clustering.IsotrackDataParser import *
+from src.clustering.ColumnNames import *
 import pandas as pd
 import os
 
