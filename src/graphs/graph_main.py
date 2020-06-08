@@ -5,22 +5,36 @@ import networkx as nx
 from osgeo import ogr
 import geopandas as gpd
 import os
+from shapely.geometry import LineString
 import src.graphs.SRN_column_names as srn_cn
+from src.graphs.pre_processing import *
+
 
 if __name__ == "__main__":
+
+    # out_path = parent_directory_at_level(__file__, 3) + fd.TEMP.value + "clipped_roads.shp"
+    #
+    # clipped_roads = gpd.read_file(out_path)
+    main_carriageways = gpd.read_file(parent_directory_at_level(__file__,3) + fd.TEMP.value + "main_carriageways.shp")
+    linked_main_carriageways = link_main_carriageway_segments(main_carriageways)
+    merged_roads_df = merge_road_segments(linked_main_carriageways)
+    merged_roads_df.to_file(parent_directory_at_level(__file__,3) + fd.TEMP.value + "merged_roads.shp")
+    # print(clipped_roads.iloc[0].geometry_list)
+    #merge_main_carriageway(clipped_roads)
+
     # Load HE Shapefile
-    he_path = parent_directory_at_level(__file__, 5) + fd.HE_NETWORK.value
-    he_gdf = gpd.read_file(he_path)
+    # he_path = parent_directory_at_level(__file__, 5) + fd.HE_NETWORK.value
+    # he_gdf = gpd.read_file(he_path)
+    # print(he_gdf)
+    #
+    # # # Create clipper polygon
+    # coords = [(327838.0, 406237.0), (329310, 386013), (364126, 387741),
+    #           (361886, 407645)]
+    # poly_converter = GeoPolyDataFrameBuilder()
+    # poly_gdf = poly_converter.build_geo_frame(coords, "epsg:27700")
+    # clipped_gdf = clip(he_gdf, poly_gdf)
 
-    # # Create clipper polygon
-    coords = [(327838.0, 406237.0), (329310, 386013), (364126, 387741),
-              (361886, 407645)]
-    poly_converter = GeoPolyDataFrameBuilder()
-    poly_gdf = poly_converter.build_geo_frame(coords, "epsg:27700")
-    clipped_gdf = clip(he_gdf, poly_gdf)
-
-    out_path = parent_directory_at_level(__file__, 3) + fd.TEMP.value + "clipped_roads.shp"
-    clipped_gdf.to_file(out_path)
+    # clipped_gdf.to_file(out_path)
 
     # out_path = parent_directory_at_level(__file__, 3) + fd.TEMP.value + "sample_lines.shp"
     #
