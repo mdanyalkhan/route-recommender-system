@@ -14,7 +14,7 @@ ROUNDABOUT = "Roundabout"
 FUNCT_NAME = "FUNCT_NAME"
 ROAD_NO = "ROA_NUMBER"
 DIRECTION = "DIREC_CODE"
-
+NONE = "None"
 #Nodes Geodataframe column names
 NODE_ID = "node_id"
 

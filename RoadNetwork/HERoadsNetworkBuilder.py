@@ -1,10 +1,11 @@
 from RoadNetwork.RoadNetworkBuilder import *
 
+
 class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
-    def __init__(self, connection_threshold = 10, min_spacing_for_roundabout_resolution = 2):
+    def __init__(self, connection_threshold=10, min_spacing_for_roundabout_resolution=2):
         self.THRESHOLD = connection_threshold
-        self.MIN_SPACING = 2
+        self.MIN_SPACING = min_spacing_for_roundabout_resolution
 
     def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame,
                                                    funct_name: str) -> gpd.GeoDataFrame:
@@ -23,7 +24,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         for road_number in road_numbers:
             for direction in directions:
                 carriageway = funct_gdf.loc[(funct_gdf[ROAD_NO] == road_number) &
-                                                 (funct_gdf[DIRECTION] == direction)]
+                                            (funct_gdf[DIRECTION] == direction)]
 
                 for index, segment in carriageway.iterrows():
 
@@ -31,7 +32,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
                     connecting_road = carriageway.index[carriageway[FIRST_COORD].
                         apply(lambda x: self._are_coordinates_connected(x, last_coord))].tolist()
 
-                    if (len(connecting_road) == 1):
+                    if len(connecting_road) == 1:
                         roads_gdf.loc[index, NEXT_IND] = connecting_road[0]
                         roads_gdf.loc[connecting_road[0], PREV_IND] = index
 
@@ -62,7 +63,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
             if pd.isna(slip_road.PREV_IND):  # If PREV_IND is <NA> then:
                 first_coord = slip_road.FIRST_COORD
                 min_index, min_dist = self._find_closest_main_carriageway(roads_gdf, first_coord,
-                                                                          use_first_coord_of_main_carriageway= False)
+                                                                          use_first_coord_of_main_carriageway=False)
                 roads_gdf = self._update_connections_and_assign_nodes(roads_gdf, node_dict, first_coord,
                                                                       index, min_index, min_dist)
 
@@ -91,7 +92,6 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         roundabout_df = roads_gdf.loc[roads_gdf[FUNCT_NAME] == ROUNDABOUT]
         # For every roundabout do the following:
         for _, roundabout in roundabout_df.iterrows():
-
             # Set representative coordinate of roundabout and set up node into node_dict
             node_coord = self._calculate_mean_roundabout_pos(roundabout)
             roundabout_coords = self._extract_list_of_coords_from_line_object(roundabout[GEOMETRY])
@@ -101,11 +101,11 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
             # Identify the closest of distances between the roundabout and
             # the FIRST_COORD and LAST_COORD of each road segment.
             roads_gdf["distance_first"] = roads_gdf.loc[(roads_gdf[FUNCT_NAME] == MAIN_CARRIAGEWAY) |
-                                                (roads_gdf[FUNCT_NAME] == SLIP_ROAD), FIRST_COORD] \
+                                                        (roads_gdf[FUNCT_NAME] == SLIP_ROAD), FIRST_COORD] \
                 .apply(lambda x: self._proximity_of_road_to_roundabout(roundabout_refined_coords, x))
 
             roads_gdf["distance_last"] = roads_gdf.loc[(roads_gdf[FUNCT_NAME] == MAIN_CARRIAGEWAY) |
-                                               (roads_gdf[FUNCT_NAME] == SLIP_ROAD), LAST_COORD] \
+                                                       (roads_gdf[FUNCT_NAME] == SLIP_ROAD), LAST_COORD] \
                 .apply(lambda x: self._proximity_of_road_to_roundabout(roundabout_refined_coords, x))
 
             roads_gdf.loc[roads_gdf["distance_first"] <= self.THRESHOLD, FROM_NODE] = node_dict[NODE_ID][-1]
@@ -121,7 +121,31 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
     def _assign_nodes_to_dead_end_roads(self, roads_gdf: gpd.GeoDataFrame,
                                         node_dict: dict) -> (gpd.GeoDataFrame, dict):
-        pass
+        """
+        Assigns nodes to all other roads that have ends that are not connected
+        :param he_df: roads dataframe
+        :param node_dict: nodes data structure to record new nodes
+        :return: updated he_df and node_dict
+        """
+        print("Starting assign_nodes_to_dead_end_roads")
+        dead_ends = roads_gdf.loc[(roads_gdf[FROM_NODE] == NONE) | (roads_gdf[TO_NODE] == NONE)]
+        dead_ends = dead_ends.loc[(pd.isna(roads_gdf[PREV_IND])) | (pd.isna(roads_gdf[NEXT_IND]))]
+        dead_ends = dead_ends.loc[(roads_gdf[FUNCT_NAME] == MAIN_CARRIAGEWAY) |
+                                  (roads_gdf[FUNCT_NAME] == SLIP_ROAD)]
+        for index, dead_end in dead_ends.iterrows():
+            if pd.isna(dead_end.PREV_IND) and dead_end.FROM_NODE == NONE:
+                coord = dead_end.FIRST_COORD
+                node_dict = self._assign_new_node_id(node_dict, coord, "D")
+
+                roads_gdf.at[index, FROM_NODE] = node_dict[NODE_ID][-1]
+            if pd.isna(dead_end.NEXT_IND) and dead_end.TO_NODE == NONE:
+                coord = dead_end.LAST_COORD
+                node_dict = self._assign_new_node_id(node_dict, coord, "D")
+                roads_gdf.at[index, TO_NODE] = node_dict[NODE_ID][-1]
+
+        print("Finishing assign_nodes_to_dead_end_roads")
+
+        return roads_gdf, node_dict
 
     def _are_coordinates_connected(self, coord1: tuple, coord2: tuple) -> (float, float):
         """
@@ -261,4 +285,3 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         for coord in roundabout_coords:
             distance.append(self._euclidean_distance(coord, target_coord))
         return min(distance)
-
