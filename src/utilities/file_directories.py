@@ -12,4 +12,5 @@ class FileDirectories(Enum):
     HE_NETWORK = "/Incoming/imperial_data/highways_england_shapefiles/HAPMS/"
     OUT = "/out/"
     TEMP = "/temp/"
+    OS_DATA = "/Other_incoming_data/oproad_essh_gb/data/"
 
