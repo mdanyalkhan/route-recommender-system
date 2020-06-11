@@ -1,5 +1,5 @@
 from RoadNetwork.RoadNetworkBuilder import *
-
+import numpy as np
 
 class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
@@ -166,7 +166,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         :return: the index of the closest main carriageway, and its distance with respect to the target coordinates
         """
         # Set up a temporary column of distances in he_df
-        roads_gdf["distances"] = pd.inf
+        roads_gdf["distances"] = np.inf
 
         if use_first_coord_of_main_carriageway:
             COORD = FIRST_COORD
