@@ -11,8 +11,8 @@ class RoadNetworkBuilder(ABC):
         """
         Modifies the roads_gdf with extra columns indicating edges and nodes
         :param roads_gdf: Roads geodataframe
-        :return: updated roads_df containing new columns prev_ind, next_ind, from_node, to_node, and index. And nodes_df
-        containing the node IDs.
+        :return: updated roads_df containing new columns prev_ind, next_ind, from_node, to_node, and index.
+        And nodes_df containing the node IDs.
          """
         print("Build gdf of the road network")
         # Insert index as column
@@ -101,6 +101,28 @@ class RoadNetworkBuilder(ABC):
         x2, y2 = coord2
         return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2))
 
+    def _assign_new_node_id(self, node_dict: dict, coords: tuple, prefix: str) -> dict:
+        """
+        Assigns a new node ID into node_dict
+        :param node_dict: existing data structure containing list of nodes
+        :param coords: coordinate of new node ID
+        :return: updated node_dict
+        """
+        # Set node_dict with coordinates of FIRST_COORD
+
+        if not bool(node_dict):
+            first_term = prefix + str(1)
+            node_dict["node_id"] = [first_term]
+        elif node_dict["node_id"][-1][0] != prefix:
+            first_term = prefix + str(1)
+            node_dict["node_id"].extend([first_term])
+
+        else:
+            node_dict["node_id"].extend([node_dict["node_id"][-1][0] + str(int(node_dict["node_id"][-1][1:]) + 1)])
+
+        node_dict.setdefault("geometry", []).extend([coords])
+        return node_dict
+
     @abstractmethod
     def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame,
                                                    funct_name: str) -> gpd.GeoDataFrame:
@@ -108,15 +130,15 @@ class RoadNetworkBuilder(ABC):
 
     @abstractmethod
     def _connect_main_carriageways_to_slip_roads(self, roads_gdf: gpd.GeoDataFrame,
-                                                 nodes: dict) -> (gpd.GeoDataFrame, dict):
+                                                 node_dict: dict) -> (gpd.GeoDataFrame, dict):
         pass
 
     @abstractmethod
     def _connect_roads_to_roundabouts(self, roads_gdf: gpd.GeoDataFrame,
-                                      nodes: dict) -> (gpd.GeoDataFrame, dict):
+                                      node_dict: dict) -> (gpd.GeoDataFrame, dict):
         pass
 
     @abstractmethod
     def _assign_nodes_to_dead_end_roads(self, roads_gdf: gpd.GeoDataFrame,
-                                        nodes: dict) -> (gpd.GeoDataFrame, dict):
+                                        node_dict: dict) -> (gpd.GeoDataFrame, dict):
         pass
