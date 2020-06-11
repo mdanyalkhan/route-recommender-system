@@ -1,6 +1,6 @@
 from unittest import TestCase
 from src.graphs.pre_processing import *
-from geodataframebuilder import *
+from GeoDataFrameAux import *
 
 class Test(TestCase):
 

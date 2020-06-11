@@ -6,7 +6,7 @@ from shapely.geometry import MultiLineString
 from shapely import wkt
 from math import sqrt
 import networkx as nx
-from geodataframebuilder import *
+from GeoDataFrameAux import *
 
 
 def extract_coord(line_object, index: int):
@@ -78,7 +78,7 @@ def link_roads(he_df):
     he_df.drop(['FIRST_COORD', 'LAST_COORD'], axis=1, inplace=True)
 
     nodes_df = pd.DataFrame(nodes)
-    nodes_df["coordinates"] = nodes_df["coordinates"].apply(GeoLineDataFrameBuilder()._build_geometry_object)
+    nodes_df["coordinates"] = nodes_df["coordinates"].apply(GeoPointDataFrameBuilder()._build_geometry_object)
     nodes_df["coordinates"] = nodes_df["coordinates"].apply(wkt.loads)
 
     nodes_gdf = gpd.GeoDataFrame(nodes_df, geometry="coordinates")

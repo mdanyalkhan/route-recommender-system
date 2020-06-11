@@ -1,4 +1,4 @@
-from geodataframebuilder.geo_data_frame_builder import *
+from GeoDataFrameAux.geo_data_frame_builder import *
 
 
 class GeoPolyDataFrameBuilder(GeoDataFrameBuilder):
