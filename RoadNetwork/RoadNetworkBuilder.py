@@ -1,3 +1,5 @@
+from math import sqrt
+
 from shapely.geometry import MultiLineString, LineString
 from abc import ABC, abstractmethod
 from GeoDataFrameAux import *
@@ -44,7 +46,7 @@ class RoadNetworkBuilder(ABC):
         roads_gdf.drop([FIRST_COORD, LAST_COORD], axis=1, inplace=True)
 
         nodes_gdf = self._convert_points_dict_to_gdf(nodes)
-        print("Finished Link_roads")
+        print("Finished building gdf of the road network")
 
         return roads_gdf, nodes_gdf
 
@@ -88,9 +90,20 @@ class RoadNetworkBuilder(ABC):
             list_of_coords = list(line_object.coords)
         return list_of_coords
 
+    def _euclidean_distance(self, coord1: tuple, coord2: tuple):
+        """
+        Calculates the Euclidean distance between two coordinates
+        :param coord1: Tuple of numerical digits
+        :param coord2: Second tupe of numerical digits
+        :return: Returns the Euclidean distance between two coordinates
+        """
+        x1, y1 = coord1
+        x2, y2 = coord2
+        return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2))
+
     @abstractmethod
     def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame,
-                                                   param: str) -> gpd.GeoDataFrame:
+                                                   funct_name: str) -> gpd.GeoDataFrame:
         pass
 
     @abstractmethod
