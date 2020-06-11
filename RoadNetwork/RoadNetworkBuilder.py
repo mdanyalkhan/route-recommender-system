@@ -112,15 +112,16 @@ class RoadNetworkBuilder(ABC):
 
         if not bool(node_dict):
             first_term = prefix + str(1)
-            node_dict["node_id"] = [first_term]
-        elif node_dict["node_id"][-1][0] != prefix:
+            node_dict[NODE_ID] = [first_term]
+        elif node_dict[NODE_ID][-1][0] != prefix:
             first_term = prefix + str(1)
-            node_dict["node_id"].extend([first_term])
+            node_dict[NODE_ID].extend([first_term])
 
         else:
-            node_dict["node_id"].extend([node_dict["node_id"][-1][0] + str(int(node_dict["node_id"][-1][1:]) + 1)])
+            node_dict[NODE_ID].extend([node_dict[NODE_ID][-1][0] +
+                                       str(int(node_dict[NODE_ID][-1][1:]) + 1)])
 
-        node_dict.setdefault("geometry", []).extend([coords])
+        node_dict.setdefault(GEOMETRY, []).extend([coords])
         return node_dict
 
     @abstractmethod

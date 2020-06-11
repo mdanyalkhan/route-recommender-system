@@ -2,8 +2,9 @@ from RoadNetwork.RoadNetworkBuilder import *
 
 class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
-    def __init__(self, connection_threshold = 10):
+    def __init__(self, connection_threshold = 10, min_spacing_for_roundabout_resolution = 2):
         self.THRESHOLD = connection_threshold
+        self.MIN_SPACING = 2
 
     def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame,
                                                    funct_name: str) -> gpd.GeoDataFrame:
@@ -49,7 +50,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         :param node_dict: existing data structure containing the list of nodes
         :return: updated he_df and node_dict
         """
-        
+
         print("Starting _connect_main_carriageways_to_slip_roads")
 
         slip_roads_df = roads_gdf.loc[roads_gdf[FUNCT_NAME] == SLIP_ROAD]
@@ -76,7 +77,47 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
     def _connect_roads_to_roundabouts(self, roads_gdf: gpd.GeoDataFrame,
                                       node_dict: dict) -> (gpd.GeoDataFrame, dict):
-        pass
+        """
+        Identifies and establishes connections between all road segments and connections. Where
+        connections are identified, a new node is generated and incorporated into the roads
+        geospatial data structure.
+
+        :param roads_gdf: geospatial data structure containing the main carriageways, slip roads, and roundabouts
+        :param node_dict: Existing data structure containing list of roundabout nodes
+        :return: updated roads_gdf and node_dict
+        """
+        print("Starting link_roundabouts_to_segments")
+        # Select all roundabouts
+        roundabout_df = roads_gdf.loc[roads_gdf[FUNCT_NAME] == ROUNDABOUT]
+        # For every roundabout do the following:
+        for _, roundabout in roundabout_df.iterrows():
+
+            # Set representative coordinate of roundabout and set up node into node_dict
+            node_coord = self._calculate_mean_roundabout_pos(roundabout)
+            roundabout_coords = self._extract_list_of_coords_from_line_object(roundabout[GEOMETRY])
+            roundabout_refined_coords = self._increase_resolution_of_line(roundabout_coords)
+            node_dict = self._assign_new_node_id(node_dict, node_coord, "R")
+
+            # Identify the closest of distances between the roundabout and
+            # the FIRST_COORD and LAST_COORD of each road segment.
+            roads_gdf["distance_first"] = roads_gdf.loc[(roads_gdf[FUNCT_NAME] == MAIN_CARRIAGEWAY) |
+                                                (roads_gdf[FUNCT_NAME] == SLIP_ROAD), FIRST_COORD] \
+                .apply(lambda x: self._proximity_of_road_to_roundabout(roundabout_refined_coords, x))
+
+            roads_gdf["distance_last"] = roads_gdf.loc[(roads_gdf[FUNCT_NAME] == MAIN_CARRIAGEWAY) |
+                                               (roads_gdf[FUNCT_NAME] == SLIP_ROAD), LAST_COORD] \
+                .apply(lambda x: self._proximity_of_road_to_roundabout(roundabout_refined_coords, x))
+
+            roads_gdf.loc[roads_gdf["distance_first"] <= self.THRESHOLD, FROM_NODE] = node_dict[NODE_ID][-1]
+            roads_gdf.loc[roads_gdf["distance_first"] <= self.THRESHOLD, PREV_IND] = pd.NA
+
+            roads_gdf.loc[roads_gdf["distance_last"] <= self.THRESHOLD, TO_NODE] = node_dict[NODE_ID][-1]
+            roads_gdf.loc[roads_gdf["distance_last"] <= self.THRESHOLD, NEXT_IND] = pd.NA
+            roads_gdf.drop(['distance_last', 'distance_first'], axis=1, inplace=True)
+
+        print("Finishing link_roundabouts_to_segments")
+
+        return roads_gdf, node_dict
 
     def _assign_nodes_to_dead_end_roads(self, roads_gdf: gpd.GeoDataFrame,
                                         node_dict: dict) -> (gpd.GeoDataFrame, dict):
@@ -108,7 +149,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         else:
             COORD = LAST_COORD
 
-        carriageway_df = roads_gdf.loc[roads_gdf["FUNCT_NAME"] == "Main Carriageway"]
+        carriageway_df = roads_gdf.loc[roads_gdf[FUNCT_NAME] == MAIN_CARRIAGEWAY]
         distances = carriageway_df[COORD].apply(lambda x: self._euclidean_distance(x, target_coord))
         min_dist = distances.min()
         index = distances.index[distances == distances.min()][0]
@@ -131,15 +172,15 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         :return: roads_gdf with updates to reflect connectivity and nodal connection between slip road and carriageways
         """
         if is_prev:
-            ind_a = "NEXT_IND"
-            ind_b = "PREV_IND"
-            node_a = "FROM_NODE"
-            node_b = "TO_NODE"
+            ind_a = NEXT_IND
+            ind_b = PREV_IND
+            node_a = FROM_NODE
+            node_b = TO_NODE
         else:
-            ind_a = "PREV_IND"
-            ind_b = "NEXT_IND"
-            node_a = "TO_NODE"
-            node_b = "FROM_NODE"
+            ind_a = PREV_IND
+            ind_b = NEXT_IND
+            node_a = TO_NODE
+            node_b = FROM_NODE
 
         if min_dist < self.THRESHOLD:
             node_dict = self._assign_new_node_id(node_dict, target_coord, "S")
@@ -147,10 +188,77 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
             if not pd.isna(roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a].values[0]):
                 index = roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a].values[0]
                 roads_gdf.loc[roads_gdf[INDEX] == index, ind_b] = pd.NA
-                roads_gdf.loc[roads_gdf[INDEX] == index, node_a] = node_dict["node_id"][-1]
+                roads_gdf.loc[roads_gdf[INDEX] == index, node_a] = node_dict[NODE_ID][-1]
             # update connection to current carriageway
             roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a] = pd.NA
-            roads_gdf.loc[roads_gdf[INDEX] == min_index, node_b] = node_dict["node_id"][-1]
-            roads_gdf.loc[roads_gdf[INDEX] == slip_road_index, node_a] = node_dict["node_id"][-1]
+            roads_gdf.loc[roads_gdf[INDEX] == min_index, node_b] = node_dict[NODE_ID][-1]
+            roads_gdf.loc[roads_gdf[INDEX] == slip_road_index, node_a] = node_dict[NODE_ID][-1]
 
         return roads_gdf
+
+    def _calculate_mean_roundabout_pos(self, roundabout: gpd.GeoDataFrame) -> (float, float):
+        """
+        Calculates the mean coordinates of the roundabout
+        :param roundabout: geodataframe of roundabout
+        :return: mean coordinates of roundabout
+        """
+        coords = list(roundabout[GEOMETRY].coords)
+        n = len(coords)
+        x_sum = 0
+        y_sum = 0
+
+        for coord in coords:
+            x_sum += coord[0]
+            y_sum += coord[1]
+        x_ave = x_sum / n
+        y_ave = y_sum / n
+
+        return x_ave, y_ave
+
+    def _increase_resolution_of_line(self, line_coords: list) -> list:
+        """
+        Increases the number of points in the line object
+        :param line_coords: current number of points in the line object
+        :return: Increased number of points within line_coords
+        """
+        n = len(line_coords)
+        index = 1
+
+        while index < n:
+            coord_a = line_coords[index - 1]
+            coord_b = line_coords[index]
+
+            if self._euclidean_distance(coord_a, coord_b) > self.MIN_SPACING:
+
+                midpoint = self._calculate_midpoint(coord_a, coord_b)
+                line_coords.insert(index, midpoint)
+                n += 1
+            else:
+                index += 1
+
+        return line_coords
+
+    def _calculate_midpoint(self, coord_a: tuple, coord_b: tuple) -> (float, float):
+        """
+        Calculates the midpoint between two coordinates
+        :param coord_a:
+        :param coord_b:
+        :return: midpoint in tuple
+        """
+        x1, y1 = coord_a
+        x2, y2 = coord_b
+
+        return (x1 + x2) / 2, (y1 + y2) / 2
+
+    def _proximity_of_road_to_roundabout(self, roundabout_coords: list, target_coord: tuple) -> float:
+        """
+        Calculates the distance of the road segment relative to roundabout
+        :param roundabout_coords: geodataframe of roundabout
+        :param target_coord: coordinates tuple
+        :return nearest_distance: closest distance from roundabout to road segment
+        """
+        distance = []
+        for coord in roundabout_coords:
+            distance.append(self._euclidean_distance(coord, target_coord))
+        return min(distance)
+
