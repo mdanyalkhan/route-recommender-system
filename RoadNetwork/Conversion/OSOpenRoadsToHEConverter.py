@@ -31,11 +31,16 @@ class OSOpenRoadsToHERoadsConverter(object):
         # Insert funct_name
         funct_names = sel_gdf[OS_FUNCT_NAME].apply(self._insert_funct_name)
         he_df.insert(6, HE_FUNCT_NAME, funct_names)
-        
-        # Insert carriageway builder
+
+        #Insert length
+        he_df.insert(6, HE_LENGTH, sel_gdf[OS_LENGTH])
+
+        # Insert carriageway type
+        he_df.insert(he_df.columns.tolist().index(HE_ENVIRONMENT), HE_CARRIAGEWAY_TYPE, sel_gdf[OS_FUNCT_NAME])
+
         # Insert reference
-        print(he_df)
-        print(he_df.columns.tolist())
+        he_df.insert(len(he_df.columns.tolist()), HE_REFERENCE, sel_gdf[OS_ID])
+
         return he_df
 
     def _insert_class_name(self, class_name: str) -> str:

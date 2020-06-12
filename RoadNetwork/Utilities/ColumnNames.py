@@ -13,7 +13,7 @@ HE_DIRECTION = "DIREC_CODE" #Set to NULL
 HE_PERM_LANES = "PERM_LANES" #Set to NULL
 HE_CARRIAGEWAY_TYPE = "DUAL_NAME" #Set to formOfWay
 HE_ENVIRONMENT = "ENVIR_NAME" #set to NULL
-HE_AUTHORITY = "AUTH_NAME" #Set to NULL
+HE_AUTHORITY = "AUTHO_NAME" #Set to NULL
 HE_REFERENCE = "REFERENCE" #Use identifier
 
 #OS_open_roads geodataframe column names

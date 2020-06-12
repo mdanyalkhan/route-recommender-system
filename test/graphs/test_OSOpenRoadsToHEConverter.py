@@ -6,7 +6,9 @@ class TestOSOpenRoadsToHERoadsConverter(TestCase):
     mock_os_df = pd.DataFrame({
         OS_CLASS: ["A Road", "Motorway", "A Road", "unknown"],
         OS_ROAD_NO: ["A1", "M1", "A2", "None"],
-        OS_FUNCT_NAME: ["Single Carriageway", "Roundabout", "Slip Road", "Slip Road"]
+        OS_FUNCT_NAME: ["Single Carriageway", "Roundabout", "Slip Road", "Slip Road"],
+        OS_LENGTH: ["10", "20", "30", "40"],
+        OS_ID: ["1", "2", "3", "4"]
     })
 
     def test_convert_OS_data_to_HE_compatible_dataframe(self):
