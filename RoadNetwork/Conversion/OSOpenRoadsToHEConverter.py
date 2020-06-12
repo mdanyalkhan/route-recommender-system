@@ -2,6 +2,7 @@ from RoadNetwork.Utilities.ColumnNames import *
 import geopandas as gpd
 import pandas as pd
 import numpy as np
+import os
 
 column_names_null = [HE_SECT_LABEL, HE_LOCATION, HE_START_DATE, HE_END_DATE, HE_AREA_NAME,
                      HE_DIRECTION, HE_PERM_LANES, HE_ENVIRONMENT, HE_AUTHORITY]
@@ -9,12 +10,62 @@ column_names_null = [HE_SECT_LABEL, HE_LOCATION, HE_START_DATE, HE_END_DATE, HE_
 
 class OSOpenRoadsToHERoadsConverter(object):
 
-    def convert_to_HE_dataframe(self, os_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    def convert_and_merge_to_HE_geoDataframe(self, folder_path: str, roads_to_exclude=None) -> gpd.GeoDataFrame:
+
+        list_of_files = os.listdir(folder_path)
+        list_of_shp = [folder_path + "/" + x for x in list_of_files if ".shp" in x]
+        merged_df = None
+        i = 0
+        for shp_path in list_of_shp:
+            print("iteration:", i)
+            os_gdf = gpd.read_file(shp_path)
+            converted_df = self.convert_to_HE_dataframe(os_gdf, roads_to_exclude)
+            if merged_df is None:
+                merged_df = converted_df
+            else:
+                merged_df = pd.concat([merged_df, converted_df], ignore_index=True)
+            i += 1
+
+            if i == 3:
+                break
+
+        # Insert geometry
+        merged_gdf = gpd.GeoDataFrame(merged_df, geometry=GEOMETRY)
+        merged_gdf.crs = {'init': 'epsg:27700'}
+
+        return merged_gdf
+
+    def convert_to_HE_geoDataframe(self, os_gdf, roads_to_exclude = None):
+
+        converted_df = self.convert_to_HE_dataframe(os_gdf, roads_to_exclude)
+
+        # Insert geometry
+        converted_gdf = gpd.GeoDataFrame(converted_df, geometry=GEOMETRY)
+        converted_gdf.crs = {'init': 'epsg:27700'}
+
+        return converted_df
+
+    def convert_to_HE_dataframe(self, os_gdf: gpd.GeoDataFrame, roads_to_exclude=None) -> pd.DataFrame:
+        """
+        Converts the OS geodataframe to a dataframe compatible to HE's geospatial dataframe
+        :param os_gdf: OS_open roads geodataframe
+        :param roads_to_exclude: any road numbers to exclude
+        :return: OS open roads equivalent data converted to HE-style geodataframe
+        """
+        if roads_to_exclude is None:
+            roads_to_exclude = []
+
+        pd.options.mode.chained_assignment = None
 
         # Select features that are only motorways and A roads
         sel_gdf = os_gdf.loc[(os_gdf[OS_CLASS] == OS_MOTORWAY) | (os_gdf[OS_CLASS] == OS_A_ROAD)]
 
-        # OPTIONALLY select features that are not a duplicate of roads already in SRN
+        # # OPTIONALLY select features that are not a duplicate of roads already in SRN
+        if roads_to_exclude:
+            sel_gdf["is_in_list"] = sel_gdf[OS_ROAD_NO].apply(lambda x: x in roads_to_exclude)
+            sel_gdf = sel_gdf.loc[sel_gdf["is_in_list"] == False]
+
+        sel_gdf.drop("is_in_list", axis=1, inplace=True)
 
         # Set up a geodataframe with with columns that will be NULL values (such as AREA_NAME)
         null_list = [pd.NA] * len(sel_gdf)
@@ -23,23 +74,30 @@ class OSOpenRoadsToHERoadsConverter(object):
 
         # Insert Class Name
         class_names = sel_gdf[OS_CLASS].apply(self._insert_class_name)
-        he_df.insert(0, HE_CLASS_NAME, class_names)
+        he_df.insert(0, HE_CLASS_NAME, class_names.values)
 
         # Insert Road Number
-        he_df.insert(1, HE_ROAD_NO, sel_gdf[OS_ROAD_NO])
+        he_df.insert(1, HE_ROAD_NO, sel_gdf[OS_ROAD_NO].values)
 
         # Insert funct_name
         funct_names = sel_gdf[OS_FUNCT_NAME].apply(self._insert_funct_name)
-        he_df.insert(6, HE_FUNCT_NAME, funct_names)
+        he_df.insert(6, HE_FUNCT_NAME, funct_names.values)
 
-        #Insert length
-        he_df.insert(6, HE_LENGTH, sel_gdf[OS_LENGTH])
+        # Insert length
+        he_df.insert(6, HE_LENGTH, sel_gdf[OS_LENGTH].values)
 
         # Insert carriageway type
-        he_df.insert(he_df.columns.tolist().index(HE_ENVIRONMENT), HE_CARRIAGEWAY_TYPE, sel_gdf[OS_FUNCT_NAME])
+        he_df.insert(he_df.columns.tolist().index(HE_ENVIRONMENT), HE_CARRIAGEWAY_TYPE,
+                     sel_gdf[OS_FUNCT_NAME].values)
 
         # Insert reference
-        he_df.insert(len(he_df.columns.tolist()), HE_REFERENCE, sel_gdf[OS_ID])
+        he_df.insert(len(he_df.columns.tolist()), HE_REFERENCE,
+                     sel_gdf[OS_ID].values)
+
+        #Insert geometry
+        he_df.insert(len(he_df.columns.tolist()), GEOMETRY, sel_gdf[GEOMETRY].values)
+
+        pd.options.mode.chained_assignment = 'warn'
 
         return he_df
 

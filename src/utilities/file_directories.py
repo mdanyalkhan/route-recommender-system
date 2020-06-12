@@ -13,4 +13,5 @@ class FileDirectories(Enum):
     OUT = "/out/"
     TEMP = "/temp/"
     OS_DATA = "/Other_incoming_data/oproad_essh_gb/data/"
+    OS_SELECTED_DATA = "/Operational_data_OS_Open_Roads/"
 
