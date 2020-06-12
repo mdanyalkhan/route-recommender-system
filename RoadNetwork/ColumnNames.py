@@ -1,5 +1,22 @@
 
-#Roads Geodataframe column names
+#HE roads geodataframe column names
+HE_CLASS_NAME = "CLASS_NAME"
+HE_ROAD_NO = "ROA_NUMBER"
+HE_SECT_LABEL = "SECT_LABEL"
+HE_LOCATION = "LOCATION"
+HE_START_DATE = "START_DATE"
+HE_END_DATE = "S_END_DATE"
+HE_LENGTH = "SEC_LENGTH"
+HE_FUNCT_NAME = "FUNCT_NAME"
+HE_AREA_NAME = "AREA_NAME"
+HE_DIRECTION = "DIREC_CODE"
+HE_PERM_LANES = "PERM_LANES"
+HE_CARRIAGEWAY_TYPE = "DUAL_NAME"
+HE_ENVIRONMENT = "ENVIR_NAME"
+HE_AUTHORITY = "AUTH_NAME"
+HE_REFERENCE = "REFERENCE"
+
+#Additional column names to be added to the geodataframe
 INDEX = "INDEX"
 PREV_IND = "PREV_IND"
 NEXT_IND = "NEXT_IND"
@@ -8,13 +25,13 @@ LAST_COORD = "LAST_COORD"
 FROM_NODE = "FROM_NODE"
 TO_NODE = "TO_NODE"
 GEOMETRY = "geometry"
+
+#Key string variables in geodataframe
 MAIN_CARRIAGEWAY = "Main Carriageway"
 SLIP_ROAD = "Slip Road"
 ROUNDABOUT = "Roundabout"
-FUNCT_NAME = "FUNCT_NAME"
-ROAD_NO = "ROA_NUMBER"
-DIRECTION = "DIREC_CODE"
 NONE = "None"
+
 #Nodes Geodataframe column names
 NODE_ID = "node_id"
 
