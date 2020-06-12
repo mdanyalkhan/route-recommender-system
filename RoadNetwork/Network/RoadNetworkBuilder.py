@@ -1,9 +1,9 @@
 from math import sqrt
 
-from shapely.geometry import MultiLineString, LineString
+from shapely.geometry import MultiLineString
 from abc import ABC, abstractmethod
 from GeoDataFrameAux import *
-from RoadNetwork.ColumnNames import *
+from RoadNetwork.Utilities.ColumnNames import *
 
 class RoadNetworkBuilder(ABC):
 
@@ -31,8 +31,8 @@ class RoadNetworkBuilder(ABC):
         # Set up a dict of nodes
         nodes = {}
         # Link all main carriageways and slip roads
-        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, MAIN_CARRIAGEWAY)
-        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, SLIP_ROAD)
+        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_MAIN_CARRIAGEWAY)
+        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_SLIP_ROAD)
 
         # link_main_cariageways_to_slip_roads
         roads_gdf, slip_road_nodes = self._connect_main_carriageways_to_slip_roads(roads_gdf, nodes)

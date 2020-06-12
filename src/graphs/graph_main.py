@@ -4,7 +4,13 @@ import geopandas as gpd
 
 if __name__ == "__main__":
 
-    print("Hello world")
+    poly_clip_path = parent_directory_at_level(__file__,3) + "/out/bounds.shp"
+    # SJ_road_link_path = parent_directory_at_level(__file__,4) + fd.OS_DATA.value + "SJ_RoadLink.shp"
+    # poly_clip_gdf = gpd.read_file(poly_clip_path)
+    # SJ_road_link_gdf = gpd.read_file(SJ_road_link_path)
+    # SJ_road_link_gdf_clip = clip(SJ_road_link_gdf, poly_clip_gdf)
+    # out_path = parent_directory_at_level(__file__,3) + "/temp/OS_roads.shp"
+    # SJ_road_link_gdf_clip.to_file(out_path)
     # out_path = parent_directory_at_level(__file__, 4) + fd.OS_DATA.value + "SJ_RoadLink.shp"
     # print(out_path)
     # roads_df = gpd.read_file(out_path)
