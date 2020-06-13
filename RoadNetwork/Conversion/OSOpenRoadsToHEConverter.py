@@ -11,13 +11,19 @@ column_names_null = [HE_SECT_LABEL, HE_LOCATION, HE_START_DATE, HE_END_DATE, HE_
 class OSOpenRoadsToHERoadsConverter(object):
 
     def convert_and_merge_to_HE_geoDataframe(self, folder_path: str, roads_to_exclude=None) -> gpd.GeoDataFrame:
-
+        """
+        Converts all OS geodataframes in a directory to a combined HE geodataframe
+        :param folder_path: directory path containing the OS geodataframes
+        :param roads_to_exclude: Any roads to exclude from from the geodataframe
+        :return: HE geodataframe containing information from all the OS geodataframe
+        """
         list_of_files = os.listdir(folder_path)
         list_of_shp = [folder_path + "/" + x for x in list_of_files if ".shp" in x]
         merged_df = None
         i = 0
+        n = len(list_of_shp)
         for shp_path in list_of_shp:
-            print("iteration:", i)
+            print("iteration: " + str(i) + " out of " + str(n))
             os_gdf = gpd.read_file(shp_path)
             converted_df = self.convert_to_HE_dataframe(os_gdf, roads_to_exclude)
             if merged_df is None:
@@ -26,17 +32,19 @@ class OSOpenRoadsToHERoadsConverter(object):
                 merged_df = pd.concat([merged_df, converted_df], ignore_index=True)
             i += 1
 
-            if i == 3:
-                break
-
         # Insert geometry
         merged_gdf = gpd.GeoDataFrame(merged_df, geometry=GEOMETRY)
         merged_gdf.crs = {'init': 'epsg:27700'}
 
         return merged_gdf
 
-    def convert_to_HE_geoDataframe(self, os_gdf, roads_to_exclude = None):
-
+    def convert_to_HE_geoDataframe(self, os_gdf: gpd.GeoDataFrame, roads_to_exclude = None) -> pd.DataFrame:
+        """
+        Converts a single os geodataframe to an equivalent HE geodataframe
+        :param os_gdf:
+        :param roads_to_exclude:
+        :return: HE geodataframe converted from the OS geodataframe
+        """
         converted_df = self.convert_to_HE_dataframe(os_gdf, roads_to_exclude)
 
         # Insert geometry
@@ -47,10 +55,10 @@ class OSOpenRoadsToHERoadsConverter(object):
 
     def convert_to_HE_dataframe(self, os_gdf: gpd.GeoDataFrame, roads_to_exclude=None) -> pd.DataFrame:
         """
-        Converts the OS geodataframe to a dataframe compatible to HE's geospatial dataframe
+        Converts the OS geodataframe to a dataframe compatible to HE's dataframe
         :param os_gdf: OS_open roads geodataframe
-        :param roads_to_exclude: any road numbers to exclude
-        :return: OS open roads equivalent data converted to HE-style geodataframe
+        :param roads_to_exclude: any road numbers to exclude, usually in list form
+        :return: OS open roads equivalent data converted to HE-style dataframe
         """
         if roads_to_exclude is None:
             roads_to_exclude = []
