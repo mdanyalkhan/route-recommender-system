@@ -4,9 +4,6 @@ import numpy as np
 
 class OSRoadsNetworkBuilder(RoadNetworkBuilder):
 
-    def __init__(self, connection_threshold=5):
-        super().__init__(connection_threshold)
-
     def _connect_all_road_segments(self, roads_gdf: gpd.GeoDataFrame, nodes: dict) \
             -> (gpd.GeoDataFrame, dict):
         """
@@ -15,13 +12,12 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         :param nodes: dictionary containing list of nodes
         :return: Returns updated roads gdf and nodes dict
         """
-        roads_gdf, nodes = self._connect_and_assign_nodes_using_funct_name(roads_gdf, nodes, HE_MAIN_CARRIAGEWAY)
-        roads_gdf, nodes = self._connect_and_assign_nodes_using_funct_name(roads_gdf, nodes, HE_SLIP_ROAD)
+        roads_gdf, nodes = self._connect_and_assign_nodes_using_funct_name(roads_gdf, nodes)
 
         return roads_gdf, nodes
 
-    def _connect_and_assign_nodes_using_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict,
-                                                   funct_name: str) -> (gpd.GeoDataFrame, dict):
+    def _connect_and_assign_nodes_using_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict)\
+            -> (gpd.GeoDataFrame, dict):
         """
         Explicitly connects and assigns nodes to all road segments by function name and geometry,
         :param roads_gdf: Geodataframe of roads data
@@ -29,7 +25,8 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         :param funct_name: name of road type to perform connection operation on
         :return: Updated roads_gdf and node_dict
         """
-        funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
+        # funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
+        funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
         no_of_roads = len(funct_gdf)
 
         for i in range(no_of_roads):
@@ -45,7 +42,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
                 node_dict, roads_gdf = self._find_connections(funct_gdf, roads_gdf, index, last_coord,
                                                               node_dict, road_no, is_last_coord = True)
                 #Update dataframe
-                funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
+                funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
 
             if pd.isna(segment.PREV_IND) and segment.FROM_NODE == "None":
 
@@ -53,7 +50,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
                                                               node_dict, road_no, is_last_coord=False)
 
                 # Update dataframe prior to next iteration
-                funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
+                funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
 
         print("Finishing _connect_road_segments_based_on_funct_name")
 
@@ -118,10 +115,6 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
             roads_gdf.loc[connected_to_road_b[INDEX].values, TO_NODE] = node_id
 
         return node_dict, roads_gdf
-
-    def _nodes_main_carriageways_to_slip_roads(self, roads_gdf: gpd.GeoDataFrame,
-                                               node_dict: dict) -> (gpd.GeoDataFrame, dict):
-        pass
 
     def _nodes_roads_to_roundabouts(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) -> (gpd.GeoDataFrame, dict):
         pass

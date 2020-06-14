@@ -28,10 +28,13 @@ def convert_OS_original_to_HE_compatibale_dataframe():
 
 def connect_os_gdf():
     os_converted_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_roads_converted.shp"
-    os_connected_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_roads_connected.shp"
+    os_edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_edges.shp"
+    os_nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_nodes.shp"
     os_converted_gdf = gpd.read_file(os_converted_path)
-    os_connected_gdf,_ = OSRoadsNetworkBuilder(0).build_road_network_gdf(os_converted_gdf)
-    os_connected_gdf.to_file(os_connected_path)
+    os_edges_gdf, os_nodes_gdf = OSRoadsNetworkBuilder(0).build_road_network_gdf(os_converted_gdf)
+
+    os_edges_gdf.to_file(os_edges_path)
+    os_nodes_gdf.to_file(os_nodes_path)
 
 if __name__ == "__main__":
 

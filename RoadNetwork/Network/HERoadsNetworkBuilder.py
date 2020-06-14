@@ -6,7 +6,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
     def __init__(self, connection_threshold=10, min_spacing_for_roundabout_resolution=2):
 
-        super().__init__(connection_threshold)
+        self.THRESHOLD = connection_threshold
         self.MIN_SPACING = min_spacing_for_roundabout_resolution
 
     def _connect_all_road_segments(self, roads_gdf, nodes) -> (gpd.GeoDataFrame, dict):
@@ -16,7 +16,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         :param nodes: dictionary containing list of nodes
         :return: Returns updated roads gdf and nodes dict
         """
-        
+
         # Connect all main carriageways and slip roads
         roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf,  HE_MAIN_CARRIAGEWAY)
         roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_SLIP_ROAD)
@@ -301,3 +301,12 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         for coord in roundabout_coords:
             distance.append(self._euclidean_distance(coord, target_coord))
         return min(distance)
+
+    def _are_coordinates_connected(self, coord1: tuple, coord2: tuple) -> (float, float):
+        """
+        Determines whether two coordinates in space are sufficiently close
+        :param coord1:
+        :param coord2:
+        :return: true if the euclidean distance is less than some pre-defined threshold, false otherwise
+        """
+        return self._euclidean_distance(coord1, coord2) <= self.THRESHOLD

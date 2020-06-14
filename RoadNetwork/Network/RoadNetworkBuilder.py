@@ -8,9 +8,6 @@ from RoadNetwork.Utilities.ColumnNames import *
 
 class RoadNetworkBuilder(ABC):
 
-    def __init__(self, connection_threshold=10):
-        self.THRESHOLD = connection_threshold
-
     def build_road_network_gdf(self, roads_gdf: gpd.GeoDataFrame) -> (gpd.GeoDataFrame, dict):
         """
         Modifies the roads_gdf with extra columns indicating edges and nodes
@@ -95,15 +92,6 @@ class RoadNetworkBuilder(ABC):
         x2, y2 = coord2
         return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2))
 
-    def _are_coordinates_connected(self, coord1: tuple, coord2: tuple) -> (float, float):
-        """
-        Determines whether two coordinates in space are sufficiently close
-        :param coord1:
-        :param coord2:
-        :return: true if the euclidean distance is less than some pre-defined threshold, false otherwise
-        """
-        return self._euclidean_distance(coord1, coord2) <= self.THRESHOLD
-
     def _assign_new_node_id(self, node_dict: dict, coords: tuple, prefix: str) -> dict:
         """
         Assigns a new node ID into node_dict
@@ -127,28 +115,8 @@ class RoadNetworkBuilder(ABC):
         node_dict.setdefault(GEOMETRY, []).extend([coords])
         return node_dict
 
-    # def _nodes_main_carriageways_multiway(self, roads_gdf, nodes):
-    #
-    #     sel_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY]
-    #     sel_gdf = roads_gdf.loc[(pd.isna(roads_gdf[PREV_IND])) | (pd.isna(roads_gdf[NEXT_IND]))]
-    #
-    #     for index, segment in sel_gdf.iterrows():
-    #         roadNumber = segment.HE_ROAD_NO
-    #         #Filter sel_gdf to include only rows that have the same road_no
-    #         #Calculate whether the FIRST_COORD of these rows are connected to the LAST_COORD of segment
-    #         #Calculate whether
-    #         roads_gdf["is_prev_connected"] = roads_gdf.loc[(pd.isna(roads_gdf[PREV_IND]) == False) &
-    #                                                        (pd.isna(roads_gdf[NEXT_IND]) == False), FIRST_COORD]\
-    #             .apply(lambda x: self._are_coordinates_connected(x, ))
-    #     pass
-
     @abstractmethod
     def _connect_all_road_segments(self, roads_gdf, nodes) -> (gpd.GeoDataFrame, dict):
-        pass
-
-    @abstractmethod
-    def _nodes_main_carriageways_to_slip_roads(self, roads_gdf: gpd.GeoDataFrame,
-                                               node_dict: dict) -> (gpd.GeoDataFrame, dict):
         pass
 
     @abstractmethod
