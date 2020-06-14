@@ -7,13 +7,27 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
     def __init__(self, connection_threshold=5):
         super().__init__(connection_threshold)
 
-    def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict,
+    def _connect_all_road_segments(self, roads_gdf: gpd.GeoDataFrame, nodes: dict) \
+            -> (gpd.GeoDataFrame, dict):
+        """
+        Overriding function that calls all other function to connect each road segment
+        :param roads_gdf: roads geo data frame.
+        :param nodes: dictionary containing list of nodes
+        :return: Returns updated roads gdf and nodes dict
+        """
+        roads_gdf, nodes = self._connect_and_assign_nodes_using_funct_name(roads_gdf, nodes, HE_MAIN_CARRIAGEWAY)
+        roads_gdf, nodes = self._connect_and_assign_nodes_using_funct_name(roads_gdf, nodes, HE_SLIP_ROAD)
+
+        return roads_gdf, nodes
+
+    def _connect_and_assign_nodes_using_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict,
                                                    funct_name: str) -> (gpd.GeoDataFrame, dict):
         """
-        Explicitly connects all road segments by function name and geometry
-        :param he_df: Geodataframe of roads data
-        :funct_name: name of road type to perform connection operation on
-        :return: A GeoDataframe with extra columns that connects each road segment
+        Explicitly connects and assigns nodes to all road segments by function name and geometry,
+        :param roads_gdf: Geodataframe of roads data
+        :param node_dict: dictionary record of all nodes
+        :param funct_name: name of road type to perform connection operation on
+        :return: Updated roads_gdf and node_dict
         """
         funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
         no_of_roads = len(funct_gdf)
@@ -45,8 +59,23 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
 
         return roads_gdf, node_dict
 
-    def _find_connections(self, funct_gdf, roads_gdf, index, target_coord, node_dict, road_no, is_last_coord):
+    def _find_connections(self, funct_gdf: gpd.GeoDataFrame, roads_gdf: gpd.GeoDataFrame, index: int,
+                          target_coord: (float, float), node_dict: dict, road_no: str,
+                          is_last_coord: bool) -> (dict, gpd.GeoDataFrame):
+        """
+        Establishes connections between the road feature corresponding to index, and assigns nodes
+        where there are either multiple connections or a connection between two different carriageways
 
+        :param funct_gdf: Dataframe of road features that are used for this comparative analysis
+        :param roads_gdf: Parent dataframe in which the assignments will take place
+        :param index: index of the current road feature that is being examined
+        :param target_coord: coordinates of the vertex of the road feature
+        :param node_dict: dictionary containing list of created nodes
+        :param road_no: Road ID of current road feature
+        :param is_last_coord: Checks if the vertex corresponds to the last coordinate or first, and assigns parameters
+        accordingly
+        :return: Updated node_dict and roads_gdf
+        """
         connected_to_road_a = funct_gdf.loc[funct_gdf[FIRST_COORD] == target_coord]
         connected_to_road_b = funct_gdf.loc[funct_gdf[LAST_COORD] == target_coord]
 
@@ -90,115 +119,8 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
 
         return node_dict, roads_gdf
 
-    # def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict,
-    #                                                funct_name: str) -> (gpd.GeoDataFrame, dict):
-    #     """
-    #     Explicitly connects all road segments by function name and geometry
-    #     :param he_df: Geodataframe of roads data
-    #     :funct_name: name of road type to perform connection operation on
-    #     :return: A GeoDataframe with extra columns that connects each road segment
-    #     """
-    #
-    #     list_of_multiway_connected_roads = []
-    #
-    #     funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
-    #     road_numbers = funct_gdf.ROA_NUMBER.unique()
-    #
-    #     for road_number in road_numbers:
-    #         carriageway = funct_gdf.loc[funct_gdf[HE_ROAD_NO] == road_number]
-    #         carriageway_size = len(carriageway)
-    #
-    #         for i in range(carriageway_size):
-    #
-    #             segment = carriageway.iloc[i, :]
-    #             index = int(segment.INDEX)
-    #
-    #             first_coord = segment.FIRST_COORD
-    #             last_coord = segment.LAST_COORD
-    #
-    #             if pd.isna(segment.NEXT_IND) and segment.TO_NODE == "None":
-    #                 #Check any connections at last_coord end
-    #                 connecting_road_last_coord_a = carriageway[carriageway[FIRST_COORD].
-    #                     apply(lambda x: self._are_coordinates_connected(x, last_coord))]
-    #
-    #                 connecting_road_last_coord_b = carriageway[carriageway[LAST_COORD].
-    #                     apply(lambda x: self._are_coordinates_connected(x, last_coord))]
-    #
-    #
-    #                 #Remove the index corresponding to its own
-    #                 connecting_road_last_coord_b = connecting_road_last_coord_b.loc[connecting_road_last_coord_b[INDEX]
-    #                                                                                 != index]
-    #
-    #                 if len(connecting_road_last_coord_a) == 1 and len(connecting_road_last_coord_b) == 0:
-    #                     connecting_index = int(connecting_road_last_coord_a[INDEX].values[0])
-    #                     roads_gdf.at[index, NEXT_IND] = connecting_index
-    #                     roads_gdf.at[connecting_index, PREV_IND] = index
-    #
-    #                 elif len(connecting_road_last_coord_a) == 0 and len(connecting_road_last_coord_b) == 1:
-    #                     connecting_index = int(connecting_road_last_coord_b[INDEX].values[0])
-    #                     roads_gdf.at[index, NEXT_IND] = connecting_index
-    #                     roads_gdf.at[connecting_index, PREV_IND] = index
-    #
-    #                     #Reconfigure coordinate orientation
-    #                     roads_gdf = self._swap_coords(roads_gdf, connecting_index)
-    #                     funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
-    #                     carriageway = funct_gdf.loc[roads_gdf[HE_ROAD_NO] == road_number]
-    #
-    #                 elif len(connecting_road_last_coord_a) >= 1 or len(connecting_road_last_coord_b) >= 1:
-    #                     node_dict = self._assign_new_node_id(node_dict, last_coord, "X")
-    #                     node_id = node_dict[NODE_ID][-1]
-    #
-    #                     roads_gdf.at[index, TO_NODE] = node_id
-    #                     roads_gdf.loc[connecting_road_last_coord_a[INDEX].values, FROM_NODE] = node_id
-    #                     roads_gdf.loc[connecting_road_last_coord_b[INDEX].values, TO_NODE] = node_id
-    #
-    #             if pd.isna(segment.PREV_IND) and segment.FROM_NODE == "None":
-    #                 #Check any connections at first_coord end
-    #                 connecting_road_first_coord_a = carriageway[carriageway[FIRST_COORD].
-    #                     apply(lambda x: self._are_coordinates_connected(x, first_coord))]
-    #
-    #                 connecting_road_first_coord_b = carriageway[carriageway[LAST_COORD].
-    #                     apply(lambda x: self._are_coordinates_connected(x, first_coord))]
-    #
-    #                 connecting_road_first_coord_a = connecting_road_first_coord_a.loc[connecting_road_first_coord_a[INDEX]
-    #                                                                                   != index]
-    #
-    #                 if len(connecting_road_first_coord_a) == 1 and len(connecting_road_first_coord_b) == 0:
-    #                     connecting_index = int(connecting_road_first_coord_a[INDEX].values[0])
-    #                     roads_gdf.at[index, PREV_IND] = connecting_index
-    #                     roads_gdf.at[connecting_index, NEXT_IND] = index
-    #
-    #                     roads_gdf = self._swap_coords(roads_gdf, connecting_index)
-    #
-    #                 elif len(connecting_road_first_coord_a) == 0 and len(connecting_road_first_coord_b) == 1:
-    #                     connecting_index = int(connecting_road_first_coord_b[INDEX].values[0])
-    #                     roads_gdf.at[index, PREV_IND] = connecting_index
-    #                     roads_gdf.at[connecting_index, NEXT_IND] = index
-    #
-    #                 elif len(connecting_road_first_coord_a) >= 1 or len(connecting_road_first_coord_b) >= 1:
-    #                     node_dict = self._assign_new_node_id(node_dict, first_coord, "X")
-    #                     node_id = node_dict[NODE_ID][-1]
-    #
-    #                     roads_gdf.at[index, FROM_NODE] = node_id
-    #                     roads_gdf.loc[connecting_road_first_coord_a[INDEX].values, FROM_NODE] = node_id
-    #                     roads_gdf.loc[connecting_road_first_coord_b[INDEX].values, TO_NODE] = node_id
-    #
-    #             #Update dataframe prior to next iteration
-    #             funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
-    #             carriageway = funct_gdf.loc[roads_gdf[HE_ROAD_NO] == road_number]
-    #
-    #     print("Finishing _connect_road_segments_based_on_funct_name")
-    #
-    #     return roads_gdf, node_dict
-
-    def _nodes_multiway_connections(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict,
-                                    funct_name: str) -> gpd.GeoDataFrame:
-
-        #Filter dataframe to only include funct_name, and either PREV_IND or NEXT_IND (or both) as pd.NA
-        pass
-
-    def _nodes_main_carriageways_to_slip_roads(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) -> (
-            gpd.GeoDataFrame, dict):
+    def _nodes_main_carriageways_to_slip_roads(self, roads_gdf: gpd.GeoDataFrame,
+                                               node_dict: dict) -> (gpd.GeoDataFrame, dict):
         pass
 
     def _nodes_roads_to_roundabouts(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) -> (gpd.GeoDataFrame, dict):
@@ -207,8 +129,13 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
     def _assign_nodes_to_dead_end_roads(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) -> (gpd.GeoDataFrame, dict):
         pass
 
-    def _swap_coords(self, roads_gdf, index):
-
+    def _swap_coords(self, roads_gdf: gpd.GeoDataFrame, index: int) -> gpd.GeoDataFrame:
+        """
+        Swaps first_coord and last_coord
+        :param roads_gdf: geodataframe of roads
+        :param index: index of road feature where swap is to take place
+        :return: updated roads_gdf
+        """
         first_coord = roads_gdf.at[index, FIRST_COORD]
         last_coord = roads_gdf.at[index, LAST_COORD]
         roads_gdf.at[index, FIRST_COORD] = last_coord

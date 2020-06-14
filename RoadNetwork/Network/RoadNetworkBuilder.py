@@ -35,26 +35,14 @@ class RoadNetworkBuilder(ABC):
         # Set up a dict of nodes
         nodes = {}
 
-        # Connect all main carriageways and slip roads
-        roads_gdf, _ = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, HE_MAIN_CARRIAGEWAY)
-        roads_gdf, _ = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, HE_SLIP_ROAD)
+        roads_gdf, nodes = self._connect_all_road_segments(roads_gdf, nodes)
 
-        # # Assign nodes between main carriageways and slip roads
-        # roads_gdf, nodes = self._nodes_main_carriageways_to_slip_roads(roads_gdf, nodes)
-        #
-        # # Assign nodes between all roundabouts and nodes
-        # roads_gdf, nodes = self._nodes_roads_to_roundabouts(roads_gdf, nodes)
-        #
-        # # set new nodes for all remaining ends of roads that are not connected
-        # roads_gdf, nodes = self._assign_nodes_to_dead_end_roads(roads_gdf, nodes)
-        #
         roads_gdf.drop([FIRST_COORD, LAST_COORD], axis=1, inplace=True)
-        #
-        # nodes_gdf = self._convert_points_dict_to_gdf(nodes)
-        # print("Finished building gdf of the road network")
 
-        # return roads_gdf, nodes_gdf
-        return roads_gdf
+        nodes_gdf = self._convert_points_dict_to_gdf(nodes)
+        print("Finished building gdf of the road network")
+
+        return roads_gdf, nodes_gdf
 
     def _convert_points_dict_to_gdf(self, dict_structure: dict) -> gpd.GeoDataFrame:
         """
@@ -155,8 +143,7 @@ class RoadNetworkBuilder(ABC):
     #     pass
 
     @abstractmethod
-    def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict,
-                                                   funct_name: str) -> (gpd.GeoDataFrame, dict):
+    def _connect_all_road_segments(self, roads_gdf, nodes) -> (gpd.GeoDataFrame, dict):
         pass
 
     @abstractmethod

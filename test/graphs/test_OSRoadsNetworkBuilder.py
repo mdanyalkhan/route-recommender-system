@@ -19,7 +19,7 @@ class TestOSRoadsNetworkBuilder(TestCase):
         prev_ind_new = [pd.NA, 0, pd.NA, pd.NA]
         next_ind_new = [1, pd.NA, pd.NA, pd.NA]
 
-        df, _ = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
+        df, _ = OSRoadsNetworkBuilder(0)._connect_and_assign_nodes_using_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
 
         self.assertEqual(df[PREV_IND].tolist(), prev_ind_new)
         self.assertEqual(df[NEXT_IND].tolist(), next_ind_new)
@@ -40,7 +40,7 @@ class TestOSRoadsNetworkBuilder(TestCase):
         prev_ind_new = [pd.NA, 0, pd.NA, pd.NA]
         next_ind_new = [1, pd.NA, pd.NA, pd.NA]
 
-        df, _ = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
+        df, _ = OSRoadsNetworkBuilder(0)._connect_and_assign_nodes_using_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
 
         self.assertEqual(df[PREV_IND].tolist(), prev_ind_new)
         self.assertEqual(df[NEXT_IND].tolist(), next_ind_new)
@@ -60,7 +60,7 @@ class TestOSRoadsNetworkBuilder(TestCase):
 
         prev_ind_new = [pd.NA, 2, pd.NA, pd.NA]
         next_ind_new = [pd.NA, pd.NA, 1, pd.NA]
-        df, _ = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
+        df, _ = OSRoadsNetworkBuilder(0)._connect_and_assign_nodes_using_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
 
         self.assertEqual(df[PREV_IND].tolist(), prev_ind_new)
         self.assertEqual(df[NEXT_IND].tolist(), next_ind_new)
@@ -84,7 +84,7 @@ class TestOSRoadsNetworkBuilder(TestCase):
         from_node_new = ["X1", "X1", "X1", "X2", "None", "None"]
         to_node_new = ["None", "None", "None", "None", "X2", "X2"]
 
-        df, nodes = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
+        df, nodes = OSRoadsNetworkBuilder(0)._connect_and_assign_nodes_using_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
 
         self.assertEqual(df[PREV_IND].tolist(), prev_ind_new)
         self.assertEqual(df[NEXT_IND].tolist(), next_ind_new)

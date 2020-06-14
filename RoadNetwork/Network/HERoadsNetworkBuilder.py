@@ -9,8 +9,31 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         super().__init__(connection_threshold)
         self.MIN_SPACING = min_spacing_for_roundabout_resolution
 
-    def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict,
-                                                   funct_name: str) -> (gpd.GeoDataFrame, dict):
+    def _connect_all_road_segments(self, roads_gdf, nodes) -> (gpd.GeoDataFrame, dict):
+        """
+        Overriding function that calls all other function to connect each road segment
+        :param roads_gdf: roads geo data frame.
+        :param nodes: dictionary containing list of nodes
+        :return: Returns updated roads gdf and nodes dict
+        """
+        
+        # Connect all main carriageways and slip roads
+        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf,  HE_MAIN_CARRIAGEWAY)
+        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_SLIP_ROAD)
+
+        # Assign nodes between main carriageways and slip roads
+        roads_gdf, nodes = self._nodes_main_carriageways_to_slip_roads(roads_gdf, nodes)
+
+        # Assign nodes between all roundabouts and nodes
+        roads_gdf, nodes = self._nodes_roads_to_roundabouts(roads_gdf, nodes)
+
+        # set new nodes for all remaining ends of roads that are not connected
+        roads_gdf, nodes = self._assign_nodes_to_dead_end_roads(roads_gdf, nodes)
+
+        return roads_gdf, nodes
+
+    def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame, funct_name: str) \
+            -> (gpd.GeoDataFrame, dict):
         """
         Explicitly connects all road segments by function name and geometry
         :param he_df: Geodataframe of roads data
@@ -40,7 +63,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
         print("Finishing _connect_road_segments_based_on_funct_name")
 
-        return roads_gdf, {}
+        return roads_gdf
 
     def _nodes_main_carriageways_to_slip_roads(self, roads_gdf: gpd.GeoDataFrame,
                                                node_dict: dict) -> (gpd.GeoDataFrame, dict):
