@@ -1,4 +1,5 @@
 from RoadNetwork.Utilities.ColumnNames import *
+from shapely.geometry import LineString
 import geopandas as gpd
 import pandas as pd
 import numpy as np
@@ -38,7 +39,7 @@ class OSOpenRoadsToHERoadsConverter(object):
 
         return merged_gdf
 
-    def convert_to_HE_geoDataframe(self, os_gdf: gpd.GeoDataFrame, roads_to_exclude = None) -> pd.DataFrame:
+    def convert_to_HE_geoDataframe(self, os_gdf: gpd.GeoDataFrame, roads_to_exclude = None) -> gpd.GeoDataFrame:
         """
         Converts a single os geodataframe to an equivalent HE geodataframe
         :param os_gdf:
@@ -51,7 +52,7 @@ class OSOpenRoadsToHERoadsConverter(object):
         converted_gdf = gpd.GeoDataFrame(converted_df, geometry=GEOMETRY)
         converted_gdf.crs = {'init': 'epsg:27700'}
 
-        return converted_df
+        return converted_gdf
 
     def convert_to_HE_dataframe(self, os_gdf: gpd.GeoDataFrame, roads_to_exclude=None) -> pd.DataFrame:
         """
@@ -103,7 +104,8 @@ class OSOpenRoadsToHERoadsConverter(object):
                      sel_gdf[OS_ID].values)
 
         #Insert geometry
-        he_df.insert(len(he_df.columns.tolist()), GEOMETRY, sel_gdf[GEOMETRY].values)
+        geometry_2D = self._convert_LineString_to_2D(sel_gdf[GEOMETRY].values)
+        he_df.insert(len(he_df.columns.tolist()), GEOMETRY, geometry_2D)
 
         pd.options.mode.chained_assignment = 'warn'
 
@@ -136,3 +138,13 @@ class OSOpenRoadsToHERoadsConverter(object):
             return HE_ROUNDABOUT
         else:
             return HE_NONE
+
+    def _convert_LineString_to_2D(self, coords_3D):
+
+        list_of_2D_lines = []
+
+        for coord_3D in coords_3D:
+            line_2D = LineString([xy[0:2] for xy in list(coord_3D.coords)])
+            list_of_2D_lines.append(line_2D)
+
+        return list_of_2D_lines

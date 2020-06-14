@@ -16,10 +16,10 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         :funct_name: name of road type to perform connection operation on
         :return: A GeoDataframe with extra columns that connects each road segment
         """
-        print("Starting _connect_road_segments_based_on_funct_name")
 
         funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
         road_numbers = funct_gdf.ROA_NUMBER.unique()
+        print(road_numbers)
 
         for road_number in road_numbers:
             carriageway = funct_gdf.loc[funct_gdf[HE_ROAD_NO] == road_number]
@@ -28,7 +28,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
             for i in range(carriageway_size):
 
                 segment = carriageway.iloc[i, :]
-                index = segment.INDEX
+                index = int(segment.INDEX)
 
                 if pd.isna(segment.NEXT_IND) == False and \
                         pd.isna(segment.PREV_IND) == False:
@@ -49,15 +49,16 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
                 connecting_road_last_coord_b = connecting_road_last_coord_b.loc[connecting_road_last_coord_b[INDEX] != index]
 
                 if len(connecting_road_last_coord_a) == 1 and len(connecting_road_last_coord_b) == 0:
-                    connecting_index = connecting_road_last_coord_a[INDEX].values[0]
+                    connecting_index = int(connecting_road_last_coord_a[INDEX].values[0])
                     roads_gdf.at[index, NEXT_IND] = connecting_index
                     roads_gdf.at[connecting_index, PREV_IND] = index
 
                 elif len(connecting_road_last_coord_a) == 0 and len(connecting_road_last_coord_b) == 1:
-                    connecting_index = connecting_road_last_coord_b[INDEX].values[0]
+                    connecting_index = int(connecting_road_last_coord_b[INDEX].values[0])
                     roads_gdf.at[index, NEXT_IND] = connecting_index
                     roads_gdf.at[connecting_index, PREV_IND] = index
 
+                    #Reconfigure coordinate orientation
                     roads_gdf = self._swap_coords(roads_gdf, connecting_index)
                     funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
                     carriageway = funct_gdf.loc[roads_gdf[HE_ROAD_NO] == road_number]
@@ -72,23 +73,25 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
                 connecting_road_first_coord_a = connecting_road_first_coord_a.loc[connecting_road_first_coord_a[INDEX] != index]
 
                 if len(connecting_road_first_coord_a) == 1 and len(connecting_road_first_coord_b) == 0:
-                    connecting_index = connecting_road_first_coord_a[INDEX].values[0]
+                    connecting_index = int(connecting_road_first_coord_a[INDEX].values[0])
                     roads_gdf.at[index, PREV_IND] = connecting_index
                     roads_gdf.at[connecting_index, NEXT_IND] = index
 
                     roads_gdf = self._swap_coords(roads_gdf, connecting_index)
 
                 elif len(connecting_road_first_coord_a) == 0 and len(connecting_road_first_coord_b) == 1:
-                    connecting_index = connecting_road_first_coord_b[INDEX].values[0]
+                    connecting_index = int(connecting_road_first_coord_b[INDEX].values[0])
                     roads_gdf.at[index, PREV_IND] = connecting_index
                     roads_gdf.at[connecting_index, NEXT_IND] = index
 
+                #Update dataframe prior to next iteration
                 funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
                 carriageway = funct_gdf.loc[roads_gdf[HE_ROAD_NO] == road_number]
 
         print("Finishing _connect_road_segments_based_on_funct_name")
 
         return roads_gdf
+
 
     def _nodes_main_carriageways_to_slip_roads(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) -> (
             gpd.GeoDataFrame, dict):
@@ -101,6 +104,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         pass
 
     def _swap_coords(self, roads_gdf, index):
+
         first_coord = roads_gdf.at[index, FIRST_COORD]
         last_coord = roads_gdf.at[index, LAST_COORD]
         roads_gdf.at[index, FIRST_COORD] = last_coord
