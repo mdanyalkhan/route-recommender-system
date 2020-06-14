@@ -5,7 +5,8 @@ import numpy as np
 class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
     def __init__(self, connection_threshold=10, min_spacing_for_roundabout_resolution=2):
-        self.THRESHOLD = connection_threshold
+
+        super().__init__(connection_threshold)
         self.MIN_SPACING = min_spacing_for_roundabout_resolution
 
     def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame,
@@ -41,8 +42,8 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
         return roads_gdf
 
-    def _connect_main_carriageways_to_slip_roads(self, roads_gdf: gpd.GeoDataFrame,
-                                                 node_dict: dict) -> (gpd.GeoDataFrame, dict):
+    def _nodes_main_carriageways_to_slip_roads(self, roads_gdf: gpd.GeoDataFrame,
+                                               node_dict: dict) -> (gpd.GeoDataFrame, dict):
         """
         Identfies and establishes connections between slip roads and main carriageways. Where
         connections are identified, a new node is generated and incorporated into the roads
@@ -77,10 +78,10 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         print("Finishing link_main_carriageways_to_slip_roads")
         return roads_gdf, node_dict
 
-    def _connect_roads_to_roundabouts(self, roads_gdf: gpd.GeoDataFrame,
-                                      node_dict: dict) -> (gpd.GeoDataFrame, dict):
+    def _nodes_roads_to_roundabouts(self, roads_gdf: gpd.GeoDataFrame,
+                                    node_dict: dict) -> (gpd.GeoDataFrame, dict):
         """
-        Identifies and establishes connections between all road segments and connections. Where
+        Identifies and establishes connections between all road segments and roundabouts. Where
         connections are identified, a new node is generated and incorporated into the roads
         geospatial data structure.
 
@@ -147,15 +148,6 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         print("Finishing assign_nodes_to_dead_end_roads")
 
         return roads_gdf, node_dict
-
-    def _are_coordinates_connected(self, coord1: tuple, coord2: tuple) -> (float, float):
-        """
-        Determines whether two coordinates in space are sufficiently close
-        :param coord1:
-        :param coord2:
-        :return: true if the euclidean distance is less than some pre-defined threshold, false otherwise
-        """
-        return self._euclidean_distance(coord1, coord2) <= self.THRESHOLD
 
     def _find_closest_main_carriageway(self, roads_gdf: gpd.GeoDataFrame, target_coord: tuple,
                                        use_first_coord_of_main_carriageway: bool = True) -> (int, float):

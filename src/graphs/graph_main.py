@@ -5,15 +5,16 @@ from RoadNetwork import *
 import os
 if __name__ == "__main__":
 
-    he_path = parent_directory_at_level(__file__, 5) + fd.HE_NETWORK.value + "/network.shp"
-    folder_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/OS_Open_roads"
+    print("hello world")
+    # he_path = parent_directory_at_level(__file__, 5) + fd.HE_NETWORK.value + "/network.shp"
+    # folder_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/OS_Open_roads"
 
-    he_gdf = gpd.read_file(he_path)
-    he_road_numbers = he_gdf["ROA_NUMBER"].unique().tolist()
-
-    merged_os_gdf = OSOpenRoadsToHERoadsConverter().convert_and_merge_to_HE_geoDataframe(folder_path, he_road_numbers)
-
-    merged_os_gdf.to_file(folder_path + "/os_merged_converted.shp")
+    # he_gdf = gpd.read_file(he_path)
+    # he_road_numbers = he_gdf["ROA_NUMBER"].unique().tolist()
+    #
+    # merged_os_gdf = OSOpenRoadsToHERoadsConverter().convert_and_merge_to_HE_geoDataframe(folder_path, he_road_numbers)
+    #
+    # merged_os_gdf.to_file(folder_path + "/os_merged_converted.shp")
     # clipped_roads_path = parent_directory_at_level(__file__,3) + "/temp/clipped_roads.shp"
     # os_road_path = parent_directory_at_level(__file__, 3) + "/temp/OS_roads.shp"
     #
