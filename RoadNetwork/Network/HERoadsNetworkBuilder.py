@@ -9,8 +9,8 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         super().__init__(connection_threshold)
         self.MIN_SPACING = min_spacing_for_roundabout_resolution
 
-    def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame,
-                                                   funct_name: str) -> gpd.GeoDataFrame:
+    def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict,
+                                                   funct_name: str) -> (gpd.GeoDataFrame, dict):
         """
         Explicitly connects all road segments by function name and geometry
         :param he_df: Geodataframe of roads data
@@ -40,7 +40,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
         print("Finishing _connect_road_segments_based_on_funct_name")
 
-        return roads_gdf
+        return roads_gdf, {}
 
     def _nodes_main_carriageways_to_slip_roads(self, roads_gdf: gpd.GeoDataFrame,
                                                node_dict: dict) -> (gpd.GeoDataFrame, dict):

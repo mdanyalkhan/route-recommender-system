@@ -34,12 +34,11 @@ class RoadNetworkBuilder(ABC):
 
         # Set up a dict of nodes
         nodes = {}
-        # Connect all main carriageways and slip roads
-        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_MAIN_CARRIAGEWAY)
-        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_SLIP_ROAD)
 
-        # # Assign nodes between multi-way connected carriageways
-        # # roads_gdf, nodes = self._nodes_main_carriageways_multiway(roads_gdf, nodes)
+        # Connect all main carriageways and slip roads
+        roads_gdf, _ = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, HE_MAIN_CARRIAGEWAY)
+        roads_gdf, _ = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, HE_SLIP_ROAD)
+
         # # Assign nodes between main carriageways and slip roads
         # roads_gdf, nodes = self._nodes_main_carriageways_to_slip_roads(roads_gdf, nodes)
         #
@@ -156,8 +155,8 @@ class RoadNetworkBuilder(ABC):
     #     pass
 
     @abstractmethod
-    def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame,
-                                                   funct_name: str) -> gpd.GeoDataFrame:
+    def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict,
+                                                   funct_name: str) -> (gpd.GeoDataFrame, dict):
         pass
 
     @abstractmethod

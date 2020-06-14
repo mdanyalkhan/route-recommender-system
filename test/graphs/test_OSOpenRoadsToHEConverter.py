@@ -2,6 +2,7 @@ from unittest import TestCase
 from RoadNetwork import *
 from GeoDataFrameAux import *
 
+#TODO: amend geometry to only be lineString Z
 class TestOSOpenRoadsToHERoadsConverter(TestCase):
     mock_os_df = pd.DataFrame({
         OS_CLASS: ["A Road", "Motorway", "A Road", "unknown"],

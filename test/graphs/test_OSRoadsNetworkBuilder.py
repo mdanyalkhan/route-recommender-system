@@ -19,7 +19,7 @@ class TestOSRoadsNetworkBuilder(TestCase):
         prev_ind_new = [pd.NA, 0, pd.NA, pd.NA]
         next_ind_new = [1, pd.NA, pd.NA, pd.NA]
 
-        df = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, HE_MAIN_CARRIAGEWAY)
+        df, _ = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
 
         self.assertEqual(df[PREV_IND].tolist(), prev_ind_new)
         self.assertEqual(df[NEXT_IND].tolist(), next_ind_new)
@@ -40,7 +40,7 @@ class TestOSRoadsNetworkBuilder(TestCase):
         prev_ind_new = [pd.NA, 0, pd.NA, pd.NA]
         next_ind_new = [1, pd.NA, pd.NA, pd.NA]
 
-        df = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, HE_MAIN_CARRIAGEWAY)
+        df, _ = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
 
         self.assertEqual(df[PREV_IND].tolist(), prev_ind_new)
         self.assertEqual(df[NEXT_IND].tolist(), next_ind_new)
@@ -60,29 +60,34 @@ class TestOSRoadsNetworkBuilder(TestCase):
 
         prev_ind_new = [pd.NA, 2, pd.NA, pd.NA]
         next_ind_new = [pd.NA, pd.NA, 1, pd.NA]
-
-        df = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, HE_MAIN_CARRIAGEWAY)
+        df, _ = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
 
         self.assertEqual(df[PREV_IND].tolist(), prev_ind_new)
         self.assertEqual(df[NEXT_IND].tolist(), next_ind_new)
 
     def test_connection_where_there_are_more_than_two_road_segment_connections(self):
         df = pd.DataFrame({
-            INDEX: [0, 1, 2, 3],
-            HE_ROAD_NO: ['A1', 'A1', 'A1', 'A1'],
-            HE_FUNCT_NAME: ["Main Carriageway", "Main Carriageway", "Main Carriageway", "Slip Road"],
-            PREV_IND: [pd.NA, pd.NA, pd.NA, pd.NA],
-            NEXT_IND: [pd.NA, pd.NA, pd.NA, pd.NA],
-            FROM_NODE: ["None", "None", "None", "None"],
-            TO_NODE: ["None", "None", "None", "None"],
-            FIRST_COORD: [(0, 0), (0, 0), (0, 0), (0, 0.5)],
-            LAST_COORD: [(0, 0.5), (0, 2.5), (0, 1.5), (0.5, 0.5)]
+            INDEX: [0, 1, 2, 3, 4, 5],
+            HE_ROAD_NO: ['A1', 'A1', 'A1', 'M1', 'M1', 'M1'],
+            HE_FUNCT_NAME: ["Main Carriageway", "Main Carriageway", "Main Carriageway", "Main Carriageway",
+                            "Main Carriageway", "Main Carriageway"],
+            PREV_IND: [pd.NA, pd.NA, pd.NA, pd.NA, pd.NA, pd.NA],
+            NEXT_IND: [pd.NA, pd.NA, pd.NA, pd.NA, pd.NA, pd.NA],
+            FROM_NODE: ["None", "None", "None", "None", "None", "None"],
+            TO_NODE: ["None", "None", "None", "None", "None", "None"],
+            FIRST_COORD: [(0, 0), (0, 0), (0, 0), (0.5, 0.5), (-1, -2.2), (10.1, 9)],
+            LAST_COORD: [(0, 0.5), (0, 2.5), (0, 1.5), (-1, 2.2), (0.5, 0.5), (0.5, 0.5)]
         })
 
-        prev_ind_new = [pd.NA, pd.NA, pd.NA, pd.NA]
-        next_ind_new = [pd.NA, pd.NA, pd.NA, pd.NA]
+        prev_ind_new = [pd.NA, pd.NA, pd.NA, pd.NA, pd.NA, pd.NA]
+        next_ind_new = [pd.NA, pd.NA, pd.NA, pd.NA, pd.NA, pd.NA]
+        from_node_new = ["X1", "X1", "X1", "X2", "None", "None"]
+        to_node_new = ["None", "None", "None", "None", "X2", "X2"]
 
-        df = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, HE_MAIN_CARRIAGEWAY)
+        df, nodes = OSRoadsNetworkBuilder(0)._connect_road_segments_based_on_funct_name(df, {}, HE_MAIN_CARRIAGEWAY)
 
         self.assertEqual(df[PREV_IND].tolist(), prev_ind_new)
         self.assertEqual(df[NEXT_IND].tolist(), next_ind_new)
+        self.assertEqual(df[FROM_NODE].tolist(), from_node_new)
+        self.assertEqual(df[TO_NODE].tolist(), to_node_new)
+        self.assertEqual(nodes[NODE_ID], ['X1', 'X2'])
