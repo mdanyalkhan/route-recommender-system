@@ -115,6 +115,25 @@ class RoadNetworkBuilder(ABC):
         node_dict.setdefault(GEOMETRY, []).extend([coords])
         return node_dict
 
+    def _calculate_mean_roundabout_pos(self, roundabout: gpd.GeoDataFrame) -> (float, float):
+        """
+        Calculates the mean coordinates of the roundabout
+        :param roundabout: geodataframe of roundabout
+        :return: mean coordinates of roundabout
+        """
+        coords = list(roundabout[GEOMETRY].coords)
+        n = len(coords)
+        x_sum = 0
+        y_sum = 0
+
+        for coord in coords:
+            x_sum += coord[0]
+            y_sum += coord[1]
+        x_ave = x_sum / n
+        y_ave = y_sum / n
+
+        return x_ave, y_ave
+
     @abstractmethod
     def _connect_all_road_segments(self, roads_gdf, nodes) -> (gpd.GeoDataFrame, dict):
         pass

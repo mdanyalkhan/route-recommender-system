@@ -12,11 +12,11 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         :param nodes: dictionary containing list of nodes
         :return: Returns updated roads gdf and nodes dict
         """
-        roads_gdf, nodes = self._connect_and_assign_nodes_using_funct_name(roads_gdf, nodes)
+        roads_gdf, nodes = self._connect_and_assign_nodes_main_carriageways_slip_roads(roads_gdf, nodes)
 
         return roads_gdf, nodes
 
-    def _connect_and_assign_nodes_using_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict)\
+    def _connect_and_assign_nodes_main_carriageways_slip_roads(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) \
             -> (gpd.GeoDataFrame, dict):
         """
         Explicitly connects and assigns nodes to all road segments by function name and geometry,
@@ -38,14 +38,13 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
             road_no = segment.ROA_NUMBER
 
             if pd.isna(segment.NEXT_IND) and segment.TO_NODE == "None":
-                #Find roads connected to last coord
+                # Find roads connected to last coord
                 node_dict, roads_gdf = self._find_connections(funct_gdf, roads_gdf, index, last_coord,
-                                                              node_dict, road_no, is_last_coord = True)
-                #Update dataframe
+                                                              node_dict, road_no, is_last_coord=True)
+                # Update dataframe
                 funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
 
             if pd.isna(segment.PREV_IND) and segment.FROM_NODE == "None":
-
                 node_dict, roads_gdf = self._find_connections(funct_gdf, roads_gdf, index, first_coord,
                                                               node_dict, road_no, is_last_coord=False)
 
@@ -117,7 +116,32 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         return node_dict, roads_gdf
 
     def _nodes_roads_to_roundabouts(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) -> (gpd.GeoDataFrame, dict):
-        pass
+
+        #:TODO amend the mean coord calculation below, will not work in this case as each roundabout is split into segments
+        roundabouts_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == HE_ROUNDABOUT]
+        other_roads_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
+        roundabouts_names = roundabouts_gdf[HE_ROAD_NO].unique()
+
+        for name in roundabouts_names:
+            roundabout_gdf = roundabouts_gdf.loc[roundabouts_gdf[HE_ROAD_NO] == name]
+            mean_coord = self._calculate_mean_roundabout_pos(roundabout_gdf)
+            node_dict = self._assign_new_node_id(node_dict, mean_coord, "R")
+
+            for index, segment in roundabout_gdf.iterrorws():
+                first_coord = segment.FIRST_COORD
+                last_coord = segment.LAST_COORD
+
+                connected_at_start = other_roads_gdf.loc[(other_roads_gdf[FIRST_COORD] == first_coord) |
+                                                         (other_roads_gdf[FIRST_COORD] == last_coord)]
+
+                roads_gdf.loc[connected_at_start[INDEX], FROM_NODE] = node_dict[NODE_ID][-1]
+
+                connected_at_end = other_roads_gdf.loc[(other_roads_gdf[LAST_COORD] == first_coord) |
+                                                       (other_roads_gdf[LAST_COORD] == last_coord)]
+
+                roads_gdf.loc[connected_at_end[INDEX], TO_NODE] = node_dict[NODE_ID][-1]
+
+        return roads_gdf, node_dict
 
     def _assign_nodes_to_dead_end_roads(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) -> (gpd.GeoDataFrame, dict):
         pass
