@@ -15,7 +15,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         """
         roads_gdf, nodes = self._connect_and_assign_nodes_main_carriageways_slip_roads(roads_gdf, nodes)
         roads_gdf, nodes = self._nodes_roads_to_roundabouts(roads_gdf, nodes)
-
+        roads_gdf, nodes = self._assign_nodes_to_dead_end_roads(roads_gdf, nodes)
         return roads_gdf, nodes
 
     def _connect_and_assign_nodes_main_carriageways_slip_roads(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) \
@@ -118,7 +118,12 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         return node_dict, roads_gdf
 
     def _nodes_roads_to_roundabouts(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) -> (gpd.GeoDataFrame, dict):
-
+        """
+        Assigns a roundabout node and sets this for other road segments
+        :param roads_gdf: roads dataframe
+        :param node_dict: Dictionary containing list of node IDs
+        :return: returns updated roads gdf and node dict
+        """
         roundabouts_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == HE_ROUNDABOUT]
         other_roads_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
         roundabouts_names = roundabouts_gdf[HE_ROAD_NO].unique()
@@ -145,9 +150,6 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
                 roads_gdf.loc[connected_at_end[INDEX], TO_NODE] = node_dict[NODE_ID][-1]
 
         return roads_gdf, node_dict
-
-    def _assign_nodes_to_dead_end_roads(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) -> (gpd.GeoDataFrame, dict):
-        pass
 
     def _swap_coords(self, roads_gdf: gpd.GeoDataFrame, index: int) -> gpd.GeoDataFrame:
         """

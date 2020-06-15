@@ -40,6 +40,34 @@ class RoadNetworkBuilder(ABC):
 
         return roads_gdf, nodes_gdf
 
+    def _assign_nodes_to_dead_end_roads(self, roads_gdf: gpd.GeoDataFrame,
+                                        node_dict: dict) -> (gpd.GeoDataFrame, dict):
+        """
+        Assigns nodes to all other roads that have ends that are not connected
+        :param he_df: roads dataframe
+        :param node_dict: nodes data structure to record new nodes
+        :return: updated he_df and node_dict
+        """
+        print("Starting assign_nodes_to_dead_end_roads")
+        dead_ends = roads_gdf.loc[(roads_gdf[FROM_NODE] == HE_NONE) | (roads_gdf[TO_NODE] == HE_NONE)]
+        dead_ends = dead_ends.loc[(pd.isna(roads_gdf[PREV_IND])) | (pd.isna(roads_gdf[NEXT_IND]))]
+        dead_ends = dead_ends.loc[(roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY) |
+                                  (roads_gdf[HE_FUNCT_NAME] == HE_SLIP_ROAD)]
+        for index, dead_end in dead_ends.iterrows():
+            if pd.isna(dead_end.PREV_IND) and dead_end.FROM_NODE == HE_NONE:
+                coord = dead_end.FIRST_COORD
+                node_dict = self._assign_new_node_id(node_dict, coord, "D")
+
+                roads_gdf.at[index, FROM_NODE] = node_dict[NODE_ID][-1]
+            if pd.isna(dead_end.NEXT_IND) and dead_end.TO_NODE == HE_NONE:
+                coord = dead_end.LAST_COORD
+                node_dict = self._assign_new_node_id(node_dict, coord, "D")
+                roads_gdf.at[index, TO_NODE] = node_dict[NODE_ID][-1]
+
+        print("Finishing assign_nodes_to_dead_end_roads")
+
+        return roads_gdf, node_dict
+
     def _convert_points_dict_to_gdf(self, dict_structure: dict) -> gpd.GeoDataFrame:
         """
         Converts the point dict structure into a geodataframe
@@ -140,9 +168,4 @@ class RoadNetworkBuilder(ABC):
     @abstractmethod
     def _nodes_roads_to_roundabouts(self, roads_gdf: gpd.GeoDataFrame,
                                     node_dict: dict) -> (gpd.GeoDataFrame, dict):
-        pass
-
-    @abstractmethod
-    def _assign_nodes_to_dead_end_roads(self, roads_gdf: gpd.GeoDataFrame,
-                                        node_dict: dict) -> (gpd.GeoDataFrame, dict):
         pass

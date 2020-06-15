@@ -23,7 +23,7 @@ def convert_OS_original_to_HE_compatibale_dataframe():
     os_original_gdf = gpd.read_file(os_original_path)
     he_gdf = gpd.read_file(he_sample_path)
     roads_to_exclude = list(he_gdf[HE_ROAD_NO].unique())
-    os_converted_gdf = OSOpenRoadsToHERoadsConverter().convert_to_HE_geoDataframe(os_original_gdf, roads_to_exclude)
+    os_converted_gdf = OSOpenRoadsToHERoadsConverter().convert_to_HE_geoDataframe(os_original_gdf)
     os_converted_gdf.to_file(os_converted_path)
 
 def connect_os_gdf():
@@ -37,5 +37,5 @@ def connect_os_gdf():
     os_nodes_gdf.to_file(os_nodes_path)
 
 if __name__ == "__main__":
-    convert_OS_original_to_HE_compatibale_dataframe
+    convert_OS_original_to_HE_compatibale_dataframe()
     connect_os_gdf()

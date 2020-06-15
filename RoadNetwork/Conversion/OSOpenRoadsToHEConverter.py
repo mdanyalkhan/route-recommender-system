@@ -75,8 +75,7 @@ class OSOpenRoadsToHERoadsConverter(object):
         if roads_to_exclude:
             sel_gdf["is_in_list"] = sel_gdf[OS_ROAD_NO].apply(lambda x: x in roads_to_exclude)
             sel_gdf = sel_gdf.loc[sel_gdf["is_in_list"] == False]
-
-        sel_gdf.drop("is_in_list", axis=1, inplace=True)
+            sel_gdf.drop("is_in_list", axis=1, inplace=True)
 
         # Set up a geodataframe with with columns that will be NULL values (such as AREA_NAME)
         null_list = [pd.NA] * len(sel_gdf)
