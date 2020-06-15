@@ -126,8 +126,8 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         for name in roundabouts_names:
             roundabout_gdf = roundabouts_gdf.loc[roundabouts_gdf[HE_ROAD_NO] == name]
 
-            combined_line_string = linemerge(roundabout_gdf[GEOMETRY].tolist())
-            mean_coord = self._calculate_mean_roundabout_pos(combined_line_string)
+            roundabout_coords = self._coords_of_os_roundabout(roundabout_gdf)
+            mean_coord = self._calculate_mean_roundabout_pos(roundabout_coords)
             node_dict = self._assign_new_node_id(node_dict, mean_coord, "R")
 
             for index, segment in roundabout_gdf.iterrows():
@@ -162,3 +162,13 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         roads_gdf.at[index, LAST_COORD] = first_coord
 
         return roads_gdf
+
+    def _coords_of_os_roundabout(self, roundabout_gdf):
+
+        coords = []
+
+        for _, segment in roundabout_gdf.iterrows():
+            segment_coords = extract_list_of_coords_from_line_object(segment[GEOMETRY])
+            coords.extend(segment_coords)
+        print(coords)
+        return coords

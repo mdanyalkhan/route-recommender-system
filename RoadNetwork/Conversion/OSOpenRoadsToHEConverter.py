@@ -103,6 +103,8 @@ class OSOpenRoadsToHERoadsConverter(object):
         he_df.insert(len(he_df.columns.tolist()), HE_REFERENCE,
                      sel_gdf[OS_ID].values)
 
+        #Insert unique IDs for each roundabout
+
         #Insert geometry
         geometry_2D = self._convert_LineString_to_2D(sel_gdf[GEOMETRY].values)
         he_df.insert(len(he_df.columns.tolist()), GEOMETRY, geometry_2D)
@@ -148,3 +150,22 @@ class OSOpenRoadsToHERoadsConverter(object):
             list_of_2D_lines.append(line_2D)
 
         return list_of_2D_lines
+
+    def _rename_roundabouts(self, he_df: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+
+        #Temporarily assign  FIRST_COORD, LAST_COORD
+
+        #Temporarily create IS_RENAMED to same dataframe, set defualt value to False
+        #Create roundabout_df: filter he_df to roundabouts only
+        #Create a temporary node containing name of roundabouts
+        #For every row in roundabout_df:
+            #If IS_RENAMED is False, then
+                #Rename roadnumber and set IS_RENAMED to true
+            #Extract first_coord and last_coord from current segment
+            #Set dataframe x where first_coord is equal to FIRST_COORD or LAST_COORD of dataframe
+            #Filter x to remove its own segment
+            #If x is equal to one, then if IS_RENAMED is False:
+                #Rename this segment to current row
+                #Set IS_RENAMED to True
+            #Apply above procedure but for last_coord
+        pass

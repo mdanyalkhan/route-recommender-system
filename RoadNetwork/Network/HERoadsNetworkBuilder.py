@@ -118,8 +118,8 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         # For every roundabout do the following:
         for _, roundabout in roundabout_df.iterrows():
             # Set representative coordinate of roundabout and set up node into node_dict
-            node_coord = self._calculate_mean_roundabout_pos(roundabout[GEOMETRY])
-            roundabout_coords = self._extract_list_of_coords_from_line_object(roundabout[GEOMETRY])
+            roundabout_coords = extract_list_of_coords_from_line_object(roundabout[GEOMETRY])
+            node_coord = self._calculate_mean_roundabout_pos(roundabout_coords)
             roundabout_refined_coords = self._increase_resolution_of_line(roundabout_coords)
             node_dict = self._assign_new_node_id(node_dict, node_coord, "R")
 

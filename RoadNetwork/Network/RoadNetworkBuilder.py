@@ -21,8 +21,8 @@ class RoadNetworkBuilder(ABC):
         roads_gdf[PREV_IND] = pd.NA
         roads_gdf[NEXT_IND] = pd.NA
         # Extract first and last coordinates of each road segment
-        roads_gdf[FIRST_COORD] = roads_gdf[GEOMETRY].apply(lambda x: self._extract_coord_at_index(x, 0))
-        roads_gdf[LAST_COORD] = roads_gdf[GEOMETRY].apply(lambda x: self._extract_coord_at_index(x, -1))
+        roads_gdf[FIRST_COORD] = roads_gdf[GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
+        roads_gdf[LAST_COORD] = roads_gdf[GEOMETRY].apply(lambda x: extract_coord_at_index(x, -1))
 
         # Set from_node and to_node columns
         roads_gdf[FROM_NODE] = "None"
@@ -114,14 +114,12 @@ class RoadNetworkBuilder(ABC):
         node_dict.setdefault(GEOMETRY, []).extend([coords])
         return node_dict
 
-    def _calculate_mean_roundabout_pos(self, roundabout: LineString) -> (float, float):
+    def _calculate_mean_roundabout_pos(self, coords: list) -> (float, float):
         """
         Calculates the mean coordinates of the roundabout
         :param roundabout: geodataframe of roundabout
         :return: mean coordinates of roundabout
         """
-
-        coords = list(roundabout.coords)
 
         n = len(coords)
         x_sum = 0

@@ -31,7 +31,7 @@ def connect_os_gdf():
     os_edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_edges.shp"
     os_nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_nodes.shp"
     os_converted_gdf = gpd.read_file(os_converted_path)
-    os_edges_gdf, os_nodes_gdf = OSRoadsNetworkBuilder(0).build_road_network_gdf(os_converted_gdf)
+    os_edges_gdf, os_nodes_gdf = OSRoadsNetworkBuilder().build_road_network_gdf(os_converted_gdf)
 
     os_edges_gdf.to_file(os_edges_path)
     os_nodes_gdf.to_file(os_nodes_path)
