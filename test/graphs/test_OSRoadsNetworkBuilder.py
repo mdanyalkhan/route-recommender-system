@@ -1,5 +1,6 @@
 from unittest import TestCase
 from RoadNetwork import *
+from shapely.ops import linemerge
 
 class TestOSRoadsNetworkBuilder(TestCase):
 
@@ -91,3 +92,33 @@ class TestOSRoadsNetworkBuilder(TestCase):
         self.assertEqual(df[FROM_NODE].tolist(), from_node_new)
         self.assertEqual(df[TO_NODE].tolist(), to_node_new)
         self.assertEqual(nodes[NODE_ID], ['X1', 'X2'])
+
+    def test_connections_to_os_type_roundabout(self):
+        df = pd.DataFrame({
+            INDEX: [0, 1, 2, 3, 4, 5],
+            HE_ROAD_NO: ['A1', 'A1', 'A1', 'A1', 'M1', 'M1'],
+            HE_FUNCT_NAME: ["Roundabout", "Roundabout", "Roundabout", "Roundabout",
+                            "Main Carriageway", "Main Carriageway"],
+            PREV_IND: [pd.NA, pd.NA, pd.NA, pd.NA, pd.NA, pd.NA],
+            NEXT_IND: [pd.NA, pd.NA, pd.NA, pd.NA, pd.NA, pd.NA],
+            FROM_NODE: ["None", "None", "None", "None", "None", "None"],
+            TO_NODE: ["None", "None", "None", "None", "None", "None"],
+            FIRST_COORD: [(0, 0), (0, 0.5), (1, 0.5), (1, 0.0), (0, 0), (10.1, 9)],
+            LAST_COORD: [(0, 0.5), (1, 0.5), (1, 0.0), (0, 0), (-1, -1.2), (1, 0.5)],
+            GEOMETRY: [[(0, 0), (0, 0.5)], [(0, 0.5), (1, 0.5)], [(1, 0.5), (1, 0.0)],
+                       [(1, 0.0), (0, 0)], [(0, 0), (-1, -1.2)], [(10.1, 9), (1, 0.5)]]
+        })
+
+        df[GEOMETRY] = df[GEOMETRY].apply(GeoLineDataFrameBuilder()._build_geometry_object)
+        df[GEOMETRY] = df[GEOMETRY].apply(wkt.loads)
+
+        gdf = gpd.GeoDataFrame(df, geometry= GEOMETRY)
+        nodes = {}
+
+        from_node_new = ["None", "None", "None", "None", "R1", "None"]
+        to_node_new = ["None", "None", "None", "None", "None", "R1"]
+        gdf, nodes = OSRoadsNetworkBuilder()._nodes_roads_to_roundabouts(gdf, nodes)
+
+        self.assertEqual(gdf[FROM_NODE].tolist(), from_node_new)
+        self.assertEqual(gdf[TO_NODE].tolist(), to_node_new)
+        self.assertEqual(nodes[NODE_ID], ['R1'])

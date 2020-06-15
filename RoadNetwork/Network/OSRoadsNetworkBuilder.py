@@ -1,5 +1,6 @@
 from RoadNetwork.Network.RoadNetworkBuilder import *
 import numpy as np
+from shapely.ops import linemerge
 
 
 class OSRoadsNetworkBuilder(RoadNetworkBuilder):
@@ -13,6 +14,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         :return: Returns updated roads gdf and nodes dict
         """
         roads_gdf, nodes = self._connect_and_assign_nodes_main_carriageways_slip_roads(roads_gdf, nodes)
+        roads_gdf, nodes = self._nodes_roads_to_roundabouts(roads_gdf, nodes)
 
         return roads_gdf, nodes
 
@@ -117,17 +119,18 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
 
     def _nodes_roads_to_roundabouts(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) -> (gpd.GeoDataFrame, dict):
 
-        #:TODO amend the mean coord calculation below, will not work in this case as each roundabout is split into segments
         roundabouts_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == HE_ROUNDABOUT]
         other_roads_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
         roundabouts_names = roundabouts_gdf[HE_ROAD_NO].unique()
 
         for name in roundabouts_names:
             roundabout_gdf = roundabouts_gdf.loc[roundabouts_gdf[HE_ROAD_NO] == name]
-            mean_coord = self._calculate_mean_roundabout_pos(roundabout_gdf)
+
+            combined_line_string = linemerge(roundabout_gdf[GEOMETRY].tolist())
+            mean_coord = self._calculate_mean_roundabout_pos(combined_line_string)
             node_dict = self._assign_new_node_id(node_dict, mean_coord, "R")
 
-            for index, segment in roundabout_gdf.iterrorws():
+            for index, segment in roundabout_gdf.iterrows():
                 first_coord = segment.FIRST_COORD
                 last_coord = segment.LAST_COORD
 

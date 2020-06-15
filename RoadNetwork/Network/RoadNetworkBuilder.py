@@ -1,6 +1,5 @@
 from math import sqrt
-
-from shapely.geometry import MultiLineString
+from shapely.geometry import MultiLineString, LineString
 from abc import ABC, abstractmethod
 from GeoDataFrameAux import *
 from RoadNetwork.Utilities.ColumnNames import *
@@ -115,13 +114,15 @@ class RoadNetworkBuilder(ABC):
         node_dict.setdefault(GEOMETRY, []).extend([coords])
         return node_dict
 
-    def _calculate_mean_roundabout_pos(self, roundabout: gpd.GeoDataFrame) -> (float, float):
+    def _calculate_mean_roundabout_pos(self, roundabout: LineString) -> (float, float):
         """
         Calculates the mean coordinates of the roundabout
         :param roundabout: geodataframe of roundabout
         :return: mean coordinates of roundabout
         """
-        coords = list(roundabout[GEOMETRY].coords)
+
+        coords = list(roundabout.coords)
+
         n = len(coords)
         x_sum = 0
         y_sum = 0
