@@ -1,9 +1,11 @@
+from GeoDataFrameAux import *
 from RoadNetwork.Utilities.ColumnNames import *
 from shapely.geometry import LineString
 import geopandas as gpd
 import pandas as pd
 import numpy as np
 import os
+from queue import Queue
 
 column_names_null = [HE_SECT_LABEL, HE_LOCATION, HE_START_DATE, HE_END_DATE, HE_AREA_NAME,
                      HE_DIRECTION, HE_PERM_LANES, HE_ENVIRONMENT, HE_AUTHORITY]
@@ -103,11 +105,12 @@ class OSOpenRoadsToHERoadsConverter(object):
         he_df.insert(len(he_df.columns.tolist()), HE_REFERENCE,
                      sel_gdf[OS_ID].values)
 
-        #Insert unique IDs for each roundabout
-
         #Insert geometry
         geometry_2D = self._convert_LineString_to_2D(sel_gdf[GEOMETRY].values)
         he_df.insert(len(he_df.columns.tolist()), GEOMETRY, geometry_2D)
+
+        #Rename roundabouts to unique roundabout IDs
+        he_df = self._rename_roundabouts(he_df)
 
         pd.options.mode.chained_assignment = 'warn'
 
@@ -141,8 +144,12 @@ class OSOpenRoadsToHERoadsConverter(object):
         else:
             return HE_NONE
 
-    def _convert_LineString_to_2D(self, coords_3D):
-
+    def _convert_LineString_to_2D(self, coords_3D) -> list:
+        """
+        Converts LineString Z object types to LineString types
+        :param coords_3D: LineString Z list of objects
+        :return: list of LineString object
+        """
         list_of_2D_lines = []
 
         for coord_3D in coords_3D:
@@ -151,21 +158,78 @@ class OSOpenRoadsToHERoadsConverter(object):
 
         return list_of_2D_lines
 
-    def _rename_roundabouts(self, he_df: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    def _rename_roundabouts(self, he_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+        """
+        Identifies and assigns unique roundabout IDs to each roundabout from the OS
+        dataset. This ensures each roundabout does not have the same road number (as
+        was the case in the original dataset).
 
-        #Temporarily assign  FIRST_COORD, LAST_COORD
+        :param he_gdf: OS Dataset converted to HE format
+        :return: Updated he_gdf with roundabout segments sets uniquely named
+        """
+        #Temporarily assign  FIRST_COORD, LAST_COORD, and INDEX
+        he_gdf[FIRST_COORD] = he_gdf[GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
+        he_gdf[LAST_COORD] = he_gdf[GEOMETRY].apply(lambda x: extract_coord_at_index(x, -1))
+        he_gdf.insert(loc=0, column=INDEX, value=he_gdf.index)
 
-        #Temporarily create IS_RENAMED to same dataframe, set defualt value to False
-        #Create roundabout_df: filter he_df to roundabouts only
-        #Create a temporary node containing name of roundabouts
-        #For every row in roundabout_df:
-            #If IS_RENAMED is False, then
-                #Rename roadnumber and set IS_RENAMED to true
-            #Extract first_coord and last_coord from current segment
-            #Set dataframe x where first_coord is equal to FIRST_COORD or LAST_COORD of dataframe
-            #Filter x to remove its own segment
-            #If x is equal to one, then if IS_RENAMED is False:
-                #Rename this segment to current row
-                #Set IS_RENAMED to True
-            #Apply above procedure but for last_coord
-        pass
+        he_gdf["IS_RENAMED"] = False
+        roundabout_df = he_gdf.loc[he_gdf[HE_FUNCT_NAME] == HE_ROUNDABOUT]
+        roundabout_names = {}
+        roundabout_df_size = len(roundabout_df)
+
+        for i in range(roundabout_df_size):
+            segment = roundabout_df.iloc[i, :]
+            index = segment.INDEX
+
+            if segment.IS_RENAMED:
+                continue
+
+            roundabout_names = self._set_roundabout_name(roundabout_names, segment.ROA_NUMBER)
+            he_gdf.at[index, HE_ROAD_NO] = roundabout_names[segment.ROA_NUMBER][-1]
+            he_gdf.at[index, "IS_RENAMED"] = True
+
+            roundabout_queue = Queue()
+            roundabout_queue.put(segment)
+
+            while not roundabout_queue.empty():
+                current_segment = roundabout_queue.get()
+                current_index = current_segment.INDEX
+                first_coord = current_segment.FIRST_COORD
+                last_coord = current_segment.LAST_COORD
+                set_of_target_coords = [first_coord, last_coord]
+
+                for target_coords in set_of_target_coords:
+                    connected_segments = roundabout_df.loc[(roundabout_df[FIRST_COORD] == target_coords) |
+                                                           (roundabout_df[LAST_COORD] == target_coords)]
+                    connected_segments = connected_segments[connected_segments[INDEX] != current_index]
+
+                    if len(connected_segments) == 1:
+                        if not connected_segments["IS_RENAMED"].values[0]:
+                            connecting_index = connected_segments[INDEX].values[0]
+                            road_ref = he_gdf.at[connecting_index, HE_ROAD_NO]
+                            he_gdf.at[connecting_index, HE_ROAD_NO] = roundabout_names[road_ref][-1]
+                            he_gdf.at[connecting_index, "IS_RENAMED"] = True
+                            roundabout_queue.put(connected_segments.iloc[0, :])
+
+                roundabout_df = he_gdf.loc[he_gdf[HE_FUNCT_NAME] == HE_ROUNDABOUT]
+
+        he_gdf.drop([INDEX, FIRST_COORD, LAST_COORD, "IS_RENAMED"], axis=1, inplace=True)
+
+        return he_gdf
+
+    def _set_roundabout_name(self, roundabout_names, road_ref):
+        """
+        Inserts and updated roundabout names into the dictionary.
+        :param roundabout_names: Dictonary which keeps a record of existing roundabout name
+        :param road_ref: Road reference to give a unique ID for
+        :return: Updated roundabout_names
+        """
+        if road_ref in roundabout_names:
+            split_text = roundabout_names[road_ref][-1].split("_")
+
+            number = str(int(split_text[1]) + 1)
+            roundabout_names[road_ref].extend([split_text[0] + "_" + number])
+        else:
+            roundabout_names[road_ref] = [road_ref + "_" + "0"]
+
+        return roundabout_names
