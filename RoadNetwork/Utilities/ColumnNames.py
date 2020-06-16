@@ -49,9 +49,9 @@ OS_SLIP_ROAD = "Slip Road"
 OS_ROUNDABOUT = "Roundabout"
 
 #Nodes Geodataframe column names
-NODE_ID = "node_id"
-TYPE = "Type"
-ROUNDABOUT_EXTENT = "Extent"
+N_NODE_ID = "node_id"
+N_TYPE = "Type"
+N_ROUNDABOUT_EXTENT = "Extent"
 
 #Node type names
 N_ROUNDABOUT = "Roundabout"

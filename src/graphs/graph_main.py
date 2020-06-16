@@ -41,5 +41,6 @@ def connect_os_gdf():
 
 
 if __name__ == "__main__":
-    connect_he_gdf()
-    connect_os_gdf()
+    os_nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_nodes.shp"
+    os_nodes_gdf = gpd.read_file(os_nodes_path)
+    print(os_nodes_gdf)

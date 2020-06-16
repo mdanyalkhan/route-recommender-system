@@ -61,11 +61,11 @@ class RoadNetworkBuilder(ABC):
                 coord = dead_end.FIRST_COORD
                 node_dict = self._assign_new_node_id(node_dict, coord, N_DEAD_END)
 
-                roads_gdf.at[index, FROM_NODE] = node_dict[NODE_ID][-1]
+                roads_gdf.at[index, FROM_NODE] = node_dict[N_NODE_ID][-1]
             if pd.isna(dead_end.NEXT_IND) and dead_end.TO_NODE == HE_NONE:
                 coord = dead_end.LAST_COORD
                 node_dict = self._assign_new_node_id(node_dict, coord, N_DEAD_END)
-                roads_gdf.at[index, TO_NODE] = node_dict[NODE_ID][-1]
+                roads_gdf.at[index, TO_NODE] = node_dict[N_NODE_ID][-1]
 
         print("Finishing assign_nodes_to_dead_end_roads")
 
@@ -132,20 +132,20 @@ class RoadNetworkBuilder(ABC):
         """
         if not bool(node_dict):
             first_term = self.node_tag + "_" + str(0)
-            node_dict[NODE_ID] = [first_term]
-            node_dict[TYPE] = [node_type]
+            node_dict[N_NODE_ID] = [first_term]
+            node_dict[N_TYPE] = [node_type]
             node_dict[GEOMETRY] = [coords]
-            node_dict[ROUNDABOUT_EXTENT] = [roundabout_extent]
+            node_dict[N_ROUNDABOUT_EXTENT] = [roundabout_extent]
             return node_dict
 
-        last_node_id = node_dict[NODE_ID][-1]
+        last_node_id = node_dict[N_NODE_ID][-1]
         last_node_id_list = last_node_id.split("_")
         next_node_id = last_node_id_list[0] + "_" + str(int(last_node_id_list[-1]) + 1)
 
-        node_dict[NODE_ID].extend([next_node_id])
-        node_dict[TYPE].extend([node_type])
+        node_dict[N_NODE_ID].extend([next_node_id])
+        node_dict[N_TYPE].extend([node_type])
         node_dict[GEOMETRY].extend([coords])
-        node_dict[ROUNDABOUT_EXTENT].extend([roundabout_extent])
+        node_dict[N_ROUNDABOUT_EXTENT].extend([roundabout_extent])
 
         return node_dict
 

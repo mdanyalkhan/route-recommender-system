@@ -90,7 +90,7 @@ class TestOSRoadsNetworkBuilder(TestCase):
         self.assertEqual(df[NEXT_IND].tolist(), next_ind_new)
         self.assertEqual(df[FROM_NODE].tolist(), from_node_new)
         self.assertEqual(df[TO_NODE].tolist(), to_node_new)
-        self.assertEqual(nodes[NODE_ID], ['_0', '_1'])
+        self.assertEqual(nodes[N_NODE_ID], ['_0', '_1'])
 
     def test_connections_to_os_type_roundabout(self):
         df = pd.DataFrame({
@@ -120,4 +120,4 @@ class TestOSRoadsNetworkBuilder(TestCase):
 
         self.assertEqual(gdf[FROM_NODE].tolist(), from_node_new)
         self.assertEqual(gdf[TO_NODE].tolist(), to_node_new)
-        self.assertEqual(nodes[NODE_ID], ['_0'])
+        self.assertEqual(nodes[N_NODE_ID], ['_0'])

@@ -138,10 +138,10 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
                                                        (roads_gdf[HE_FUNCT_NAME] == HE_SLIP_ROAD), LAST_COORD] \
                 .apply(lambda x: self._is_connected_to_roundabout(centre_coord, x, roundabout_radius))
 
-            roads_gdf.loc[roads_gdf["distance_first"] == True, FROM_NODE] = node_dict[NODE_ID][-1]
+            roads_gdf.loc[roads_gdf["distance_first"] == True, FROM_NODE] = node_dict[N_NODE_ID][-1]
             roads_gdf.loc[roads_gdf["distance_first"] == True, PREV_IND] = pd.NA
 
-            roads_gdf.loc[roads_gdf["distance_last"] == True, TO_NODE] = node_dict[NODE_ID][-1]
+            roads_gdf.loc[roads_gdf["distance_last"] == True, TO_NODE] = node_dict[N_NODE_ID][-1]
             roads_gdf.loc[roads_gdf["distance_last"] == True, NEXT_IND] = pd.NA
             roads_gdf.drop(['distance_last', 'distance_first'], axis=1, inplace=True)
 
@@ -205,11 +205,11 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
             if not pd.isna(roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a].values[0]):
                 index = roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a].values[0]
                 roads_gdf.loc[roads_gdf[INDEX] == index, ind_b] = pd.NA
-                roads_gdf.loc[roads_gdf[INDEX] == index, node_a] = node_dict[NODE_ID][-1]
+                roads_gdf.loc[roads_gdf[INDEX] == index, node_a] = node_dict[N_NODE_ID][-1]
             # update connection to current carriageway
             roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a] = pd.NA
-            roads_gdf.loc[roads_gdf[INDEX] == min_index, node_b] = node_dict[NODE_ID][-1]
-            roads_gdf.loc[roads_gdf[INDEX] == slip_road_index, node_a] = node_dict[NODE_ID][-1]
+            roads_gdf.loc[roads_gdf[INDEX] == min_index, node_b] = node_dict[N_NODE_ID][-1]
+            roads_gdf.loc[roads_gdf[INDEX] == slip_road_index, node_a] = node_dict[N_NODE_ID][-1]
 
         return roads_gdf
 

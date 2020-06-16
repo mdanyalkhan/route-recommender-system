@@ -105,7 +105,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
 
         elif len(connected_to_road_a) >= 1 or len(connected_to_road_b) >= 1:
             node_dict = self._assign_new_node_id(node_dict, target_coord, N_JUNCTION)
-            node_id = node_dict[NODE_ID][-1]
+            node_id = node_dict[N_NODE_ID][-1]
 
             roads_gdf.at[index, NODE_A] = node_id
             roads_gdf.loc[connected_to_road_a[INDEX].values, FROM_NODE] = node_id
@@ -140,12 +140,12 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
                 connected_at_start = other_roads_gdf.loc[(other_roads_gdf[FIRST_COORD] == first_coord) |
                                                          (other_roads_gdf[FIRST_COORD] == last_coord)]
 
-                roads_gdf.loc[connected_at_start[INDEX], FROM_NODE] = node_dict[NODE_ID][-1]
+                roads_gdf.loc[connected_at_start[INDEX], FROM_NODE] = node_dict[N_NODE_ID][-1]
 
                 connected_at_end = other_roads_gdf.loc[(other_roads_gdf[LAST_COORD] == first_coord) |
                                                        (other_roads_gdf[LAST_COORD] == last_coord)]
 
-                roads_gdf.loc[connected_at_end[INDEX], TO_NODE] = node_dict[NODE_ID][-1]
+                roads_gdf.loc[connected_at_end[INDEX], TO_NODE] = node_dict[N_NODE_ID][-1]
 
         return roads_gdf, node_dict
 
