@@ -5,6 +5,10 @@ from shapely.ops import linemerge
 
 class OSRoadsNetworkBuilder(RoadNetworkBuilder):
 
+    def __init__(self, node_tag=""):
+
+        super().__init__(node_tag)
+
     def _connect_all_road_segments(self, roads_gdf: gpd.GeoDataFrame, nodes: dict) \
             -> (gpd.GeoDataFrame, dict):
         """

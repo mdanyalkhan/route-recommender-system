@@ -45,9 +45,9 @@ class Test(TestCase):
         # Answers
         prev_ind_new = [pd.NA, pd.NA, 2, pd.NA]
         next_ind_new = [pd.NA, 3, pd.NA, 10]
-        from_node_new = ["None", "S1", "None", "S1"]
-        to_node_new = ["S1", "None", "None", "None"]
-        node_ids = ["S1"]
+        from_node_new = ["None", "_0", "None", "_0"]
+        to_node_new = ["_0", "None", "None", "None"]
+        node_ids = ["_0"]
         node_coords = [(0, 0.5)]
 
         # calculations
@@ -77,9 +77,9 @@ class Test(TestCase):
         # Answers
         prev_ind_new = [pd.NA, pd.NA, 2, 10]
         next_ind_new = [pd.NA, 3, pd.NA, pd.NA]
-        from_node_new = ["None", "S1", "None", "None"]
-        to_node_new = ["S1", "None", "None", "S1"]
-        node_ids = ["S1"]
+        from_node_new = ["None", "_0", "None", "None"]
+        to_node_new = ["_0", "None", "None", "_0"]
+        node_ids = ["_0"]
         node_coords = [(0, 0.5)]
 
         # calculations
@@ -111,9 +111,9 @@ class Test(TestCase):
         # Answers
         prev_ind_new = [pd.NA, pd.NA, 2, pd.NA, pd.NA]
         next_ind_new = [pd.NA, 3, pd.NA, pd.NA, pd.NA]
-        from_node_new = ["None", "S1", "None", "S1", "S2"]
-        to_node_new = ["S1", "None", "None", "S2", "None"]
-        node_ids = ["S1", "S2"]
+        from_node_new = ["None", "_0", "None", "_0", "_1"]
+        to_node_new = ["_0", "None", "None", "_1", "None"]
+        node_ids = ["_0", "_1"]
         node_coords = [(0, 0.5), (0.5, 0.5)]
 
         # calculations
@@ -154,8 +154,8 @@ class Test(TestCase):
         df["geometry"] = df["geometry"].apply(wkt.loads)
         node_dict = {}
 
-        from_node_new = ["None", "None", "R1", "None", "R1"]
-        to_node_new = ["R1", "None", "None", "None", "None"]
+        from_node_new = ["None", "None", "_0", "None", "_0"]
+        to_node_new = ["_0", "None", "None", "None", "None"]
 
         df, node_dict = self.test_object._nodes_roads_to_roundabouts(df, node_dict)
 
@@ -184,8 +184,8 @@ class Test(TestCase):
         node_dict = {}
 
         # Answers
-        from_node_new = ["None", "None", "R1", "None", "R1", "None"]
-        to_node_new = ["R1", "None", "R2", "None", "None", "None"]
+        from_node_new = ["None", "None", "_0", "None", "_0", "None"]
+        to_node_new = ["_0", "None", "_1", "None", "None", "None"]
         prev_ind_new = [pd.NA, 5, pd.NA, pd.NA, pd.NA, pd.NA]
         next_ind_new = [pd.NA, pd.NA, pd.NA, pd.NA, 2, pd.NA]
 
@@ -211,10 +211,10 @@ class Test(TestCase):
         node_dict = {}
 
         # Answers
-        from_node_new = ["D1", "D3", "None", "D5", "None"]
-        to_node_new = ["D2", "None", "D4", "D6", "None"]
+        from_node_new = ["_0", "_2", "None", "_4", "None"]
+        to_node_new = ["_1", "None", "_3", "_5", "None"]
         df, node_dict = self.test_object._assign_nodes_to_dead_end_roads(df, node_dict)
-        node_ids_new = ["D1", "D2", "D3", "D4", "D5", "D6"]
+        node_ids_new = ["_0", "_1", "_2", "_3", "_4", "_5"]
 
         # Checks
         self.assertEqual(df["FROM_NODE"].tolist(), from_node_new)

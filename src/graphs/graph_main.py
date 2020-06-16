@@ -10,7 +10,7 @@ def connect_he_gdf():
     he_converted_nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/nodes.shp"
 
     he_gdf = gpd.read_file(he_original_path)
-    edges, nodes = HERoadsNetworkBuilder().build_road_network_gdf(he_gdf)
+    edges, nodes = HERoadsNetworkBuilder(node_tag="SRN").build_road_network_gdf(he_gdf)
 
     edges.to_file(he_converted_edges_path)
     nodes.to_file(he_converted_nodes_path)

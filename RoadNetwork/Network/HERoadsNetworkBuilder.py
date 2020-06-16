@@ -4,10 +4,12 @@ import numpy as np
 
 class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
-    def __init__(self, connection_threshold=10, min_spacing_for_roundabout_resolution=2):
+    def __init__(self, node_tag="", connection_threshold=10, min_spacing_for_roundabout_resolution=2):
 
+        super().__init__(node_tag)
         self.THRESHOLD = connection_threshold
         self.MIN_SPACING = min_spacing_for_roundabout_resolution
+
 
     def _connect_all_road_segments(self, roads_gdf, nodes) -> (gpd.GeoDataFrame, dict):
         """
@@ -123,7 +125,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
             roundabout_radius = self._calculate_radius_of_roundabout(roundabout_coords, centre_coord)
 
             roundabout_refined_coords = self._increase_resolution_of_line(roundabout_coords)
-            node_dict = self._assign_new_node_id(node_dict, centre_coord, "R")
+            node_dict = self._assign_new_node_id(node_dict, centre_coord, N_ROUNDABOUT)
 
             # Identify the closest of distances between the roundabout and
             # the FIRST_COORD and LAST_COORD of each road segment.
@@ -197,7 +199,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
             node_b = FROM_NODE
 
         if min_dist < self.THRESHOLD:
-            node_dict = self._assign_new_node_id(node_dict, target_coord, "S")
+            node_dict = self._assign_new_node_id(node_dict, target_coord, N_JUNCTION)
             # Update connections to adjacent carriageway segment (if there is one)
             if not pd.isna(roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a].values[0]):
                 index = roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a].values[0]

@@ -7,6 +7,9 @@ from RoadNetwork.Utilities.ColumnNames import *
 
 class RoadNetworkBuilder(ABC):
 
+    def __init__(self, node_tag = ""):
+        self.node_tag = node_tag
+
     def build_road_network_gdf(self, roads_gdf: gpd.GeoDataFrame) -> (gpd.GeoDataFrame, dict):
         """
         Modifies the roads_gdf with extra columns indicating edges and nodes
@@ -56,12 +59,12 @@ class RoadNetworkBuilder(ABC):
         for index, dead_end in dead_ends.iterrows():
             if pd.isna(dead_end.PREV_IND) and dead_end.FROM_NODE == HE_NONE:
                 coord = dead_end.FIRST_COORD
-                node_dict = self._assign_new_node_id(node_dict, coord, "D")
+                node_dict = self._assign_new_node_id(node_dict, coord, N_DEAD_END)
 
                 roads_gdf.at[index, FROM_NODE] = node_dict[NODE_ID][-1]
             if pd.isna(dead_end.NEXT_IND) and dead_end.TO_NODE == HE_NONE:
                 coord = dead_end.LAST_COORD
-                node_dict = self._assign_new_node_id(node_dict, coord, "D")
+                node_dict = self._assign_new_node_id(node_dict, coord, N_DEAD_END)
                 roads_gdf.at[index, TO_NODE] = node_dict[NODE_ID][-1]
 
         print("Finishing assign_nodes_to_dead_end_roads")
@@ -119,27 +122,28 @@ class RoadNetworkBuilder(ABC):
         x2, y2 = coord2
         return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2))
 
-    def _assign_new_node_id(self, node_dict: dict, coords: tuple, prefix: str) -> dict:
+    def _assign_new_node_id(self, node_dict: dict, coords: tuple, node_type: str) -> dict:
         """
         Assigns a new node ID into node_dict
         :param node_dict: existing data structure containing list of nodes
         :param coords: coordinate of new node ID
         :return: updated node_dict
         """
-        # Set node_dict with coordinates of FIRST_COORD
-
         if not bool(node_dict):
-            first_term = prefix + str(1)
+            first_term = self.node_tag + "_" + str(0)
             node_dict[NODE_ID] = [first_term]
-        elif node_dict[NODE_ID][-1][0] != prefix:
-            first_term = prefix + str(1)
-            node_dict[NODE_ID].extend([first_term])
+            node_dict[TYPE] = [node_type]
+            node_dict[GEOMETRY] = [coords]
+            return node_dict
 
-        else:
-            node_dict[NODE_ID].extend([node_dict[NODE_ID][-1][0] +
-                                       str(int(node_dict[NODE_ID][-1][1:]) + 1)])
+        last_node_id = node_dict[NODE_ID][-1]
+        last_node_id_list = last_node_id.split("_")
+        next_node_id = last_node_id_list[0] + "_" + str(int(last_node_id_list[-1]) + 1)
 
-        node_dict.setdefault(GEOMETRY, []).extend([coords])
+        node_dict[NODE_ID].extend([next_node_id])
+        node_dict[TYPE].extend([node_type])
+        node_dict[GEOMETRY].extend([coords])
+
         return node_dict
 
     def _calculate_mean_roundabout_pos(self, coords: list) -> (float, float):
