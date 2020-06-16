@@ -104,7 +104,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
                 roads_gdf = self._swap_coords(roads_gdf, connecting_index)
 
         elif len(connected_to_road_a) >= 1 or len(connected_to_road_b) >= 1:
-            node_dict = self._assign_new_node_id(node_dict, target_coord, "X")
+            node_dict = self._assign_new_node_id(node_dict, target_coord, N_JUNCTION)
             node_id = node_dict[NODE_ID][-1]
 
             roads_gdf.at[index, NODE_A] = node_id
@@ -129,7 +129,9 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
 
             roundabout_coords = self._coords_of_os_roundabout(roundabout_gdf)
             mean_coord = self._calculate_mean_roundabout_pos(roundabout_coords)
-            node_dict = self._assign_new_node_id(node_dict, mean_coord, "R")
+            roundabout_radius = self._calculate_radius_of_roundabout(roundabout_coords, mean_coord)
+            node_dict = self._assign_new_node_id(node_dict, mean_coord, N_ROUNDABOUT,
+                                                 roundabout_extent= roundabout_radius)
 
             for index, segment in roundabout_gdf.iterrows():
                 first_coord = segment.FIRST_COORD

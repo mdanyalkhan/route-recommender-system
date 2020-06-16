@@ -81,8 +81,8 @@ class TestOSRoadsNetworkBuilder(TestCase):
 
         prev_ind_new = [pd.NA, pd.NA, pd.NA, pd.NA, pd.NA, pd.NA]
         next_ind_new = [pd.NA, pd.NA, pd.NA, pd.NA, pd.NA, pd.NA]
-        from_node_new = ["X1", "X1", "X1", "X2", "None", "None"]
-        to_node_new = ["None", "None", "None", "None", "X2", "X2"]
+        from_node_new = ["_0", "_0", "_0", "_1", "None", "None"]
+        to_node_new = ["None", "None", "None", "None", "_1", "_1"]
 
         df, nodes = OSRoadsNetworkBuilder()._connect_and_assign_nodes_main_carriageways_slip_roads(df, {})
 
@@ -90,7 +90,7 @@ class TestOSRoadsNetworkBuilder(TestCase):
         self.assertEqual(df[NEXT_IND].tolist(), next_ind_new)
         self.assertEqual(df[FROM_NODE].tolist(), from_node_new)
         self.assertEqual(df[TO_NODE].tolist(), to_node_new)
-        self.assertEqual(nodes[NODE_ID], ['X1', 'X2'])
+        self.assertEqual(nodes[NODE_ID], ['_0', '_1'])
 
     def test_connections_to_os_type_roundabout(self):
         df = pd.DataFrame({
@@ -114,10 +114,10 @@ class TestOSRoadsNetworkBuilder(TestCase):
         gdf = gpd.GeoDataFrame(df, geometry= GEOMETRY)
         nodes = {}
 
-        from_node_new = ["None", "None", "None", "None", "R1", "None"]
-        to_node_new = ["None", "None", "None", "None", "None", "R1"]
+        from_node_new = ["None", "None", "None", "None", "_0", "None"]
+        to_node_new = ["None", "None", "None", "None", "None", "_0"]
         gdf, nodes = OSRoadsNetworkBuilder()._nodes_roads_to_roundabouts(gdf, nodes)
 
         self.assertEqual(gdf[FROM_NODE].tolist(), from_node_new)
         self.assertEqual(gdf[TO_NODE].tolist(), to_node_new)
-        self.assertEqual(nodes[NODE_ID], ['R1'])
+        self.assertEqual(nodes[NODE_ID], ['_0'])

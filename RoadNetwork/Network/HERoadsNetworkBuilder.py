@@ -124,8 +124,9 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
             centre_coord = self._calculate_mean_roundabout_pos(roundabout_coords)
             roundabout_radius = self._calculate_radius_of_roundabout(roundabout_coords, centre_coord)
 
-            roundabout_refined_coords = self._increase_resolution_of_line(roundabout_coords)
-            node_dict = self._assign_new_node_id(node_dict, centre_coord, N_ROUNDABOUT)
+            # roundabout_refined_coords = self._increase_resolution_of_line(roundabout_coords)
+            node_dict = self._assign_new_node_id(node_dict, centre_coord, N_ROUNDABOUT,
+                                                 roundabout_extent=roundabout_radius)
 
             # Identify the closest of distances between the roundabout and
             # the FIRST_COORD and LAST_COORD of each road segment.
@@ -211,17 +212,6 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
             roads_gdf.loc[roads_gdf[INDEX] == slip_road_index, node_a] = node_dict[NODE_ID][-1]
 
         return roads_gdf
-
-    def _calculate_radius_of_roundabout(self, line_coords: list, central_point: tuple) -> float:
-
-        radius = 0
-
-        for line_coord in line_coords:
-            temp_distance = self._euclidean_distance(line_coord, central_point)
-            if temp_distance > radius:
-                radius = temp_distance
-
-        return radius
 
     def _is_connected_to_roundabout(self, roundabout_coords: tuple, road_coords: tuple,
                                     radius: float) -> bool:

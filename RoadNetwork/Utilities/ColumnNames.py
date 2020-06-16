@@ -51,6 +51,7 @@ OS_ROUNDABOUT = "Roundabout"
 #Nodes Geodataframe column names
 NODE_ID = "node_id"
 TYPE = "Type"
+ROUNDABOUT_EXTENT = "Extent"
 
 #Node type names
 N_ROUNDABOUT = "Roundabout"

@@ -122,7 +122,8 @@ class RoadNetworkBuilder(ABC):
         x2, y2 = coord2
         return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2))
 
-    def _assign_new_node_id(self, node_dict: dict, coords: tuple, node_type: str) -> dict:
+    def _assign_new_node_id(self, node_dict: dict, coords: tuple, node_type: str,
+                            roundabout_extent = pd.NA) -> dict:
         """
         Assigns a new node ID into node_dict
         :param node_dict: existing data structure containing list of nodes
@@ -134,6 +135,7 @@ class RoadNetworkBuilder(ABC):
             node_dict[NODE_ID] = [first_term]
             node_dict[TYPE] = [node_type]
             node_dict[GEOMETRY] = [coords]
+            node_dict[ROUNDABOUT_EXTENT] = [roundabout_extent]
             return node_dict
 
         last_node_id = node_dict[NODE_ID][-1]
@@ -143,6 +145,7 @@ class RoadNetworkBuilder(ABC):
         node_dict[NODE_ID].extend([next_node_id])
         node_dict[TYPE].extend([node_type])
         node_dict[GEOMETRY].extend([coords])
+        node_dict[ROUNDABOUT_EXTENT].extend([roundabout_extent])
 
         return node_dict
 
@@ -164,6 +167,17 @@ class RoadNetworkBuilder(ABC):
         y_ave = y_sum / n
 
         return x_ave, y_ave
+
+    def _calculate_radius_of_roundabout(self, line_coords: list, central_point: tuple) -> float:
+
+        radius = 0
+
+        for line_coord in line_coords:
+            temp_distance = self._euclidean_distance(line_coord, central_point)
+            if temp_distance > radius:
+                radius = temp_distance
+
+        return radius
 
     @abstractmethod
     def _connect_all_road_segments(self, roads_gdf, nodes) -> (gpd.GeoDataFrame, dict):
