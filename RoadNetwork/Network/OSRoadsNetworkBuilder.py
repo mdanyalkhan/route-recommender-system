@@ -27,13 +27,10 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         :param funct_name: name of road type to perform connection operation on
         :return: Updated roads_gdf and node_dict
         """
-        funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
-        no_of_roads = len(funct_gdf)
-
         funct_indices = roads_gdf.index[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
-        
-        for i in range(no_of_roads):
-            segment = funct_gdf.iloc[i, :]
+
+        for i in funct_indices:
+            segment = roads_gdf.iloc[i, :]
             index = int(segment.INDEX)
 
             first_coord = segment.FIRST_COORD
@@ -41,31 +38,24 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
             road_no = segment.ROA_NUMBER
 
             if pd.isna(segment.NEXT_IND) and segment.TO_NODE == "None":
-                # Find roads connected to last coord
-                node_dict, roads_gdf = self._find_connections(funct_gdf, roads_gdf, index, last_coord,
+                node_dict, roads_gdf = self._find_connections(roads_gdf, index, last_coord,
                                                               node_dict, road_no, is_last_coord=True)
-                # Update dataframe
-                funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
 
             if pd.isna(segment.PREV_IND) and segment.FROM_NODE == "None":
-                node_dict, roads_gdf = self._find_connections(funct_gdf, roads_gdf, index, first_coord,
+                node_dict, roads_gdf = self._find_connections(roads_gdf, index, first_coord,
                                                               node_dict, road_no, is_last_coord=False)
-
-                # Update dataframe prior to next iteration
-                funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
 
         print("Finishing _connect_road_segments_based_on_funct_name")
 
         return roads_gdf, node_dict
 
-    def _find_connections(self, funct_gdf: gpd.GeoDataFrame, roads_gdf: gpd.GeoDataFrame, index: int,
+    def _find_connections(self, roads_gdf: gpd.GeoDataFrame, index: int,
                           target_coord: (float, float), node_dict: dict, road_no: str,
                           is_last_coord: bool) -> (dict, gpd.GeoDataFrame):
         """
         Establishes connections between the road feature corresponding to index, and assigns nodes
         where there are either multiple connections or a connection between two different carriageways
 
-        :param funct_gdf: Dataframe of road features that are used for this comparative analysis
         :param roads_gdf: Parent dataframe in which the assignments will take place
         :param index: index of the current road feature that is being examined
         :param target_coord: coordinates of the vertex of the road feature
@@ -75,6 +65,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         accordingly
         :return: Updated node_dict and roads_gdf
         """
+        funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
         connected_to_road_a = funct_gdf.loc[funct_gdf[FIRST_COORD] == target_coord]
         connected_to_road_b = funct_gdf.loc[funct_gdf[LAST_COORD] == target_coord]
 

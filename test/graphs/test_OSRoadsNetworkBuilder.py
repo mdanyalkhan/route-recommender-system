@@ -62,7 +62,6 @@ class TestOSRoadsNetworkBuilder(TestCase):
         prev_ind_new = [pd.NA, 2, pd.NA]
         next_ind_new = [pd.NA, pd.NA, 1]
         df, _ = OSRoadsNetworkBuilder()._connect_and_assign_nodes_main_carriageways_slip_roads(df, {})
-
         self.assertEqual(df[PREV_IND].tolist(), prev_ind_new)
         self.assertEqual(df[NEXT_IND].tolist(), next_ind_new)
 
