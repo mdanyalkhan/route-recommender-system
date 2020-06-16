@@ -1,3 +1,5 @@
+from math import sqrt
+
 import geopandas as gpd
 import pandas as pd
 from RoadNetwork.Utilities.ColumnNames import *
@@ -42,13 +44,21 @@ class MergeNetworkDataFrames:
     def _exclude_roads(self, base_edges_df, to_merge_edges_df):
 
         pd.options.mode.chained_assignment = None
-
+        print(to_merge_edges_df)
         # Exclude roads in the to_merge_edges_df
         roads_to_exclude = base_edges_df[HE_ROAD_NO].unique()
         to_merge_edges_df["is_in_list"] = to_merge_edges_df[HE_ROAD_NO].apply(lambda x: x in roads_to_exclude)
         to_merge_edges_df = to_merge_edges_df.loc[to_merge_edges_df["is_in_list"] == False]
         to_merge_edges_df.drop("is_in_list", axis=1, inplace=True)
 
+        old_index = to_merge_edges_df[INDEX].tolist()
+
+        to_merge_edges_df.reset_index(drop= True, inplace=True)
+        to_merge_edges_df[INDEX] = to_merge_edges_df.index
+        to_merge_edges_df[PREV_IND] = to_merge_edges_df.loc[pd.isna(to_merge_edges_df[PREV_IND]) == False, PREV_IND].apply(lambda x: old_index.index(x))
+        to_merge_edges_df[NEXT_IND] = to_merge_edges_df.loc[pd.isna(to_merge_edges_df[NEXT_IND]) == False, NEXT_IND].apply(lambda x: old_index.index(x))
+
+        print(to_merge_edges_df)
         pd.options.mode.chained_assignment = 'warn'
 
         return to_merge_edges_df

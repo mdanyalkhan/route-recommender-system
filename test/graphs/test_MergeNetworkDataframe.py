@@ -24,17 +24,17 @@ class TestMergeNetworkDataFrames(TestCase):
 
     to_merge_edges_df = pd.DataFrame({
         INDEX: [0, 1, 2, 3, 4],
-        HE_ROAD_NO: ["A1", "A1", "A2", "A2", "X1"],
-        PREV_IND: [pd.NA, 1, pd.NA, 2, pd.NA],
-        NEXT_IND: [1, pd.NA, 2, pd.NA, pd.NA],
-        FROM_NODE: ["X_1", "None", "X_2", "None", "X_4"],
-        TO_NODE: ["None", "X_2", "None", "X_3", "X_5"]
+        HE_ROAD_NO: ["A1", "X1", "A1", "A2", "A2"],
+        PREV_IND: [pd.NA, pd.NA, 0, pd.NA, 3],
+        NEXT_IND: [2, pd.NA, pd.NA, 4, pd.NA],
+        FROM_NODE: ["X_1", "X_2", "None", "X_4", "None"],
+        TO_NODE: ["None", "X_3", "X_4", "None", "X_5"]
     })
 
     to_merge_nodes_df = pd.DataFrame({
         N_NODE_ID: ["X_1", "X_2", "X_3", "X_4", "X_5"],
-        N_TYPE: [N_DEAD_END, N_JUNCTION, N_DEAD_END, N_DEAD_END, N_DEAD_END],
-        GEOMETRY: [[0, 0], [0, 1], [0, 2], [8, 8], [9, 9]]
+        N_TYPE: [N_DEAD_END, N_DEAD_END, N_DEAD_END, N_JUNCTION, N_DEAD_END],
+        GEOMETRY: [[0, 0], [8, 8], [9, 9], [0, 1], [0, 2]]
     })
 
     def test_roads_are_excluded_between_dataframes(self):
