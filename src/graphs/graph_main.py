@@ -37,5 +37,4 @@ def connect_os_gdf():
     os_nodes_gdf.to_file(os_nodes_path)
 
 if __name__ == "__main__":
-    convert_OS_original_to_HE_compatibale_dataframe()
-    connect_os_gdf()
+    connect_he_gdf()

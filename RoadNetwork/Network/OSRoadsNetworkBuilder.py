@@ -27,10 +27,11 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         :param funct_name: name of road type to perform connection operation on
         :return: Updated roads_gdf and node_dict
         """
-        # funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
         funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
         no_of_roads = len(funct_gdf)
 
+        funct_indices = roads_gdf.index[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
+        
         for i in range(no_of_roads):
             segment = funct_gdf.iloc[i, :]
             index = int(segment.INDEX)

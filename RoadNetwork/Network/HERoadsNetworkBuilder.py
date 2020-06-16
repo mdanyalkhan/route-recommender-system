@@ -18,7 +18,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         """
 
         # Connect all main carriageways and slip roads
-        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf,  HE_MAIN_CARRIAGEWAY)
+        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_MAIN_CARRIAGEWAY)
         roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_SLIP_ROAD)
 
         # Assign nodes between main carriageways and slip roads
@@ -119,25 +119,27 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         for _, roundabout in roundabout_df.iterrows():
             # Set representative coordinate of roundabout and set up node into node_dict
             roundabout_coords = extract_list_of_coords_from_line_object(roundabout[GEOMETRY])
-            node_coord = self._calculate_mean_roundabout_pos(roundabout_coords)
+            centre_coord = self._calculate_mean_roundabout_pos(roundabout_coords)
+            roundabout_radius = self._calculate_radius_of_roundabout(roundabout_coords, centre_coord)
+
             roundabout_refined_coords = self._increase_resolution_of_line(roundabout_coords)
-            node_dict = self._assign_new_node_id(node_dict, node_coord, "R")
+            node_dict = self._assign_new_node_id(node_dict, centre_coord, "R")
 
             # Identify the closest of distances between the roundabout and
             # the FIRST_COORD and LAST_COORD of each road segment.
             roads_gdf["distance_first"] = roads_gdf.loc[(roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY) |
                                                         (roads_gdf[HE_FUNCT_NAME] == HE_SLIP_ROAD), FIRST_COORD] \
-                .apply(lambda x: self._proximity_of_road_to_roundabout(roundabout_refined_coords, x))
+                .apply(lambda x: self._is_connected_to_roundabout(centre_coord, x, roundabout_radius))
 
             roads_gdf["distance_last"] = roads_gdf.loc[(roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY) |
                                                        (roads_gdf[HE_FUNCT_NAME] == HE_SLIP_ROAD), LAST_COORD] \
-                .apply(lambda x: self._proximity_of_road_to_roundabout(roundabout_refined_coords, x))
+                .apply(lambda x: self._is_connected_to_roundabout(centre_coord, x, roundabout_radius))
 
-            roads_gdf.loc[roads_gdf["distance_first"] <= self.THRESHOLD, FROM_NODE] = node_dict[NODE_ID][-1]
-            roads_gdf.loc[roads_gdf["distance_first"] <= self.THRESHOLD, PREV_IND] = pd.NA
+            roads_gdf.loc[roads_gdf["distance_first"] == True, FROM_NODE] = node_dict[NODE_ID][-1]
+            roads_gdf.loc[roads_gdf["distance_first"] == True, PREV_IND] = pd.NA
 
-            roads_gdf.loc[roads_gdf["distance_last"] <= self.THRESHOLD, TO_NODE] = node_dict[NODE_ID][-1]
-            roads_gdf.loc[roads_gdf["distance_last"] <= self.THRESHOLD, NEXT_IND] = pd.NA
+            roads_gdf.loc[roads_gdf["distance_last"] == True, TO_NODE] = node_dict[NODE_ID][-1]
+            roads_gdf.loc[roads_gdf["distance_last"] == True, NEXT_IND] = pd.NA
             roads_gdf.drop(['distance_last', 'distance_first'], axis=1, inplace=True)
 
         print("Finishing link_roundabouts_to_segments")
@@ -208,6 +210,25 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
         return roads_gdf
 
+    def _calculate_radius_of_roundabout(self, line_coords: list, central_point: tuple) -> float:
+
+        radius = 0
+
+        for line_coord in line_coords:
+            temp_distance = self._euclidean_distance(line_coord, central_point)
+            if temp_distance > radius:
+                radius = temp_distance
+
+        return radius
+
+    def _is_connected_to_roundabout(self, roundabout_coords: tuple, road_coords: tuple,
+                                    radius: float) -> bool:
+
+        tolerance = radius + self.THRESHOLD
+        distance = self._euclidean_distance(roundabout_coords, road_coords)
+
+        return distance <= tolerance
+
     def _increase_resolution_of_line(self, line_coords: list) -> list:
         """
         Increases the number of points in the line object
@@ -263,4 +284,3 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         :return: true if the euclidean distance is less than some pre-defined threshold, false otherwise
         """
         return self._euclidean_distance(coord1, coord2) <= self.THRESHOLD
-
