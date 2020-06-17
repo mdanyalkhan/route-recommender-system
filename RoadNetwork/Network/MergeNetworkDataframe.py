@@ -81,25 +81,34 @@ class MergeNetworkDataFrames:
         x2, y2 = coord2
         return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2))
 
-    def _is_connected(self, target_coords: tuple, road_coords: tuple, buffer: float = 0.0) -> bool:
+    def _is_connected(self, target_coords: tuple, road_coords: tuple, buffer: float) -> bool:
+
+        if pd.isna(buffer):
+            buffer = 0.0
+
         tolerance = buffer + self.THRESHOLD
         distance = self._euclidean_distance(target_coords, road_coords)
 
         return distance <= tolerance
 
-    def _connect_by_roundabout(self, base_nodes_df, to_merge_edges_df, to_merge_nodes_df):
+    def _connect_by_nodes(self, base_nodes_df, to_merge_nodes_df, to_merge_edges_df, node_type: str,
+                          check_only_dead_ends=True):
 
         base_nodes_df[N_COORD] = base_nodes_df[GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
         to_merge_nodes_df[N_COORD] = to_merge_nodes_df[GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
-        roundabout_nodes = base_nodes_df.loc[base_nodes_df[N_TYPE] == N_ROUNDABOUT]
+        sel_nodes = base_nodes_df.loc[base_nodes_df[N_TYPE] == node_type]
 
-        for _, node in roundabout_nodes.iterrows():
-            roundabout_coord = node.Coord
-            roundabout_radius = node.Extent
+        for _, node in sel_nodes.iterrows():
+            sel_coord = node.Coord
+            sel_buffer = node.Extent
 
-            to_merge_nodes_df["is_connected"] = \
-                to_merge_nodes_df.loc[to_merge_nodes_df[N_TYPE] == N_DEAD_END, N_COORD]. \
-                    apply(lambda x: self._is_connected(roundabout_coord, x, roundabout_radius))
+            if check_only_dead_ends:
+                to_merge_nodes_df["is_connected"] = \
+                    to_merge_nodes_df.loc[to_merge_nodes_df[N_TYPE] == N_DEAD_END, N_COORD]. \
+                        apply(lambda x: self._is_connected(sel_coord, x, sel_buffer))
+            else:
+                to_merge_nodes_df["is_connected"] = \
+                    to_merge_nodes_df[N_COORD].apply(lambda x: self._is_connected(sel_coord, x, sel_buffer))
 
             nodes_replacing = to_merge_nodes_df.loc[to_merge_nodes_df["is_connected"] == True, N_NODE_ID]
 
@@ -116,26 +125,3 @@ class MergeNetworkDataFrames:
 
         return to_merge_edges_df, to_merge_nodes_df
 
-    def _connect_dead_end_nodes(self, base_nodes_df, to_merge_edges_df, to_merge_nodes_df):
-
-        base_nodes_df[N_COORD] = base_nodes_df[GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
-        to_merge_nodes_df[N_COORD] = to_merge_nodes_df[GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
-        dead_end_nodes = base_nodes_df.loc[base_nodes_df[N_TYPE] == N_DEAD_END]
-
-        for _, node in dead_end_nodes.iterrows():
-            to_merge_nodes_df["is_connected"] = to_merge_nodes_df[N_COORD].\
-                apply(lambda x: self._is_connected(node.Coord, x))
-            nodes_replacing = to_merge_nodes_df.loc[to_merge_nodes_df["is_connected"] == True, N_NODE_ID]
-
-            to_merge_edges_df.loc[to_merge_edges_df[FROM_NODE].isin(nodes_replacing), FROM_NODE] = node.node_id
-            to_merge_edges_df.loc[to_merge_edges_df[TO_NODE].isin(nodes_replacing), TO_NODE] = node.node_id
-
-            to_merge_nodes_df.drop(index=to_merge_nodes_df.index[to_merge_nodes_df[N_NODE_ID].isin(nodes_replacing)],
-                                   inplace=True)
-
-            to_merge_nodes_df["is_connected"] = False
-
-        to_merge_nodes_df.drop(['is_connected', N_COORD], axis=1, inplace=True)
-        base_nodes_df.drop(N_COORD, axis=1, inplace=True)
-
-        return to_merge_edges_df, to_merge_nodes_df
