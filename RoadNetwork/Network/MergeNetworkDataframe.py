@@ -32,25 +32,34 @@ class MergeNetworkDataFrames:
 
     def merge_two_network_dataframes(self, base_edges_df: gpd.GeoDataFrame, base_nodes_df: gpd.GeoDataFrame,
                                      to_merge_edges_df: gpd.GeoDataFrame, to_merge_nodes_df: gpd.GeoDataFrame):
-        to_merge_edges_df = self._exclude_roads(base_edges_df, to_merge_edges_df)
+        to_merge_edges_df = self._exclude_roads(base_edges_df, to_merge_edges_df, to_merge_nodes_df)
 
-        # roundabout_nodes = base_nodes_df.loc[base_nodes_df[N_TYPE] == N_ROUNDABOUT]
-
-        # for _, roundabout_node in roundabout_nodes.iterrows():
-        #     to_merge_nodes_df["is_connected"] = to_merge_nodes_df.loc[to_merge_nodes_df[N_TYPE] == N_DEAD_END,GEOMETRY]
 
         return to_merge_edges_df
 
-    def _exclude_roads(self, base_edges_df, to_merge_edges_df):
+    def _exclude_roads(self, base_edges_df, to_merge_edges_df, to_merge_nodes_df):
         pd.options.mode.chained_assignment = None
         # Exclude roads in the to_merge_edges_df
         roads_to_exclude = base_edges_df[HE_ROAD_NO].unique()
         to_merge_edges_df["is_in_list"] = to_merge_edges_df[HE_ROAD_NO].apply(lambda x: x in roads_to_exclude)
+
+        redundant_from_nodes = to_merge_edges_df.loc[(to_merge_edges_df["is_in_list"] == True) &
+                                                (to_merge_edges_df[FROM_NODE] != "None"), FROM_NODE]
+
+        redundant_to_nodes = to_merge_edges_df.loc[(to_merge_edges_df["is_in_list"] == True) &
+                                                (to_merge_edges_df[TO_NODE] != "None"), TO_NODE]
+
+        to_merge_nodes_df.drop(index=to_merge_nodes_df.index[(to_merge_nodes_df[N_NODE_ID].isin(redundant_from_nodes)) &
+                                                             (to_merge_nodes_df[N_TYPE] == N_DEAD_END)], inplace=True)
+
+        to_merge_nodes_df.drop(index=to_merge_nodes_df.index[(to_merge_nodes_df[N_NODE_ID].isin(redundant_to_nodes)) &
+                                                             (to_merge_nodes_df[N_TYPE] == N_DEAD_END)], inplace=True)
+
         to_merge_edges_df = to_merge_edges_df.loc[to_merge_edges_df["is_in_list"] == False]
         to_merge_edges_df.drop("is_in_list", axis=1, inplace=True)
         pd.options.mode.chained_assignment = 'warn'
 
-        return to_merge_edges_df
+        return to_merge_edges_df, to_merge_nodes_df
 
     def _reindex(self, to_merge_edges_df):
         old_index = to_merge_edges_df[INDEX].tolist()

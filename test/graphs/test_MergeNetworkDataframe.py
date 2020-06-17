@@ -42,9 +42,12 @@ class TestMergeNetworkDataFrames(TestCase):
     to_merge_nodes_df[GEOMETRY] = to_merge_nodes_df[GEOMETRY].apply(wkt.loads)
 
     def test_roads_are_excluded_between_dataframes(self):
-        new_df = MergeNetworkDataFrames()._exclude_roads(self.base_edges_df, self.to_merge_edges_df)
+        new_edges_df, new_nodes_df = MergeNetworkDataFrames()._exclude_roads(self.base_edges_df,
+                                                                             self.to_merge_edges_df,
+                                                                             self.to_merge_nodes_df)
 
-        self.assertEqual(new_df[HE_ROAD_NO].tolist(), ["A1", "A1", "A2", "A2", "A3"])
+        self.assertEqual(new_edges_df[HE_ROAD_NO].tolist(), ["A1", "A1", "A2", "A2", "A3"])
+        self.assertEqual(new_nodes_df[N_NODE_ID].tolist(), ["X_1", "X_4", "X_5", "X_6", "X_7"])
 
     def test_road_is_connected_to_roundabout(self):
         new_edges_df, new_nodes_df = MergeNetworkDataFrames()._connect_by_roundabout(self.base_nodes_df,
