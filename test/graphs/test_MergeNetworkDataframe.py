@@ -14,30 +14,42 @@ class TestMergeNetworkDataFrames(TestCase):
     })
 
     base_nodes_df = pd.DataFrame({
-        N_NODE_ID: ["B_1", "B_2", "B_3", "B_4", "B_5"],
-        N_TYPE: [N_DEAD_END, N_JUNCTION, N_DEAD_END, N_DEAD_END, N_DEAD_END],
-        GEOMETRY: [[0, 0], [1, 1], [2, 2], [8, 8], [9, 9]]
+        N_NODE_ID: ["B_1", "B_2", "B_3", "B_4", "B_5", "B_6"],
+        N_TYPE: [N_DEAD_END, N_JUNCTION, N_DEAD_END, N_DEAD_END, N_DEAD_END, N_ROUNDABOUT],
+        GEOMETRY: [[0, 0], [1, 1], [2, 2], [8, 8], [9, 9], [15, 15]],
+        N_ROUNDABOUT_EXTENT: [pd.NA, pd.NA, pd.NA, pd.NA, pd.NA, 3.0]
     })
 
     base_nodes_df[GEOMETRY] = base_nodes_df[GEOMETRY].apply(GeoPointDataFrameBuilder()._build_geometry_object)
     base_nodes_df[GEOMETRY] = base_nodes_df[GEOMETRY].apply(wkt.loads)
 
     to_merge_edges_df = pd.DataFrame({
-        INDEX: [0, 1, 2, 3, 4],
-        HE_ROAD_NO: ["A1", "X1", "A1", "A2", "A2"],
-        PREV_IND: [pd.NA, pd.NA, 0, pd.NA, 3],
-        NEXT_IND: [2, pd.NA, pd.NA, 4, pd.NA],
-        FROM_NODE: ["X_1", "X_2", "None", "X_4", "None"],
-        TO_NODE: ["None", "X_3", "X_4", "None", "X_5"]
+        INDEX: [0, 1, 2, 3, 4, 5],
+        HE_ROAD_NO: ["A1", "X1", "A1", "A2", "A2", "A3"],
+        PREV_IND: [pd.NA, pd.NA, 0, pd.NA, 3, pd.NA],
+        NEXT_IND: [2, pd.NA, pd.NA, 4, pd.NA, pd.NA],
+        FROM_NODE: ["X_1", "X_2", "None", "X_4", "None", "X_6"],
+        TO_NODE: ["None", "X_3", "X_4", "None", "X_5", "X_7"]
     })
 
     to_merge_nodes_df = pd.DataFrame({
-        N_NODE_ID: ["X_1", "X_2", "X_3", "X_4", "X_5"],
-        N_TYPE: [N_DEAD_END, N_DEAD_END, N_DEAD_END, N_JUNCTION, N_DEAD_END],
-        GEOMETRY: [[0, 0], [8, 8], [9, 9], [0, 1], [0, 2]]
+        N_NODE_ID: ["X_1", "X_2", "X_3", "X_4", "X_5", "X_6", "X_7"],
+        N_TYPE: [N_DEAD_END, N_DEAD_END, N_DEAD_END, N_JUNCTION, N_DEAD_END, N_DEAD_END, N_DEAD_END],
+        GEOMETRY: [[0, 0], [8, 8], [9, 9], [0, 1], [0, 2], [7.8, 8.4], [14, 15]]
     })
+
+    to_merge_nodes_df[GEOMETRY] = to_merge_nodes_df[GEOMETRY].apply(GeoPointDataFrameBuilder()._build_geometry_object)
+    to_merge_nodes_df[GEOMETRY] = to_merge_nodes_df[GEOMETRY].apply(wkt.loads)
 
     def test_roads_are_excluded_between_dataframes(self):
         new_df = MergeNetworkDataFrames()._exclude_roads(self.base_edges_df, self.to_merge_edges_df)
 
-        self.assertEqual(new_df[HE_ROAD_NO].tolist(), ["A1", "A1", "A2", "A2"])
+        self.assertEqual(new_df[HE_ROAD_NO].tolist(), ["A1", "A1", "A2", "A2", "A3"])
+
+    def test_road_is_connected_to_roundabout(self):
+        new_edges_df, new_nodes_df = MergeNetworkDataFrames()._connect_by_roundabout(self.base_nodes_df,
+                                                                                     self.to_merge_edges_df,
+                                                                                     self.to_merge_nodes_df)
+
+        self.assertEqual(new_edges_df[TO_NODE].tolist(), ["None", "X_3", "X_4", "None", "X_5", "B_6"])
+        self.assertEqual(new_nodes_df[N_NODE_ID].tolist(), ["X_1", "X_2", "X_3", "X_4", "X_5", "X_6"])

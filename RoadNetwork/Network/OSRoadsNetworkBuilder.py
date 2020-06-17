@@ -168,6 +168,6 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         coords = []
 
         for _, segment in roundabout_gdf.iterrows():
-            segment_coords = extract_list_of_coords_from_line_object(segment[GEOMETRY])
+            segment_coords = extract_list_of_coords_from_geom_object(segment[GEOMETRY])
             coords.extend(segment_coords)
         return coords

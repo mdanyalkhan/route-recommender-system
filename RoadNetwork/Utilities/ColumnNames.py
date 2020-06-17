@@ -52,6 +52,7 @@ OS_ROUNDABOUT = "Roundabout"
 N_NODE_ID = "node_id"
 N_TYPE = "Type"
 N_ROUNDABOUT_EXTENT = "Extent"
+N_COORD = "Coord"
 
 #Node type names
 N_ROUNDABOUT = "Roundabout"
