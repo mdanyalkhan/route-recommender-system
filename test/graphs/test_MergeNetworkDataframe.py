@@ -76,8 +76,7 @@ class TestMergeNetworkDataFrames(TestCase):
         new_edges_df, new_nodes_df, _ = MergeNetworkDataFrames(threshold=0)._connect_by_nodes(base_nodes_df,
                                                                                               to_merge_nodes_df,
                                                                                               to_merge_edges_df,
-                                                                                              N_DEAD_END,
-                                                                                              check_only_dead_ends=False)
+                                                                                              N_DEAD_END)
 
         self.assertEqual(new_edges_df[TO_NODE].tolist(), ["None", "B_5", "X_4", "None", "X_5", "X_7", "B_3"])
 
