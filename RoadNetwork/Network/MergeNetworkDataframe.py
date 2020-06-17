@@ -32,10 +32,32 @@ class MergeNetworkDataFrames:
 
     def merge_two_network_dataframes(self, base_edges_df: gpd.GeoDataFrame, base_nodes_df: gpd.GeoDataFrame,
                                      to_merge_edges_df: gpd.GeoDataFrame, to_merge_nodes_df: gpd.GeoDataFrame):
-        to_merge_edges_df = self._exclude_roads(base_edges_df, to_merge_edges_df, to_merge_nodes_df)
 
+        base_edges_df = base_edges_df.copy()
+        base_nodes_df = base_nodes_df.copy()
+        to_merge_edges_df = to_merge_edges_df.copy()
+        to_merge_nodes_df = to_merge_nodes_df.copy()
 
-        return to_merge_edges_df
+        to_merge_edges_df, to_merge_nodes_df = self._exclude_roads(base_edges_df, to_merge_edges_df, to_merge_nodes_df)
+
+        to_merge_edges_df, to_merge_nodes_df, base_nodes_df = self._connect_by_nodes(base_nodes_df, to_merge_nodes_df,
+                                                                                     to_merge_edges_df, N_ROUNDABOUT,
+                                                                                     check_only_dead_ends=True)
+        to_merge_edges_df, to_merge_nodes_df, base_nodes_df = self._connect_by_nodes(base_nodes_df, to_merge_nodes_df,
+                                                                                     to_merge_edges_df, N_DEAD_END,
+                                                                                     check_only_dead_ends=False)
+        base_edges_df, base_nodes_df, to_merge_nodes_df = self._connect_by_nodes(to_merge_nodes_df, base_nodes_df,
+                                                                                 base_edges_df, N_ROUNDABOUT,
+                                                                                 check_only_dead_ends=True)
+        base_edges_df, base_nodes_df, to_merge_nodes_df = self._connect_by_nodes(to_merge_nodes_df, base_nodes_df,
+                                                                                 base_edges_df, N_DEAD_END,
+                                                                                 check_only_dead_ends=False)
+        to_merge_edges_df = self._reindex_to_base_edges(base_edges_df, to_merge_edges_df)
+
+        base_edges_df = pd.concat([base_edges_df, to_merge_edges_df])
+        base_nodes_df = pd.concat([base_nodes_df, to_merge_nodes_df])
+
+        return base_edges_df, base_nodes_df
 
     def _exclude_roads(self, base_edges_df, to_merge_edges_df, to_merge_nodes_df):
         pd.options.mode.chained_assignment = None
@@ -44,10 +66,10 @@ class MergeNetworkDataFrames:
         to_merge_edges_df["is_in_list"] = to_merge_edges_df[HE_ROAD_NO].apply(lambda x: x in roads_to_exclude)
 
         redundant_from_nodes = to_merge_edges_df.loc[(to_merge_edges_df["is_in_list"] == True) &
-                                                (to_merge_edges_df[FROM_NODE] != "None"), FROM_NODE]
+                                                     (to_merge_edges_df[FROM_NODE] != "None"), FROM_NODE]
 
         redundant_to_nodes = to_merge_edges_df.loc[(to_merge_edges_df["is_in_list"] == True) &
-                                                (to_merge_edges_df[TO_NODE] != "None"), TO_NODE]
+                                                   (to_merge_edges_df[TO_NODE] != "None"), TO_NODE]
 
         to_merge_nodes_df.drop(index=to_merge_nodes_df.index[(to_merge_nodes_df[N_NODE_ID].isin(redundant_from_nodes)) &
                                                              (to_merge_nodes_df[N_TYPE] == N_DEAD_END)], inplace=True)
@@ -69,6 +91,7 @@ class MergeNetworkDataFrames:
             pd.isna(to_merge_edges_df[PREV_IND]) == False, PREV_IND].apply(lambda x: old_index.index(x))
         to_merge_edges_df[NEXT_IND] = to_merge_edges_df.loc[
             pd.isna(to_merge_edges_df[NEXT_IND]) == False, NEXT_IND].apply(lambda x: old_index.index(x))
+        return to_merge_edges_df
 
     def _euclidean_distance(self, coord1: tuple, coord2: tuple):
         """
@@ -98,7 +121,7 @@ class MergeNetworkDataFrames:
         to_merge_nodes_df[N_COORD] = to_merge_nodes_df[GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
         sel_nodes = base_nodes_df.loc[base_nodes_df[N_TYPE] == node_type]
 
-        for _, node in sel_nodes.iterrows():
+        for index, node in sel_nodes.iterrows():
             sel_coord = node.Coord
             sel_buffer = node.Extent
 
@@ -112,16 +135,29 @@ class MergeNetworkDataFrames:
 
             nodes_replacing = to_merge_nodes_df.loc[to_merge_nodes_df["is_connected"] == True, N_NODE_ID]
 
+            if len(nodes_replacing) > 0 and node.Type == N_DEAD_END:
+                base_nodes_df.at[index, N_TYPE] = N_JUNCTION
+
             to_merge_edges_df.loc[to_merge_edges_df[FROM_NODE].isin(nodes_replacing), FROM_NODE] = node.node_id
             to_merge_edges_df.loc[to_merge_edges_df[TO_NODE].isin(nodes_replacing), TO_NODE] = node.node_id
 
             to_merge_nodes_df.drop(index=to_merge_nodes_df.index[to_merge_nodes_df[N_NODE_ID].isin(nodes_replacing)],
                                    inplace=True)
 
-            to_merge_nodes_df["is_connected"] = False
+            to_merge_nodes_df.drop('is_connected', axis=1, inplace=True)
 
-        to_merge_nodes_df.drop(['is_connected', N_COORD], axis=1, inplace=True)
+        to_merge_nodes_df.drop(N_COORD, axis=1, inplace=True)
         base_nodes_df.drop(N_COORD, axis=1, inplace=True)
 
-        return to_merge_edges_df, to_merge_nodes_df
+        return to_merge_edges_df, to_merge_nodes_df, base_nodes_df
 
+    def _reindex_to_base_edges(self, base_edges_df, to_merge_edges_df):
+
+        offset = len(base_edges_df)
+        to_merge_edges_df = self._reindex(to_merge_edges_df)
+        to_merge_edges_df[INDEX] += offset
+        to_merge_edges_df[PREV_IND] += offset
+        to_merge_edges_df[NEXT_IND] += offset
+        to_merge_edges_df.index += offset
+
+        return to_merge_edges_df
