@@ -23,8 +23,8 @@ class Test(TestCase):
         first_coord_min_dist = sqrt(pow(1 - 0.8, 2) + pow(1 - 0.9, 2))
         second_coord_min_dist = sqrt(pow(1 - 1.1, 2) + pow(1 - 1.2, 2))
 
-        self.assertEqual(self.test_object._find_closest_main_carriageway(df, target_coord), (1, first_coord_min_dist))
-        self.assertEqual(self.test_object._find_closest_main_carriageway(df, target_coord,
+        self.assertEqual(self.test_object._find_closest_main_carriageway(df, target_coord, 0), (1, first_coord_min_dist))
+        self.assertEqual(self.test_object._find_closest_main_carriageway(df, target_coord, 0,
                                                                          use_first_coord_of_main_carriageway=False),
                          (2, second_coord_min_dist))
 

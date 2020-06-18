@@ -10,7 +10,6 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         self.THRESHOLD = connection_threshold
         self.MIN_SPACING = min_spacing_for_roundabout_resolution
 
-
     def _connect_all_road_segments(self, roads_gdf, nodes) -> (gpd.GeoDataFrame, dict):
         """
         Overriding function that calls all other function to connect each road segment
@@ -23,6 +22,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_MAIN_CARRIAGEWAY)
         roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_SLIP_ROAD)
 
+        roads_gdf, nodes = self._nodes_between_main_carriageways(roads_gdf, nodes)
         # Assign nodes between main carriageways and slip roads
         roads_gdf, nodes = self._nodes_main_carriageways_to_slip_roads(roads_gdf, nodes)
 
@@ -67,6 +67,33 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
         return roads_gdf
 
+    def _nodes_between_main_carriageways(self, roads_gdf: gpd.GeoDataFrame,
+                                         node_dict: dict) -> (gpd.GeoDataFrame, dict):
+
+        carriageway_df = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY]
+        carriageway_df = carriageway_df.loc[(pd.isna(roads_gdf[PREV_IND])) | (pd.isna(roads_gdf[NEXT_IND]))]
+        carriageway_indices = carriageway_df.index
+
+        for i in carriageway_indices:
+            carriageway = roads_gdf.iloc[i, :]
+            index = carriageway.INDEX
+
+            if pd.isna(carriageway.PREV_IND):  # If PREV_IND is <NA> then:
+                first_coord = carriageway.FIRST_COORD
+                min_index, min_dist = self._find_closest_main_carriageway(roads_gdf, first_coord, index,
+                                                                          use_first_coord_of_main_carriageway=False,
+                                                                          target_is_main_carriageway=True)
+                roads_gdf = self._update_connections_and_assign_nodes(roads_gdf, node_dict, first_coord,
+                                                                      index, min_index, min_dist)
+
+            if pd.isna(carriageway.NEXT_IND):
+                last_coord = carriageway.LAST_COORD
+                min_index, min_dist = self._find_closest_main_carriageway(roads_gdf, last_coord, index,
+                                                                          target_is_main_carriageway=True)
+                roads_gdf = self._update_connections_and_assign_nodes(roads_gdf, node_dict, last_coord, index,
+                                                                      min_index, min_dist, is_prev=False)
+        return roads_gdf, node_dict
+
     def _nodes_main_carriageways_to_slip_roads(self, roads_gdf: gpd.GeoDataFrame,
                                                node_dict: dict) -> (gpd.GeoDataFrame, dict):
         """
@@ -89,14 +116,14 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
             if pd.isna(slip_road.PREV_IND):  # If PREV_IND is <NA> then:
                 first_coord = slip_road.FIRST_COORD
-                min_index, min_dist = self._find_closest_main_carriageway(roads_gdf, first_coord,
+                min_index, min_dist = self._find_closest_main_carriageway(roads_gdf, first_coord, index,
                                                                           use_first_coord_of_main_carriageway=False)
                 roads_gdf = self._update_connections_and_assign_nodes(roads_gdf, node_dict, first_coord,
                                                                       index, min_index, min_dist)
 
             if pd.isna(slip_road.NEXT_IND):
                 last_coord = slip_road.LAST_COORD
-                min_index, min_dist = self._find_closest_main_carriageway(roads_gdf, last_coord)
+                min_index, min_dist = self._find_closest_main_carriageway(roads_gdf, last_coord, index)
                 roads_gdf = self._update_connections_and_assign_nodes(roads_gdf, node_dict, last_coord, index,
                                                                       min_index, min_dist, is_prev=False)
 
@@ -149,8 +176,9 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
         return roads_gdf, node_dict
 
-    def _find_closest_main_carriageway(self, roads_gdf: gpd.GeoDataFrame, target_coord: tuple,
-                                       use_first_coord_of_main_carriageway: bool = True) -> (int, float):
+    def _find_closest_main_carriageway(self, roads_gdf: gpd.GeoDataFrame, target_coord: tuple, target_index: int,
+                                       use_first_coord_of_main_carriageway: bool = True,
+                                       target_is_main_carriageway: bool = False) -> (int, float):
         """
         Finds the closest main carriageway segment to the target coordinate specified in the argument of the function
         :param roads_gdf: geodataframe containing all main carriageways
@@ -167,7 +195,17 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
             COORD = LAST_COORD
 
         carriageway_df = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY]
+
+        if target_is_main_carriageway:
+            carriageway_name = carriageway_df.loc[target_index][HE_ROAD_NO]
+            carriageway_direction = carriageway_df.loc[target_index][HE_DIRECTION]
+
+            carriageway_df = carriageway_df.drop(index=
+                                                 carriageway_df.index[(carriageway_df[HE_ROAD_NO] == carriageway_name) &
+                                                                      (carriageway_df[
+                                                                           HE_DIRECTION] == carriageway_direction)])
         distances = carriageway_df[COORD].apply(lambda x: self._euclidean_distance(x, target_coord))
+
         min_dist = distances.min()
         index = distances.index[distances == distances.min()][0]
         min_index = carriageway_df.loc[index, "INDEX"]
@@ -200,16 +238,20 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
             node_b = FROM_NODE
 
         if min_dist < self.THRESHOLD:
-            node_dict = self._assign_new_node_id(node_dict, target_coord, N_JUNCTION)
-            # Update connections to adjacent carriageway segment (if there is one)
-            if not pd.isna(roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a].values[0]):
-                index = roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a].values[0]
-                roads_gdf.loc[roads_gdf[INDEX] == index, ind_b] = pd.NA
-                roads_gdf.loc[roads_gdf[INDEX] == index, node_a] = node_dict[N_NODE_ID][-1]
-            # update connection to current carriageway
-            roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a] = pd.NA
-            roads_gdf.loc[roads_gdf[INDEX] == min_index, node_b] = node_dict[N_NODE_ID][-1]
-            roads_gdf.loc[roads_gdf[INDEX] == slip_road_index, node_a] = node_dict[N_NODE_ID][-1]
+            if roads_gdf.loc[min_index][node_b] != HE_NONE:
+                node_id = roads_gdf.loc[min_index][node_b]
+                roads_gdf.loc[roads_gdf[INDEX] == slip_road_index, node_a] = node_id
+            else:
+                node_dict = self._assign_new_node_id(node_dict, target_coord, N_JUNCTION)
+                # Update connections to adjacent carriageway segment (if there is one)
+                if not pd.isna(roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a].values[0]):
+                    index = roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a].values[0]
+                    roads_gdf.loc[roads_gdf[INDEX] == index, ind_b] = pd.NA
+                    roads_gdf.loc[roads_gdf[INDEX] == index, node_a] = node_dict[N_NODE_ID][-1]
+                # update connection to current carriageway
+                roads_gdf.loc[roads_gdf[INDEX] == min_index, ind_a] = pd.NA
+                roads_gdf.loc[roads_gdf[INDEX] == min_index, node_b] = node_dict[N_NODE_ID][-1]
+                roads_gdf.loc[roads_gdf[INDEX] == slip_road_index, node_a] = node_dict[N_NODE_ID][-1]
 
         return roads_gdf
 
