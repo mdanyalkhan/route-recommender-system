@@ -1,6 +1,7 @@
 from RoadNetwork.Network.RoadNetworkBuilder import *
 import numpy as np
 from shapely.ops import linemerge
+from queue import Queue
 
 
 class OSRoadsNetworkBuilder(RoadNetworkBuilder):
@@ -31,30 +32,43 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         :param funct_name: name of road type to perform connection operation on
         :return: Updated roads_gdf and node_dict
         """
+        VISITED = 'visited'
+        roads_gdf[VISITED] = False
         funct_indices = roads_gdf.index[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
 
         for i in funct_indices:
-            segment = roads_gdf.iloc[i, :]
-            index = int(segment.INDEX)
 
-            first_coord = segment.FIRST_COORD
-            last_coord = segment.LAST_COORD
-            road_no = segment.ROA_NUMBER
+            if not roads_gdf.iloc[i][VISITED]:
+                segment_queue = Queue()
+                segment_queue.put(i)
 
-            if pd.isna(segment.NEXT_IND) and segment.TO_NODE == "None":
-                node_dict, roads_gdf = self._find_connections(roads_gdf, index, last_coord,
-                                                              node_dict, road_no, is_last_coord=True)
+                while not segment_queue.empty():
+                    current_i = segment_queue.get()
+                    segment = roads_gdf.iloc[current_i, :]
+                    index = int(segment.INDEX)
 
-            if pd.isna(segment.PREV_IND) and segment.FROM_NODE == "None":
-                node_dict, roads_gdf = self._find_connections(roads_gdf, index, first_coord,
-                                                              node_dict, road_no, is_last_coord=False)
+                    first_coord = segment.FIRST_COORD
+                    last_coord = segment.LAST_COORD
+                    road_no = segment.ROA_NUMBER
+
+                    if pd.isna(segment.NEXT_IND) and segment.TO_NODE == "None":
+                        node_dict, roads_gdf, segment_queue = self._find_connections(roads_gdf, index, last_coord,
+                                                                                     node_dict, road_no, segment_queue,
+                                                                                     is_last_coord=True)
+
+                    if pd.isna(segment.PREV_IND) and segment.FROM_NODE == "None":
+                        node_dict, roads_gdf, segment_queue = self._find_connections(roads_gdf, index, first_coord,
+                                                                                     node_dict, road_no, segment_queue,
+                                                                                     is_last_coord=False)
+                    roads_gdf.at[index, VISITED] = True
 
         print("Finishing _connect_road_segments_based_on_funct_name")
 
+        roads_gdf.drop(VISITED, axis=1, inplace=True)
         return roads_gdf, node_dict
 
     def _find_connections(self, roads_gdf: gpd.GeoDataFrame, index: int,
-                          target_coord: (float, float), node_dict: dict, road_no: str,
+                          target_coord: (float, float), node_dict: dict, road_no: str, queue: Queue,
                           is_last_coord: bool) -> (dict, gpd.GeoDataFrame):
         """
         Establishes connections between the road feature corresponding to index, and assigns nodes
@@ -86,6 +100,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
 
         if len(connected_to_road_a) == 1 and len(connected_to_road_b) == 0 \
                 and connected_to_road_a[HE_ROAD_NO].values[0] == road_no:
+
             connecting_index = int(connected_to_road_a[INDEX].values[0])
             roads_gdf.at[index, INDEX_A] = connecting_index
             roads_gdf.at[connecting_index, INDEX_B] = index
@@ -93,8 +108,11 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
             if not is_last_coord:
                 roads_gdf = self._swap_coords(roads_gdf, connecting_index)
 
+            queue.put(connecting_index)
+
         elif len(connected_to_road_a) == 0 and len(connected_to_road_b) == 1 \
                 and connected_to_road_b[HE_ROAD_NO].values[0] == road_no:
+
             connecting_index = int(connected_to_road_b[INDEX].values[0])
             roads_gdf.at[index, INDEX_A] = connecting_index
             roads_gdf.at[connecting_index, INDEX_B] = index
@@ -102,6 +120,8 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
             # Reconfigure coordinate orientation
             if is_last_coord:
                 roads_gdf = self._swap_coords(roads_gdf, connecting_index)
+
+            queue.put(connecting_index)
 
         elif len(connected_to_road_a) >= 1 or len(connected_to_road_b) >= 1:
             node_dict = self._assign_new_node_id(node_dict, target_coord, N_JUNCTION)
@@ -111,7 +131,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
             roads_gdf.loc[connected_to_road_a[INDEX].values, FROM_NODE] = node_id
             roads_gdf.loc[connected_to_road_b[INDEX].values, TO_NODE] = node_id
 
-        return node_dict, roads_gdf
+        return node_dict, roads_gdf, queue
 
     def _nodes_roads_to_roundabouts(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict) -> (gpd.GeoDataFrame, dict):
         """
@@ -131,7 +151,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
             mean_coord = self._calculate_mean_roundabout_pos(roundabout_coords)
             roundabout_radius = self._calculate_radius_of_roundabout(roundabout_coords, mean_coord)
             node_dict = self._assign_new_node_id(node_dict, mean_coord, N_ROUNDABOUT,
-                                                 roundabout_extent= roundabout_radius)
+                                                 roundabout_extent=roundabout_radius)
 
             for index, segment in roundabout_gdf.iterrows():
                 first_coord = segment.FIRST_COORD

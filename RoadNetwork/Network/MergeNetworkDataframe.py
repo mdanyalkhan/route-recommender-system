@@ -38,22 +38,33 @@ class MergeNetworkDataFrames:
         to_merge_edges_df = to_merge_edges_df.copy()
         to_merge_nodes_df = to_merge_nodes_df.copy()
 
+        print('1')
         to_merge_edges_df, to_merge_nodes_df = self._exclude_roads(base_edges_df, to_merge_edges_df, to_merge_nodes_df)
+        print('2')
 
         to_merge_edges_df, to_merge_nodes_df, base_nodes_df = self._connect_by_nodes(base_nodes_df, to_merge_nodes_df,
                                                                                      to_merge_edges_df, N_ROUNDABOUT)
+        print('3')
+
         to_merge_edges_df, to_merge_nodes_df, base_nodes_df = self._connect_by_nodes(base_nodes_df, to_merge_nodes_df,
                                                                                      to_merge_edges_df, N_DEAD_END)
+        print('4')
         base_edges_df, base_nodes_df, to_merge_nodes_df = self._connect_by_nodes(to_merge_nodes_df, base_nodes_df,
                                                                                  base_edges_df, N_ROUNDABOUT)
+        print('5')
         base_edges_df, base_nodes_df, to_merge_nodes_df = self._connect_by_nodes(to_merge_nodes_df, base_nodes_df,
                                                                                  base_edges_df, N_DEAD_END)
+        print('6')
+        to_merge_edges_df, to_merge_nodes_df = self._expunge_redundant_edges(to_merge_edges_df,
+                                                                             to_merge_nodes_df,
+                                                                             base_nodes_df)
+        print('7')
         to_merge_edges_df = self._reindex_to_base_edges(base_edges_df, to_merge_edges_df)
-
+        print('8')
         base_edges_df = pd.concat([base_edges_df, to_merge_edges_df])
         base_nodes_df = pd.concat([base_nodes_df, to_merge_nodes_df])
-
         base_nodes_df = self._remove_redundant_nodes(base_nodes_df, base_edges_df)
+        print('9')
         return base_edges_df, base_nodes_df
 
     def _exclude_roads(self, base_edges_df, to_merge_edges_df, to_merge_nodes_df):
@@ -77,11 +88,12 @@ class MergeNetworkDataFrames:
         to_merge_edges_df = to_merge_edges_df.loc[to_merge_edges_df["is_in_list"] == False]
         to_merge_edges_df.drop("is_in_list", axis=1, inplace=True)
         pd.options.mode.chained_assignment = 'warn'
-
+        print("Finished excluding roads")
         return to_merge_edges_df, to_merge_nodes_df
 
     def _reindex(self, to_merge_edges_df):
         old_index = to_merge_edges_df[INDEX].tolist()
+
         to_merge_edges_df.reset_index(drop=True, inplace=True)
         to_merge_edges_df[INDEX] = to_merge_edges_df.index
         to_merge_edges_df[PREV_IND] = to_merge_edges_df.loc[
@@ -170,23 +182,37 @@ class MergeNetworkDataFrames:
 
         return combined_nodes_gdf
 
-    def _expunge_redundant_edges(self, to_merge_edges_gdf, base_nodes_gdf):
+    def _expunge_redundant_edges(self, to_merge_edges_gdf, to_merge_nodes_gdf, base_nodes_gdf):
 
         connected_nodes = base_nodes_gdf[N_NODE_ID].tolist()
         to_merge_edges_gdf['verified'] = 'Unverified'
-        indices = to_merge_edges_gdf.index
+        indices = to_merge_edges_gdf.INDEX.values.tolist()
         to_merge_edges_gdf['visited'] = False
 
         for index in indices:
-            edge_index = to_merge_edges_gdf.iloc[index][INDEX]
-            self._search_road_network(edge_index, to_merge_edges_gdf, connected_nodes)
-            to_merge_edges_gdf['visited'] = False
+            if to_merge_edges_gdf.loc[index]['verified'] == 'Unverified':
+                # print(index)
+
+                self._search_road_network(index, to_merge_edges_gdf, connected_nodes)
+                to_merge_edges_gdf['visited'] = False
+
+        # redundant_from_nodes = to_merge_edges_gdf.loc[(to_merge_edges_gdf["verified"] == 'Rejected') &
+        #                                              (to_merge_edges_gdf[FROM_NODE] != "None"), FROM_NODE]
+        #
+        # redundant_to_nodes = to_merge_edges_gdf.loc[(to_merge_edges_gdf["verified"] == 'Rejected') &
+        #                                            (to_merge_edges_gdf[TO_NODE] != "None"), TO_NODE]
+
+        # to_merge_nodes_gdf.drop(index=to_merge_nodes_gdf.index[to_merge_nodes_gdf[N_NODE_ID].isin(redundant_from_nodes)],
+        #                         inplace=True)
+        # to_merge_nodes_gdf.drop(index=to_merge_nodes_gdf.index[to_merge_nodes_gdf[N_NODE_ID].isin(redundant_to_nodes)],
+        #                        inplace=True)
 
         to_merge_edges_gdf.drop(index=to_merge_edges_gdf.index[to_merge_edges_gdf['verified'] == 'Rejected'],
-                               inplace=True)
+                                inplace=True)
+
         to_merge_edges_gdf.drop(['verified', 'visited'], axis=1, inplace=True)
 
-        return to_merge_edges_gdf
+        return to_merge_edges_gdf, to_merge_nodes_gdf
 
     def _search_road_network(self, edge_index, to_merge_edges_gdf, connected_nodes):
 
@@ -195,23 +221,33 @@ class MergeNetworkDataFrames:
         edge = to_merge_edges_gdf[to_merge_edges_gdf[INDEX] == edge_index]
 
         # If NEXT_IND is not null, mark current edge as visited and search_road_network to next edge and return
-        if not pd.isna(edge.NEXT_IND):
-            next_edge = to_merge_edges_gdf[to_merge_edges_gdf[INDEX] == edge.NEXT_IND.values[0]]
-            if not next_edge.visited.values[0]:
-                if self._search_road_network(edge.NEXT_IND.values[0], to_merge_edges_gdf, connected_nodes):
+        if not pd.isna(edge.NEXT_IND).values[0]:
+
+            next_edge_index = to_merge_edges_gdf[to_merge_edges_gdf[INDEX] == int(edge.NEXT_IND.values[0])]
+            if not next_edge_index.visited.values[0]:
+                if self._search_road_network(int(edge.NEXT_IND.values[0]), to_merge_edges_gdf, connected_nodes):
                     to_merge_edges_gdf.at[to_merge_edges_gdf[INDEX] == edge_index, 'verified'] = "Accepted"
                     return True
+            elif next_edge_index.verified.values[0] == "Accepted":
+                to_merge_edges_gdf.at[to_merge_edges_gdf[INDEX] == edge_index, 'verified'] = "Accepted"
+                return True
 
         # If PREV_IND is not null, mark current edge as visited and search_road_network to next edge and return
-        if not pd.isna(edge.PREV_IND):
-            prev_edge = to_merge_edges_gdf[to_merge_edges_gdf[INDEX] == edge.PREV_IND.values[0]]
+        if not pd.isna(edge.PREV_IND).values[0]:
+            prev_edge = to_merge_edges_gdf[to_merge_edges_gdf[INDEX] == int(edge.PREV_IND.values[0])]
             if not prev_edge.visited.values[0]:
-                if self._search_road_network(edge.PREV_IND.values[0], to_merge_edges_gdf, connected_nodes):
+                if self._search_road_network(int(edge.PREV_IND.values[0]), to_merge_edges_gdf, connected_nodes):
                     to_merge_edges_gdf.at[to_merge_edges_gdf[INDEX] == edge_index, 'verified'] = "Accepted"
                     return True
                 else:
+                    if edge_index == 594:
+                        print('a')
                     to_merge_edges_gdf.at[to_merge_edges_gdf[INDEX] == edge_index, 'verified'] = "Rejected"
                     return False
+                
+            elif prev_edge.verified.values[0] == "Accepted":
+                to_merge_edges_gdf.at[to_merge_edges_gdf[INDEX] == edge_index, 'verified'] = "Accepted"
+                return True
 
         if edge.TO_NODE.values[0] != "None":
             node_id = edge.TO_NODE.values[0]
@@ -221,15 +257,18 @@ class MergeNetworkDataFrames:
             else:
                 connected_edges = to_merge_edges_gdf.loc[(to_merge_edges_gdf['visited'] == False) &
                                                          ((to_merge_edges_gdf[FROM_NODE] == node_id) |
-                                                         (to_merge_edges_gdf[TO_NODE] == node_id))]
+                                                          (to_merge_edges_gdf[TO_NODE] == node_id))]
+
+                connected_edges = connected_edges[connected_edges[INDEX] != edge_index]
+
                 if len(connected_edges) > 0:
                     if len(connected_edges[connected_edges['verified'] == 'Accepted']) > 0:
                         to_merge_edges_gdf.at[to_merge_edges_gdf[INDEX] == edge_index, 'verified'] = "Accepted"
                         return True
 
-                    next_edge = connected_edges.iloc[0][INDEX]
+                    next_edge_index = connected_edges.iloc[0][INDEX]
 
-                    if self._search_road_network(next_edge, to_merge_edges_gdf, connected_nodes):
+                    if self._search_road_network(next_edge_index, to_merge_edges_gdf, connected_nodes):
                         to_merge_edges_gdf.at[to_merge_edges_gdf[INDEX] == edge_index, 'verified'] = "Accepted"
                         return True
 
@@ -242,16 +281,21 @@ class MergeNetworkDataFrames:
                 connected_edges = to_merge_edges_gdf.loc[(to_merge_edges_gdf['visited'] == False) &
                                                          ((to_merge_edges_gdf[FROM_NODE] == node_id) |
                                                           (to_merge_edges_gdf[TO_NODE] == node_id))]
+
+                connected_edges = connected_edges[connected_edges[INDEX] != edge_index]
+
                 if len(connected_edges) > 0:
                     if len(connected_edges[connected_edges['verified'] == 'Accepted']) > 0:
                         to_merge_edges_gdf.at[to_merge_edges_gdf[INDEX] == edge_index, 'verified'] = "Accepted"
                         return True
 
-                    next_edge = connected_edges.iloc[0][INDEX]
+                    next_edge_index = connected_edges.iloc[0][INDEX]
 
-                    if self._search_road_network(next_edge, to_merge_edges_gdf, connected_nodes):
+                    if self._search_road_network(next_edge_index, to_merge_edges_gdf, connected_nodes):
                         to_merge_edges_gdf.at[to_merge_edges_gdf[INDEX] == edge_index, 'verified'] = "Accepted"
                         return True
 
+        if edge_index == 594:
+            print('b')
         to_merge_edges_gdf.at[to_merge_edges_gdf[INDEX] == edge_index, 'verified'] = "Rejected"
         return False
