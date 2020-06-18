@@ -19,8 +19,8 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         """
 
         # Connect all main carriageways and slip roads
-        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_MAIN_CARRIAGEWAY)
-        roads_gdf = self._connect_road_segments_based_on_funct_name(roads_gdf, HE_SLIP_ROAD)
+        roads_gdf, nodes = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, HE_MAIN_CARRIAGEWAY)
+        roads_gdf, nodes = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, HE_SLIP_ROAD)
 
         roads_gdf, nodes = self._nodes_between_main_carriageways(roads_gdf, nodes)
         # Assign nodes between main carriageways and slip roads
@@ -34,7 +34,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
         return roads_gdf, nodes
 
-    def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame, funct_name: str) \
+    def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict, funct_name: str) \
             -> (gpd.GeoDataFrame, dict):
         """
         Explicitly connects all road segments by function name and geometry
@@ -48,6 +48,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         road_numbers = funct_gdf.ROA_NUMBER.unique()
         directions = funct_gdf.DIREC_CODE.unique()
 
+        # print(roads_gdf.loc[roads_gdf[INDEX] == 290])
         for road_number in road_numbers:
             for direction in directions:
                 carriageway = funct_gdf.loc[(funct_gdf[HE_ROAD_NO] == road_number) &
@@ -62,10 +63,15 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
                     if len(connecting_road) == 1:
                         roads_gdf.loc[index, NEXT_IND] = connecting_road[0]
                         roads_gdf.loc[connecting_road[0], PREV_IND] = index
+                    elif len(connecting_road) > 1:
+                        node_dict = self._assign_new_node_id(node_dict, last_coord, N_JUNCTION)
+                        roads_gdf.loc[index, TO_NODE] = node_dict[N_NODE_ID][-1]
+                        roads_gdf.loc[connecting_road, FROM_NODE] = node_dict[N_NODE_ID][-1]
+
 
         print("Finishing _connect_road_segments_based_on_funct_name")
 
-        return roads_gdf
+        return roads_gdf, node_dict
 
     def _nodes_between_main_carriageways(self, roads_gdf: gpd.GeoDataFrame,
                                          node_dict: dict) -> (gpd.GeoDataFrame, dict):

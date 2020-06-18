@@ -62,3 +62,5 @@ def merge_HE_and_OS_gdf():
 
 if __name__ == "__main__":
     connect_he_gdf()
+    connect_os_gdf()
+    merge_HE_and_OS_gdf()
