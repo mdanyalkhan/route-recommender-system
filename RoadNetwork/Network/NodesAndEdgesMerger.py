@@ -3,13 +3,13 @@ from RoadNetwork.Utilities.ColumnNames import *
 from GeoDataFrameAux import *
 
 
-class MergeNetworkDataFrames:
+class NodesAndEdgesMerger:
 
     def __init__(self, threshold=15):
         self.THRESHOLD = threshold
 
-    def merge_two_network_dataframes(self, base_edges_gdf: gpd.GeoDataFrame, base_nodes_gdf: gpd.GeoDataFrame,
-                                     aux_edges_gdf: gpd.GeoDataFrame, aux_nodes_gdf: gpd.GeoDataFrame) \
+    def merge_two_network_gdfs(self, base_edges_gdf: gpd.GeoDataFrame, base_nodes_gdf: gpd.GeoDataFrame,
+                               aux_edges_gdf: gpd.GeoDataFrame, aux_nodes_gdf: gpd.GeoDataFrame) \
             -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
         """
         Merges all aux-related dataframes into the base dataframe. This ensures all new connections between both
@@ -56,8 +56,8 @@ class MergeNetworkDataFrames:
         # Temporarily de-activate warning
         pd.options.mode.chained_assignment = None
 
-        roads_to_exclude = base_e[HE_ROAD_NO].unique()
-        aux_e["is_in_list"] = aux_e[HE_ROAD_NO].apply(lambda x: x in roads_to_exclude)
+        roads_to_exclude = base_e[STD_ROAD_NO].unique()
+        aux_e["is_in_list"] = aux_e[STD_ROAD_NO].apply(lambda x: x in roads_to_exclude)
 
         red_from_nodes = aux_e.loc[(aux_e["is_in_list"] == True) & (aux_e[FROM_NODE] != "None"), FROM_NODE]
         red_to_nodes = aux_e.loc[(aux_e["is_in_list"] == True) & (aux_e[TO_NODE] != "None"), TO_NODE]
@@ -260,12 +260,12 @@ class MergeNetworkDataFrames:
                 return True
 
         #If edge is connected to a node, then run through _search_node
-        if edge.TO_NODE.values[0] != HE_NONE:
+        if edge.TO_NODE.values[0] != STD_NONE:
             node_id = edge.TO_NODE.values[0]
             if self._search_node(node_id, edge_ind, aux_e, list_nodes):
                 return True
 
-        if edge.FROM_NODE.values[0] != HE_NONE:
+        if edge.FROM_NODE.values[0] != STD_NONE:
             node_id = edge.FROM_NODE.values[0]
             if self._search_node(node_id, edge_ind, aux_e, list_nodes):
                 return True

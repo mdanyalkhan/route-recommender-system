@@ -1,20 +1,20 @@
 
-#HE roads geodataframe column names
-HE_CLASS_NAME = "CLASS_NAME" #Use Class to determine whether A or M
-HE_ROAD_NO = "ROA_NUMBER" #Use roadNumber
-HE_SECT_LABEL = "SECT_LABEL" #Set to NULL
-HE_LOCATION = "LOCATION" #Set to NULL
-HE_START_DATE = "START_DATE" #Set to NULL
-HE_END_DATE = "S_END_DATE" #Set to NULL
-HE_LENGTH = "SEC_LENGTH" #Set to length
-HE_FUNCT_NAME = "FUNCT_NAME" #Use formOfWay
-HE_AREA_NAME = "AREA_NAME" #Set to NULL
-HE_DIRECTION = "DIREC_CODE" #Set to NULL
-HE_PERM_LANES = "PERM_LANES" #Set to NULL
-HE_CARRIAGEWAY_TYPE = "DUAL_NAME" #Set to formOfWay
-HE_ENVIRONMENT = "ENVIR_NAME" #set to NULL
-HE_AUTHORITY = "AUTHO_NAME" #Set to NULL
-HE_REFERENCE = "REFERENCE" #Use identifier
+#Standardised Roads geodataframe column names
+STD_CLASS_NAME = "CLASS_NAME"
+STD_ROAD_NO = "ROA_NUMBER"
+STD_SECT_LABEL = "SECT_LABEL"
+STD_LOCATION = "LOCATION"
+STD_START_DATE = "START_DATE"
+STD_END_DATE = "S_END_DATE"
+STD_LENGTH = "SEC_LENGTH"
+STD_FUNCT_NAME = "FUNCT_NAME"
+STD_AREA_NAME = "AREA_NAME"
+STD_DIRECTION = "DIREC_CODE"
+STD_PERM_LANES = "PERM_LANES"
+STD_CARRIAGEWAY_TYPE = "DUAL_NAME"
+STD_ENVIRONMENT = "ENVIR_NAME"
+STD_AUTHORITY = "AUTHO_NAME"
+STD_REFERENCE = "REFERENCE"
 
 #OS_open_roads geodataframe column names
 OS_ID = "identifier"
@@ -35,11 +35,11 @@ TO_NODE = "TO_NODE"
 GEOMETRY = "geometry"
 IS_DIRECTIONAL = "IS_DIREC"
 #Key string variables in HE dataframe
-HE_MAIN_CARRIAGEWAY = "Main Carriageway"
-HE_SLIP_ROAD = "Slip Road"
-HE_ROUNDABOUT = "Roundabout"
-HE_LAYBY = "Ox Bow Lay-by"
-HE_NONE = "None"
+STD_MAIN_CARRIAGEWAY = "Main Carriageway"
+STD_SLIP_ROAD = "Slip Road"
+STD_ROUNDABOUT = "Roundabout"
+STD_LAYBY = "Ox Bow Lay-by"
+STD_NONE = "None"
 
 #Key string variables in OS dataframe
 OS_MOTORWAY = "Motorway"

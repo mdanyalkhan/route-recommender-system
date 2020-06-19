@@ -3,7 +3,7 @@ from RoadNetwork import *
 
 
 class Test(TestCase):
-    test_object = HERoadsNetworkBuilder(connection_threshold=0.3, min_spacing_for_roundabout_resolution=1.99)
+    test_object = HENodesAndEdgesBuilder(connection_threshold=0.3, min_spacing_for_roundabout_resolution=1.99)
 
     def test_euclidean_distance(self):
         coord1 = (8, 7)

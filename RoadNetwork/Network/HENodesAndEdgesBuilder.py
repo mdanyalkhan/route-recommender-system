@@ -1,12 +1,11 @@
-from RoadNetwork.Network.RoadNetworkBuilder import *
+from RoadNetwork.Network.NodesAndEdgesBuilder import *
 import numpy as np
 
 
-class HERoadsNetworkBuilder(RoadNetworkBuilder):
+class HENodesAndEdgesBuilder(NodesAndEdgesBuilder):
 
-    def __init__(self, node_tag="", connection_threshold=10, min_spacing_for_roundabout_resolution=2):
+    def __init__(self, connection_threshold=10, min_spacing_for_roundabout_resolution=2):
 
-        super().__init__(node_tag)
         self.THRESHOLD = connection_threshold
         self.MIN_SPACING = min_spacing_for_roundabout_resolution
 
@@ -21,8 +20,8 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         #Include only references to main carriageways, slip roads and roundabouts
         roads_gdf = self._filter_by_funct_name(roads_gdf)
         # Connect all main carriageways and slip roads
-        roads_gdf, nodes = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, HE_MAIN_CARRIAGEWAY)
-        roads_gdf, nodes = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, HE_SLIP_ROAD)
+        roads_gdf, nodes = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, STD_MAIN_CARRIAGEWAY)
+        roads_gdf, nodes = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, STD_SLIP_ROAD)
 
         roads_gdf, nodes = self._nodes_between_main_carriageways(roads_gdf, nodes)
         # Assign nodes between main carriageways and slip roads
@@ -44,9 +43,9 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         :param roads_gdf: Original roads dataframe
         :return: Copy of filter roads dataframe.
         """
-        roads_gdf = roads_gdf.loc[(roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY) |
-                                  (roads_gdf[HE_FUNCT_NAME] == HE_SLIP_ROAD) |
-                                  (roads_gdf[HE_FUNCT_NAME] == HE_ROUNDABOUT)].copy()
+        roads_gdf = roads_gdf.loc[(roads_gdf[STD_FUNCT_NAME] == STD_MAIN_CARRIAGEWAY) |
+                                  (roads_gdf[STD_FUNCT_NAME] == STD_SLIP_ROAD) |
+                                  (roads_gdf[STD_FUNCT_NAME] == STD_ROUNDABOUT)].copy()
         roads_gdf.reset_index(drop=True, inplace=True)
         roads_gdf[INDEX] = roads_gdf.index
         return roads_gdf
@@ -61,15 +60,15 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         """
         print("Starting _connect_road_segments_based_on_funct_name")
 
-        funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == funct_name]
+        funct_gdf = roads_gdf.loc[roads_gdf[STD_FUNCT_NAME] == funct_name]
         road_numbers = funct_gdf.ROA_NUMBER.unique()
         directions = funct_gdf.DIREC_CODE.unique()
 
         # print(roads_gdf.loc[roads_gdf[INDEX] == 290])
         for road_number in road_numbers:
             for direction in directions:
-                carriageway = funct_gdf.loc[(funct_gdf[HE_ROAD_NO] == road_number) &
-                                            (funct_gdf[HE_DIRECTION] == direction)]
+                carriageway = funct_gdf.loc[(funct_gdf[STD_ROAD_NO] == road_number) &
+                                            (funct_gdf[STD_DIRECTION] == direction)]
 
                 for index, segment in carriageway.iterrows():
 
@@ -93,7 +92,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
     def _nodes_between_main_carriageways(self, roads_gdf: gpd.GeoDataFrame,
                                          node_dict: dict) -> (gpd.GeoDataFrame, dict):
 
-        carriageway_df = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY]
+        carriageway_df = roads_gdf.loc[roads_gdf[STD_FUNCT_NAME] == STD_MAIN_CARRIAGEWAY]
         carriageway_df = carriageway_df.loc[(pd.isna(roads_gdf[PREV_IND])) | (pd.isna(roads_gdf[NEXT_IND]))]
         carriageway_indices = carriageway_df.index
 
@@ -131,7 +130,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
         print("Starting _connect_main_carriageways_to_slip_roads")
 
-        slip_roads_df = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == HE_SLIP_ROAD]
+        slip_roads_df = roads_gdf.loc[roads_gdf[STD_FUNCT_NAME] == STD_SLIP_ROAD]
         slip_roads_df = slip_roads_df.loc[(pd.isna(roads_gdf[PREV_IND])) | (pd.isna(roads_gdf[NEXT_IND]))]
 
         for _, slip_road in slip_roads_df.iterrows():
@@ -166,7 +165,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         """
         print("Starting link_roundabouts_to_segments")
         # Select all roundabouts
-        roundabout_df = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == HE_ROUNDABOUT]
+        roundabout_df = roads_gdf.loc[roads_gdf[STD_FUNCT_NAME] == STD_ROUNDABOUT]
         # For every roundabout do the following:
         for _, roundabout in roundabout_df.iterrows():
             # Set representative coordinate of roundabout and set up node into node_dict
@@ -180,12 +179,12 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
             # Identify the closest of distances between the roundabout and
             # the FIRST_COORD and LAST_COORD of each road segment.
-            roads_gdf["distance_first"] = roads_gdf.loc[(roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY) |
-                                                        (roads_gdf[HE_FUNCT_NAME] == HE_SLIP_ROAD), FIRST_COORD] \
+            roads_gdf["distance_first"] = roads_gdf.loc[(roads_gdf[STD_FUNCT_NAME] == STD_MAIN_CARRIAGEWAY) |
+                                                        (roads_gdf[STD_FUNCT_NAME] == STD_SLIP_ROAD), FIRST_COORD] \
                 .apply(lambda x: self._is_connected_to_roundabout(centre_coord, x, roundabout_radius))
 
-            roads_gdf["distance_last"] = roads_gdf.loc[(roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY) |
-                                                       (roads_gdf[HE_FUNCT_NAME] == HE_SLIP_ROAD), LAST_COORD] \
+            roads_gdf["distance_last"] = roads_gdf.loc[(roads_gdf[STD_FUNCT_NAME] == STD_MAIN_CARRIAGEWAY) |
+                                                       (roads_gdf[STD_FUNCT_NAME] == STD_SLIP_ROAD), LAST_COORD] \
                 .apply(lambda x: self._is_connected_to_roundabout(centre_coord, x, roundabout_radius))
 
             roads_gdf.loc[roads_gdf["distance_first"] == True, FROM_NODE] = node_dict[N_NODE_ID][-1]
@@ -217,16 +216,16 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         else:
             COORD = LAST_COORD
 
-        carriageway_df = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY]
+        carriageway_df = roads_gdf.loc[roads_gdf[STD_FUNCT_NAME] == STD_MAIN_CARRIAGEWAY]
 
         if target_is_main_carriageway:
-            carriageway_name = carriageway_df.loc[target_index][HE_ROAD_NO]
-            carriageway_direction = carriageway_df.loc[target_index][HE_DIRECTION]
+            carriageway_name = carriageway_df.loc[target_index][STD_ROAD_NO]
+            carriageway_direction = carriageway_df.loc[target_index][STD_DIRECTION]
 
             carriageway_df = carriageway_df.drop(index=
-                                                 carriageway_df.index[(carriageway_df[HE_ROAD_NO] == carriageway_name) &
+                                                 carriageway_df.index[(carriageway_df[STD_ROAD_NO] == carriageway_name) &
                                                                       (carriageway_df[
-                                                                           HE_DIRECTION] == carriageway_direction)])
+                                                                           STD_DIRECTION] == carriageway_direction)])
         distances = carriageway_df[COORD].apply(lambda x: self._euclidean_distance(x, target_coord))
 
         min_dist = distances.min()
@@ -261,7 +260,7 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
             node_b = FROM_NODE
 
         if min_dist < self.THRESHOLD:
-            if roads_gdf.loc[min_index][node_b] != HE_NONE:
+            if roads_gdf.loc[min_index][node_b] != STD_NONE:
                 node_id = roads_gdf.loc[min_index][node_b]
                 roads_gdf.loc[roads_gdf[INDEX] == slip_road_index, node_a] = node_id
             else:
@@ -280,7 +279,14 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
 
     def _is_connected_to_roundabout(self, roundabout_coords: tuple, road_coords: tuple,
                                     radius: float) -> bool:
-
+        """
+        Checks if both coordinates are connected based on a pre-defined tolerance (a function of the radius of the
+        roundabout)
+        :param roundabout_coords: Central coordinates of the roundabout
+        :param road_coords: Coordinate to be examined for its proximity.
+        :param radius: Radius of roundabout
+        :return: True if both coordinates are considered 'connected', false otherwise.
+        """
         tolerance = radius + self.THRESHOLD
         distance = self._euclidean_distance(roundabout_coords, road_coords)
 

@@ -24,8 +24,8 @@ class TestOSOpenRoadsToHERoadsConverter(TestCase):
     def test_roundabout_renaming_is_correct(self):
 
         df = pd.DataFrame({
-            HE_ROAD_NO: ['A1', 'A1', 'A1', 'A1', 'M1', 'M1'],
-            HE_FUNCT_NAME: ["Roundabout", "Roundabout", "Roundabout", "Roundabout",
+            STD_ROAD_NO: ['A1', 'A1', 'A1', 'A1', 'M1', 'M1'],
+            STD_FUNCT_NAME: ["Roundabout", "Roundabout", "Roundabout", "Roundabout",
                             "Main Carriageway", "Main Carriageway"],
             GEOMETRY: [[(0, 0), (0, 0.5)], [(0, 0.5), (1, 0.5)], [(1, 0.5), (1, 0.0)],
                        [(1, 0.0), (0, 0)], [(0, 0), (-1, -1.2)], [(10.1, 9), (1, 0.5)]]
@@ -36,5 +36,5 @@ class TestOSOpenRoadsToHERoadsConverter(TestCase):
         gdf = gpd.GeoDataFrame(df, geometry= GEOMETRY)
 
         he_road_no_new = ['A1_0','A1_0','A1_0','A1_0','M1', 'M1']
-        gdf = OSOpenRoadsToHERoadsConverter()._rename_roundabouts(gdf)
-        self.assertEqual(gdf[HE_ROAD_NO].tolist(), he_road_no_new)
+        gdf = OSToToStdConverter()._rename_roundabouts(gdf)
+        self.assertEqual(gdf[STD_ROAD_NO].tolist(), he_road_no_new)

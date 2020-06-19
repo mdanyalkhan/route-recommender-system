@@ -1,5 +1,6 @@
 from GeoDataFrameAux import *
 from RoadNetwork.Utilities.ColumnNames import *
+from RoadNetwork.Conversion.ToStdConverter import *
 from shapely.geometry import LineString
 import geopandas as gpd
 import pandas as pd
@@ -7,18 +8,18 @@ import numpy as np
 import os
 from queue import Queue
 
-column_names_null = [HE_SECT_LABEL, HE_LOCATION, HE_START_DATE, HE_END_DATE, HE_AREA_NAME,
-                     HE_DIRECTION, HE_PERM_LANES, HE_ENVIRONMENT, HE_AUTHORITY]
+column_names_null = [STD_SECT_LABEL, STD_LOCATION, STD_START_DATE, STD_END_DATE, STD_AREA_NAME,
+                     STD_DIRECTION, STD_PERM_LANES, STD_ENVIRONMENT, STD_AUTHORITY]
 
 
-class OSOpenRoadsToHERoadsConverter(object):
+class OSToToStdConverter(ToStdConverter):
 
-    def convert_and_merge_to_HE_geoDataframe(self, folder_path: str, roads_to_exclude=None) -> gpd.GeoDataFrame:
+    def convert_multiple_and_merge_to_single_std_gdf(self, folder_path: str, roads_to_exclude=None) -> gpd.GeoDataFrame:
         """
-        Converts all OS geodataframes in a directory to a combined HE geodataframe
+        Converts all OS geodataframes in a directory to a combined standard geodataframe
         :param folder_path: directory path containing the OS geodataframes
         :param roads_to_exclude: Any roads to exclude from from the geodataframe
-        :return: HE geodataframe containing information from all the OS geodataframe
+        :return: A standardised geodataframe containing information from all the OS geodataframe
         """
         list_of_files = os.listdir(folder_path)
         list_of_shp = [folder_path + "/" + x for x in list_of_files if ".shp" in x]
@@ -26,9 +27,9 @@ class OSOpenRoadsToHERoadsConverter(object):
         i = 0
         n = len(list_of_shp)
         for shp_path in list_of_shp:
-            print("iteration: " + str(i) + " out of " + str(n))
+            print("iteration: " + str(i+1) + " out of " + str(n+1))
             os_gdf = gpd.read_file(shp_path)
-            converted_df = self.convert_to_HE_dataframe(os_gdf, roads_to_exclude)
+            converted_df = self.convert_to_std_df(os_gdf, roads_to_exclude)
             if merged_df is None:
                 merged_df = converted_df
             else:
@@ -41,14 +42,33 @@ class OSOpenRoadsToHERoadsConverter(object):
 
         return merged_gdf
 
-    def convert_to_HE_geoDataframe(self, os_gdf: gpd.GeoDataFrame, roads_to_exclude = None) -> gpd.GeoDataFrame:
+    def convert_multiple_to_std_gdfs(self, in_path: str, out_path: str, roads_to_exclude=None) -> None:
+        """
+        Converts multiple shp geospatial roads dataframes into the standard GeoDataFrame used for this project.
+        The results are saved in the out_path directory
+        :param in_path: File path containing all shp files that are to be converted
+        :param out_path: File path in which the converted standard dataframes are to be saved
+        :param roads_to_exclude: Any roads to be excluded (should be in list form)
+        """
+        list_of_files = os.listdir(in_path)
+        shp_full_paths_in = [in_path + "/" + x for x in list_of_files if ".shp" in x]
+        shp_full_paths_out = [out_path + "/" + x for x in list_of_files if ".shp" in x]
+
+        n = len(shp_full_paths_in)
+        for i in range(n):
+            print("iteration: " + str(i+1) + " out of " + str(n+1))
+            os_gdf = gpd.read_file(shp_full_paths_in[i])
+            converted_df = self.convert_to_std_gdf(os_gdf, roads_to_exclude)
+            converted_df.to_file(shp_full_paths_out[i])
+
+    def convert_to_std_gdf(self, gdf: gpd.GeoDataFrame, roads_to_exclude = None) -> gpd.GeoDataFrame:
         """
         Converts a single os geodataframe to an equivalent HE geodataframe
-        :param os_gdf:
+        :param gdf:
         :param roads_to_exclude:
         :return: HE geodataframe converted from the OS geodataframe
         """
-        converted_df = self.convert_to_HE_dataframe(os_gdf, roads_to_exclude)
+        converted_df = self.convert_to_std_df(gdf, roads_to_exclude)
 
         # Insert geometry
         converted_gdf = gpd.GeoDataFrame(converted_df, geometry=GEOMETRY)
@@ -56,7 +76,7 @@ class OSOpenRoadsToHERoadsConverter(object):
 
         return converted_gdf
 
-    def convert_to_HE_dataframe(self, os_gdf: gpd.GeoDataFrame, roads_to_exclude=None) -> pd.DataFrame:
+    def convert_to_std_df(self, os_gdf: gpd.GeoDataFrame, roads_to_exclude=None) -> pd.DataFrame:
         """
         Converts the OS geodataframe to a dataframe compatible to HE's dataframe
         :param os_gdf: OS_open roads geodataframe
@@ -69,7 +89,9 @@ class OSOpenRoadsToHERoadsConverter(object):
         pd.options.mode.chained_assignment = None
 
         # Select features that are only motorways and A roads
-        sel_gdf = os_gdf.loc[(os_gdf[OS_CLASS] == OS_MOTORWAY) | (os_gdf[OS_CLASS] == OS_A_ROAD)]
+        sel_gdf = os_gdf.loc[(os_gdf[OS_CLASS] == OS_MOTORWAY) | (os_gdf[OS_CLASS] == OS_A_ROAD)].copy()
+        sel_gdf.reset_index(drop=True, inplace=True)
+
 
         # # OPTIONALLY select features that are not a duplicate of roads already in SRN
         if roads_to_exclude:
@@ -84,24 +106,24 @@ class OSOpenRoadsToHERoadsConverter(object):
 
         # Insert Class Name
         class_names = sel_gdf[OS_CLASS].apply(self._insert_class_name)
-        he_df.insert(0, HE_CLASS_NAME, class_names.values)
+        he_df.insert(0, STD_CLASS_NAME, class_names.values)
 
         # Insert Road Number
-        he_df.insert(1, HE_ROAD_NO, sel_gdf[OS_ROAD_NO].values)
+        he_df.insert(1, STD_ROAD_NO, sel_gdf[OS_ROAD_NO].values)
 
         # Insert funct_name
         funct_names = sel_gdf[OS_FUNCT_NAME].apply(self._insert_funct_name)
-        he_df.insert(6, HE_FUNCT_NAME, funct_names.values)
+        he_df.insert(6, STD_FUNCT_NAME, funct_names.values)
 
         # Insert length
-        he_df.insert(6, HE_LENGTH, sel_gdf[OS_LENGTH].values)
+        he_df.insert(6, STD_LENGTH, sel_gdf[OS_LENGTH].values)
 
         # Insert carriageway type
-        he_df.insert(he_df.columns.tolist().index(HE_ENVIRONMENT), HE_CARRIAGEWAY_TYPE,
+        he_df.insert(he_df.columns.tolist().index(STD_ENVIRONMENT), STD_CARRIAGEWAY_TYPE,
                      sel_gdf[OS_FUNCT_NAME].values)
 
         # Insert reference
-        he_df.insert(len(he_df.columns.tolist()), HE_REFERENCE,
+        he_df.insert(len(he_df.columns.tolist()), STD_REFERENCE,
                      sel_gdf[OS_ID].values)
 
         #Insert geometry
@@ -126,7 +148,7 @@ class OSOpenRoadsToHERoadsConverter(object):
         elif class_name == OS_A_ROAD:
             return "A"
         else:
-            return HE_NONE
+            return STD_NONE
 
     def _insert_funct_name(self, funct_name: str) -> str:
         """
@@ -135,13 +157,13 @@ class OSOpenRoadsToHERoadsConverter(object):
         :return: Either HE main carriageway, slip road, or roundabout, otherwise None
         """
         if funct_name in OS_MAIN_CARRIAGEWAY_LIST:
-            return HE_MAIN_CARRIAGEWAY
+            return STD_MAIN_CARRIAGEWAY
         elif funct_name == OS_SLIP_ROAD:
-            return HE_SLIP_ROAD
+            return STD_SLIP_ROAD
         elif funct_name == OS_ROUNDABOUT:
-            return HE_ROUNDABOUT
+            return STD_ROUNDABOUT
         else:
-            return HE_NONE
+            return STD_NONE
 
     def _convert_LineString_to_2D(self, coords_3D) -> list:
         """
@@ -172,7 +194,7 @@ class OSOpenRoadsToHERoadsConverter(object):
         he_gdf.insert(loc=0, column=INDEX, value=he_gdf.index)
 
         he_gdf["IS_RENAMED"] = False
-        roundabout_df = he_gdf.loc[he_gdf[HE_FUNCT_NAME] == HE_ROUNDABOUT]
+        roundabout_df = he_gdf.loc[he_gdf[STD_FUNCT_NAME] == STD_ROUNDABOUT]
         roundabout_names = {}
         roundabout_df_size = len(roundabout_df)
 
@@ -184,15 +206,15 @@ class OSOpenRoadsToHERoadsConverter(object):
                 continue
 
             roundabout_names = self._set_roundabout_name(roundabout_names, segment.ROA_NUMBER)
-            he_gdf.at[index, HE_ROAD_NO] = roundabout_names[segment.ROA_NUMBER][-1]
+            he_gdf.at[index, STD_ROAD_NO] = roundabout_names[segment.ROA_NUMBER][-1]
             he_gdf.at[index, "IS_RENAMED"] = True
 
             roundabout_queue = Queue()
-            roundabout_queue.put(segment)
+            roundabout_queue.put(index)
 
             while not roundabout_queue.empty():
-                current_segment = roundabout_queue.get()
-                current_index = current_segment.INDEX
+                current_index = roundabout_queue.get()
+                current_segment = roundabout_df.loc[current_index, :]
                 first_coord = current_segment.FIRST_COORD
                 last_coord = current_segment.LAST_COORD
                 set_of_target_coords = [first_coord, last_coord]
@@ -205,12 +227,14 @@ class OSOpenRoadsToHERoadsConverter(object):
                     if len(connected_segments) == 1:
                         if not connected_segments["IS_RENAMED"].values[0]:
                             connecting_index = connected_segments[INDEX].values[0]
-                            road_ref = he_gdf.at[connecting_index, HE_ROAD_NO]
-                            he_gdf.at[connecting_index, HE_ROAD_NO] = roundabout_names[road_ref][-1]
-                            he_gdf.at[connecting_index, "IS_RENAMED"] = True
-                            roundabout_queue.put(connected_segments.iloc[0, :])
 
-                roundabout_df = he_gdf.loc[he_gdf[HE_FUNCT_NAME] == HE_ROUNDABOUT]
+                            road_ref = he_gdf.at[connecting_index, STD_ROAD_NO]
+                            he_gdf.at[connecting_index, STD_ROAD_NO] = roundabout_names[road_ref][-1]
+                            he_gdf.at[connecting_index, "IS_RENAMED"] = True
+
+                            roundabout_queue.put(connecting_index)
+
+                    roundabout_df = he_gdf.loc[he_gdf[STD_FUNCT_NAME] == STD_ROUNDABOUT]
 
         he_gdf.drop([INDEX, FIRST_COORD, LAST_COORD, "IS_RENAMED"], axis=1, inplace=True)
 

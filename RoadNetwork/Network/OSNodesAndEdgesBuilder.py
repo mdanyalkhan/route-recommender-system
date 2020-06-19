@@ -1,14 +1,9 @@
-from RoadNetwork.Network.RoadNetworkBuilder import *
-import numpy as np
-from shapely.ops import linemerge
+from RoadNetwork.Network.NodesAndEdgesBuilder import *
+
 from queue import Queue
 
 
-class OSRoadsNetworkBuilder(RoadNetworkBuilder):
-
-    def __init__(self, node_tag=""):
-
-        super().__init__(node_tag)
+class OSNodesAndEdgesBuilder(NodesAndEdgesBuilder):
 
     def _connect_all_road_segments(self, roads_gdf: gpd.GeoDataFrame, nodes: dict) \
             -> (gpd.GeoDataFrame, dict):
@@ -34,7 +29,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         """
         VISITED = 'visited'
         roads_gdf[VISITED] = False
-        funct_indices = roads_gdf.index[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
+        funct_indices = roads_gdf.index[roads_gdf[STD_FUNCT_NAME] != STD_ROUNDABOUT]
 
         for i in funct_indices:
 
@@ -83,7 +78,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         accordingly
         :return: Updated node_dict and roads_gdf
         """
-        funct_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
+        funct_gdf = roads_gdf.loc[roads_gdf[STD_FUNCT_NAME] != STD_ROUNDABOUT]
         connected_to_road_a = funct_gdf.loc[funct_gdf[FIRST_COORD] == target_coord]
         connected_to_road_b = funct_gdf.loc[funct_gdf[LAST_COORD] == target_coord]
 
@@ -99,7 +94,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
             NODE_A = FROM_NODE
 
         if len(connected_to_road_a) == 1 and len(connected_to_road_b) == 0 \
-                and connected_to_road_a[HE_ROAD_NO].values[0] == road_no:
+                and connected_to_road_a[STD_ROAD_NO].values[0] == road_no:
 
             connecting_index = int(connected_to_road_a[INDEX].values[0])
             roads_gdf.at[index, INDEX_A] = connecting_index
@@ -111,7 +106,7 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
             queue.put(connecting_index)
 
         elif len(connected_to_road_a) == 0 and len(connected_to_road_b) == 1 \
-                and connected_to_road_b[HE_ROAD_NO].values[0] == road_no:
+                and connected_to_road_b[STD_ROAD_NO].values[0] == road_no:
 
             connecting_index = int(connected_to_road_b[INDEX].values[0])
             roads_gdf.at[index, INDEX_A] = connecting_index
@@ -140,12 +135,12 @@ class OSRoadsNetworkBuilder(RoadNetworkBuilder):
         :param node_dict: Dictionary containing list of node IDs
         :return: returns updated roads gdf and node dict
         """
-        roundabouts_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] == HE_ROUNDABOUT]
-        other_roads_gdf = roads_gdf.loc[roads_gdf[HE_FUNCT_NAME] != HE_ROUNDABOUT]
-        roundabouts_names = roundabouts_gdf[HE_ROAD_NO].unique()
+        roundabouts_gdf = roads_gdf.loc[roads_gdf[STD_FUNCT_NAME] == STD_ROUNDABOUT]
+        other_roads_gdf = roads_gdf.loc[roads_gdf[STD_FUNCT_NAME] != STD_ROUNDABOUT]
+        roundabouts_names = roundabouts_gdf[STD_ROAD_NO].unique()
 
         for name in roundabouts_names:
-            roundabout_gdf = roundabouts_gdf.loc[roundabouts_gdf[HE_ROAD_NO] == name]
+            roundabout_gdf = roundabouts_gdf.loc[roundabouts_gdf[STD_ROAD_NO] == name]
 
             roundabout_coords = self._coords_of_os_roundabout(roundabout_gdf)
             mean_coord = self._calculate_mean_roundabout_pos(roundabout_coords)
