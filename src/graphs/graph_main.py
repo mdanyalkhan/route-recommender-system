@@ -7,7 +7,6 @@ import os
 #TODO: Set up directory path containing completed conversion of OS data
 #TODO: Set up function that runs through each OS Data to be converted into HE Dataframe
 #TODO: Set up function that builds a Network dataframe for each OS dataframe.
-#TODO: Update HERoadsNetworkBuilder to include additional 'source' column
 #TODO: Set up new function in HERoadsNetworkBuilder to add in OS Data Networks into SRN
 #TODO: Update HERoadsNetworkBuilder to consider what to do in the case where the direction is not disclosed
 #TODO: Set up another class that combines OS Data only
@@ -19,7 +18,7 @@ def connect_he_gdf():
     he_converted_nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/nodes.shp"
 
     he_gdf = gpd.read_file(he_original_path)
-    edges, nodes = HERoadsNetworkBuilder(node_tag="SRN").build_road_network_gdf(he_gdf)
+    edges, nodes = HERoadsNetworkBuilder(node_tag="SRN").build_road_network_gdf(he_gdf, is_directional=True)
 
     edges.to_file(he_converted_edges_path)
     nodes.to_file(he_converted_nodes_path)
@@ -42,7 +41,8 @@ def connect_os_gdf():
     os_edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_edges.shp"
     os_nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_nodes.shp"
     os_converted_gdf = gpd.read_file(os_converted_path)
-    os_edges_gdf, os_nodes_gdf = OSRoadsNetworkBuilder(node_tag="SJCLIP").build_road_network_gdf(os_converted_gdf)
+    os_edges_gdf, os_nodes_gdf = OSRoadsNetworkBuilder(node_tag="SJCLIP").build_road_network_gdf(os_converted_gdf,
+                                                                                                 is_directional=False)
 
     os_edges_gdf.to_file(os_edges_path)
     os_nodes_gdf.to_file(os_nodes_path)
@@ -69,4 +69,4 @@ def merge_HE_and_OS_gdf():
 
 
 if __name__ == "__main__":
-    connect_he_gdf()
+    connect_os_gdf()

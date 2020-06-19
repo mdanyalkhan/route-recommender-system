@@ -10,7 +10,7 @@ class RoadNetworkBuilder(ABC):
     def __init__(self, node_tag = ""):
         self.node_tag = node_tag
 
-    def build_road_network_gdf(self, roads_gdf: gpd.GeoDataFrame) -> (gpd.GeoDataFrame, dict):
+    def build_road_network_gdf(self, roads_gdf: gpd.GeoDataFrame, is_directional: bool) -> (gpd.GeoDataFrame, dict):
         """
         Modifies the roads_gdf with extra columns indicating edges and nodes
         :param roads_gdf: Roads geodataframe
@@ -20,6 +20,8 @@ class RoadNetworkBuilder(ABC):
         print("Build gdf of the road network")
         # Insert index as column
         roads_gdf.insert(loc=0, column=INDEX, value=roads_gdf.index)
+        #Insert column indicating if edges are directional
+        roads_gdf.insert(loc=1, column=IS_DIRECTIONAL, value=is_directional)
         # Set up link columns for each road segment (much like block linking)
         roads_gdf[PREV_IND] = pd.NA
         roads_gdf[NEXT_IND] = pd.NA

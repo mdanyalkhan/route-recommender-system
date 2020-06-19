@@ -33,7 +33,7 @@ LAST_COORD = "LAST_COORD"
 FROM_NODE = "FROM_NODE"
 TO_NODE = "TO_NODE"
 GEOMETRY = "geometry"
-
+IS_DIRECTIONAL = "IS_DIREC"
 #Key string variables in HE dataframe
 HE_MAIN_CARRIAGEWAY = "Main Carriageway"
 HE_SLIP_ROAD = "Slip Road"
