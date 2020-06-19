@@ -38,6 +38,7 @@ GEOMETRY = "geometry"
 HE_MAIN_CARRIAGEWAY = "Main Carriageway"
 HE_SLIP_ROAD = "Slip Road"
 HE_ROUNDABOUT = "Roundabout"
+HE_LAYBY = "Ox Bow Lay-by"
 HE_NONE = "None"
 
 #Key string variables in OS dataframe

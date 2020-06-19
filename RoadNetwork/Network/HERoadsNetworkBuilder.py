@@ -18,6 +18,8 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         :return: Returns updated roads gdf and nodes dict
         """
 
+        #Include only references to main carriageways, slip roads and roundabouts
+        roads_gdf = self._filter_by_funct_name(roads_gdf)
         # Connect all main carriageways and slip roads
         roads_gdf, nodes = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, HE_MAIN_CARRIAGEWAY)
         roads_gdf, nodes = self._connect_road_segments_based_on_funct_name(roads_gdf, nodes, HE_SLIP_ROAD)
@@ -32,7 +34,22 @@ class HERoadsNetworkBuilder(RoadNetworkBuilder):
         # set new nodes for all remaining ends of roads that are not connected
         roads_gdf, nodes = self._assign_nodes_to_dead_end_roads(roads_gdf, nodes)
 
+
         return roads_gdf, nodes
+
+    def _filter_by_funct_name(self, roads_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+        """
+        Only includes roads of type main carriageways, slip road and roundabout, removes all other road types
+        such as laybys
+        :param roads_gdf: Original roads dataframe
+        :return: Copy of filter roads dataframe.
+        """
+        roads_gdf = roads_gdf.loc[(roads_gdf[HE_FUNCT_NAME] == HE_MAIN_CARRIAGEWAY) |
+                                  (roads_gdf[HE_FUNCT_NAME] == HE_SLIP_ROAD) |
+                                  (roads_gdf[HE_FUNCT_NAME] == HE_ROUNDABOUT)].copy()
+        roads_gdf.reset_index(drop=True, inplace=True)
+        roads_gdf[INDEX] = roads_gdf.index
+        return roads_gdf
 
     def _connect_road_segments_based_on_funct_name(self, roads_gdf: gpd.GeoDataFrame, node_dict: dict, funct_name: str) \
             -> (gpd.GeoDataFrame, dict):

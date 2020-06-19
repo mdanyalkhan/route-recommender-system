@@ -4,6 +4,14 @@ import geopandas as gpd
 from RoadNetwork import *
 import os
 
+#TODO: Set up directory path containing completed conversion of OS data
+#TODO: Set up function that runs through each OS Data to be converted into HE Dataframe
+#TODO: Set up function that builds a Network dataframe for each OS dataframe.
+#TODO: Update HERoadsNetworkBuilder to include additional 'source' column
+#TODO: Set up new function in HERoadsNetworkBuilder to add in OS Data Networks into SRN
+#TODO: Update HERoadsNetworkBuilder to consider what to do in the case where the direction is not disclosed
+#TODO: Set up another class that combines OS Data only
+#TODO: Set up functions that converts the network dataframe into a Networkx object
 
 def connect_he_gdf():
     he_original_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/clipped_roads.shp"
@@ -62,5 +70,3 @@ def merge_HE_and_OS_gdf():
 
 if __name__ == "__main__":
     connect_he_gdf()
-    connect_os_gdf()
-    merge_HE_and_OS_gdf()
