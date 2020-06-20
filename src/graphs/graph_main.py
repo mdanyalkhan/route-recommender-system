@@ -94,13 +94,14 @@ def build_multiple_networks_from_os(in_path, out_path):
         node_gdf.to_file(shp_full_paths_out[i] + "/" + shp_tags[i] + "_nodes.shp")
 
 
-def merge_multiple_network_dataframes(base_path, aux_path, out_path):
-    pass
-
 
 if __name__ == "__main__":
-    base_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test/base"
-    aux_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test/aux"
-    RoadNetworkBuilder(HENodesAndEdgesBuilder(), OSNodesAndEdgesBuilder()).build_network(base_path, aux_path,
-                                                                                         is_base_conversion_required=False,
-                                                                                         is_aux_conversion_required=True)
+
+    # merge_HE_and_OS_gdf()
+    # base_prog_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country/out/base/connected"
+    # aux_prog_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country/out/aux/connected"
+    final_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country/out/final"
+    RoadNetworkBuilder().create_graph(final_path)
+    # base_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country/base"
+    # aux_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country/aux"
+    # RoadNetworkBuilder().build_network(base_path, aux_path, is_base_conversion_required=False, is_aux_conversion_required=True)

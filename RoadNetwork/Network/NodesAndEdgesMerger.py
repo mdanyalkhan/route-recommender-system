@@ -1,6 +1,7 @@
 from math import sqrt
 from RoadNetwork.Utilities.ColumnNames import *
 from GeoDataFrameAux import *
+from queue import Queue
 
 
 class NodesAndEdgesMerger:
@@ -209,12 +210,15 @@ class NodesAndEdgesMerger:
 
         connected_nodes = base_n[N_NODE_ID].tolist()
         indices = aux_e.INDEX.values.tolist()
-        aux_e[IN_NETWORK] = False
-        aux_e[VISITED] = 0
+        aux_e[IN_NETWORK] = 0
+        aux_e[VISITED] = False
 
         for index in indices:
+            # if aux_e.loc[index][STD_FUNCT_NAME] == STD_ROUNDABOUT:
+            #     continue
             if aux_e.loc[index][IN_NETWORK] == 0:
-                if self._search_road_network(index, aux_e, connected_nodes):
+                aux_e = self._search_road_network_iter(index, aux_e, aux_n, connected_nodes)
+                if len(aux_e.loc[(aux_e[VISITED] == True) & (aux_e[IN_NETWORK] == 1)]) > 0:
                     aux_e.loc[aux_e[VISITED] == True, IN_NETWORK] = 1
                 else:
                     aux_e.loc[aux_e[VISITED] == True, IN_NETWORK] = -1
@@ -226,6 +230,83 @@ class NodesAndEdgesMerger:
 
         return aux_e, aux_n
 
+    def _search_road_network_iter(self, edge_ind: int, aux_e: gpd.GeoDataFrame, aux_n: gpd.GeoDataFrame,
+                                  list_nodes: list) -> gpd.GeoDataFrame:
+        VISITED = "visited"
+        IN_NETWORK = "in_network"
+
+        index_queue = Queue()
+        index_queue.put(edge_ind)
+
+        while not index_queue.empty():
+            curr_ind = index_queue.get()
+
+            edge = aux_e.loc[aux_e[INDEX] == curr_ind]
+            if edge.visited.values[0]:
+                continue
+
+            aux_e.at[aux_e[INDEX] == curr_ind, VISITED] = True
+
+            # Check if current edge is linked to another edge, and recursively search
+            if not pd.isna(edge.NEXT_IND).values[0]:
+                next_edge = aux_e.loc[aux_e[INDEX] == int(edge.NEXT_IND.values[0])]
+                if next_edge.in_network.values[0] == 1:
+                    aux_e.at[aux_e[INDEX] == curr_ind, IN_NETWORK] = 1
+                elif not next_edge.visited.values[0]:
+                    index_queue.put(int(edge.NEXT_IND.values[0]))
+
+            if not pd.isna(edge.PREV_IND).values[0]:
+                prev_edge = aux_e.loc[aux_e[INDEX] == int(edge.PREV_IND.values[0])]
+                if prev_edge.in_network.values[0] == 1:
+                    aux_e.at[aux_e[INDEX] == curr_ind, IN_NETWORK] = 1
+                elif not prev_edge.visited.values[0]:
+                    index_queue.put(int(edge.PREV_IND.values[0]))
+
+
+            # If edge is connected to a node, then run through _search_node
+            if edge.TO_NODE.values[0] != STD_NONE:
+                node_id = edge.TO_NODE.values[0]
+                aux_e, index_queue = self._search_node_iter(node_id, curr_ind, aux_e, aux_n, list_nodes, index_queue)
+
+            if edge.FROM_NODE.values[0] != STD_NONE:
+                node_id = edge.FROM_NODE.values[0]
+                aux_e, index_queue = self._search_node_iter(node_id, curr_ind, aux_e, aux_n, list_nodes, index_queue)
+
+        return aux_e
+
+    def _search_node_iter(self, node_id: str, curr_ind: int, aux_e: gpd.GeoDataFrame, aux_n: gpd.GeoDataFrame,
+                          list_nodes: list, index_queue: Queue) -> (gpd.GeoDataFrame, Queue):
+        """
+        Checks if node is part of list_nodes, and returns true. Otherwise recusively searches through next
+        unvisited connected edge, returns false otherwise.
+        :param node_id: ID of node to be examined
+        :param curr_ind: Index of edge that the node is connected to
+        :param aux_e: dataframe of edges of the network that is being assessed
+        :param list_nodes: List of nodes that to be used as a basis to check if the edge is connected
+        :return: True if node is in list_nodes, otherwise if all edges connected to node have been visited, then
+        returns false
+        """
+        VISITED = "visited"
+        IN_NETWORK = "in_network"
+
+        if node_id in list_nodes:
+            aux_e.at[aux_e[INDEX] == curr_ind, IN_NETWORK] = 1
+        else:
+
+            connected_edges = aux_e.loc[(aux_e[VISITED] == False) & ((aux_e[FROM_NODE] == node_id) |
+                                                                     (aux_e[TO_NODE] == node_id))]
+            connected_edges = connected_edges[connected_edges[INDEX] != curr_ind]
+
+            if len(connected_edges) > 0:
+                # next_edge_index = connected_edges.iloc[0][INDEX]
+                next_edge_indices = connected_edges.INDEX.values
+                if len(connected_edges.loc[connected_edges[IN_NETWORK] == 1]) > 0:
+                    aux_e.at[aux_e[INDEX] == curr_ind, IN_NETWORK] = 1
+                else:
+                    for next_edge_index in next_edge_indices:
+                        index_queue.put(next_edge_index)
+        return aux_e, index_queue
+
     def _search_road_network(self, edge_ind: int, aux_e: gpd.GeoDataFrame, list_nodes: list) -> bool:
         """
         Searches through network recusively starting at edge_ind and returns true if connected to a node in list_node
@@ -236,13 +317,14 @@ class NodesAndEdgesMerger:
         """
         VISITED = "visited"
 
-        #Mark the current edge as visited
+        # Mark the current edge as visited
+        print(edge_ind)
         aux_e.at[aux_e[INDEX] == edge_ind, VISITED] = True
-        edge = aux_e[aux_e[INDEX] == edge_ind]
+        edge = aux_e.loc[aux_e[INDEX] == edge_ind]
 
-        #Check if current edge is linked to another edge, and recursively search
+        # Check if current edge is linked to another edge, and recursively search
         if not pd.isna(edge.NEXT_IND).values[0]:
-            next_edge = aux_e[aux_e[INDEX] == int(edge.NEXT_IND.values[0])]
+            next_edge = aux_e.loc[aux_e[INDEX] == int(edge.NEXT_IND.values[0])]
             if not next_edge.visited.values[0]:
                 if self._search_road_network(int(edge.NEXT_IND.values[0]), aux_e, list_nodes):
                     return True
@@ -250,7 +332,7 @@ class NodesAndEdgesMerger:
                 return True
 
         if not pd.isna(edge.PREV_IND).values[0]:
-            prev_edge = aux_e[aux_e[INDEX] == int(edge.PREV_IND.values[0])]
+            prev_edge = aux_e.loc[aux_e[INDEX] == int(edge.PREV_IND.values[0])]
             if not prev_edge.visited.values[0]:
                 if self._search_road_network(int(edge.PREV_IND.values[0]), aux_e, list_nodes):
                     return True
@@ -259,7 +341,7 @@ class NodesAndEdgesMerger:
             elif prev_edge.in_network.values[0] == 1:
                 return True
 
-        #If edge is connected to a node, then run through _search_node
+        # If edge is connected to a node, then run through _search_node
         if edge.TO_NODE.values[0] != STD_NONE:
             node_id = edge.TO_NODE.values[0]
             if self._search_node(node_id, edge_ind, aux_e, list_nodes):
@@ -289,7 +371,7 @@ class NodesAndEdgesMerger:
             return True
         else:
             connected_edges = aux_e.loc[(aux_e[VISITED] == False) & ((aux_e[FROM_NODE] == node_id) |
-                                                                       (aux_e[TO_NODE] == node_id))]
+                                                                     (aux_e[TO_NODE] == node_id))]
             connected_edges = connected_edges[connected_edges[INDEX] != edge_ind]
 
             if len(connected_edges) > 0:

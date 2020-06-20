@@ -122,6 +122,7 @@ class RoadNetworkBuilder:
         aux_folders = [directory for directory in os.listdir(aux_path) if not directory.startswith('.')]
 
         for folder in aux_folders:
+            print("Running through: ", folder)
             aux_e = gpd.read_file(aux_path + "/" + folder + "/" + folder + "_edges.shp")
             aux_n = gpd.read_file(aux_path + "/" + folder + "/" + folder + "_nodes.shp")
             base_e, base_n = self.merger.merge_two_network_gdfs(base_e, base_n, aux_e, aux_n)

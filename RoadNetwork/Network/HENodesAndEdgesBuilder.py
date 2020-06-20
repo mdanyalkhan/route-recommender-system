@@ -4,7 +4,7 @@ import numpy as np
 
 class HENodesAndEdgesBuilder(NodesAndEdgesBuilder):
 
-    def __init__(self, connection_threshold=10, min_spacing_for_roundabout_resolution=2):
+    def __init__(self, connection_threshold=15, min_spacing_for_roundabout_resolution=2):
 
         self.THRESHOLD = connection_threshold
         self.MIN_SPACING = min_spacing_for_roundabout_resolution
