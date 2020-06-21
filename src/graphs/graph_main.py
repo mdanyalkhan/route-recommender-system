@@ -2,6 +2,7 @@ from src.utilities.aux_func import *
 from src.utilities.file_directories import FileDirectories as fd
 import geopandas as gpd
 from RoadNetwork import *
+import RoadGraph
 import os
 
 # TODO: Update HERoadsNetworkBuilder to consider what to do in the case where the direction is not disclosed
@@ -97,15 +98,6 @@ def build_multiple_networks_from_os(in_path, out_path):
 
 if __name__ == "__main__":
 
-    base_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country_os/base"
-    aux_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country_os/aux"
-
-    roadNetworkBuilder = RoadNetworkBuilder(base_builder=OSNodesAndEdgesBuilder(),
-                                            aux_builder=OSNodesAndEdgesBuilder(),
-                                            base_converter=OSToToStdConverter(),
-                                            aux_converter=OSToToStdConverter(),
-                                            merger=NodesAndEdgesMerger())
-
-    roadNetworkBuilder.build_network(base_path, aux_path, is_base_conversion_required=True, is_base_directional=False,
-                                     is_aux_conversion_required=True, is_aux_directional=False)
-    print(base_path)
+    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/OS_roads.shp"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/OS_converted.shp"
+    RoadGraph.OSToStdGdfConverter().convert_to_std_gdf_from_path(in_path, out_path)
