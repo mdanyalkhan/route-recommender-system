@@ -167,7 +167,7 @@ class HENodesAndEdgesBuilder(NodesAndEdgesBuilder):
         # Select all roundabouts
         roundabout_df = roads_gdf.loc[roads_gdf[STD_FUNCT_NAME] == STD_ROUNDABOUT]
         # For every roundabout do the following:
-        for _, roundabout in roundabout_df.iterrows():
+        for index, roundabout in roundabout_df.iterrows():
             # Set representative coordinate of roundabout and set up node into node_dict
             roundabout_coords = extract_list_of_coords_from_geom_object(roundabout[GEOMETRY])
             centre_coord = self._calculate_mean_roundabout_pos(roundabout_coords)
@@ -176,6 +176,9 @@ class HENodesAndEdgesBuilder(NodesAndEdgesBuilder):
             # roundabout_refined_coords = self._increase_resolution_of_line(roundabout_coords)
             node_dict = self._assign_new_node_id(node_dict, centre_coord, N_ROUNDABOUT,
                                                  roundabout_extent=roundabout_radius)
+
+            roads_gdf.loc[index, FROM_NODE] = node_dict[N_NODE_ID][-1]
+            roads_gdf.loc[index, TO_NODE] = node_dict[N_NODE_ID][-1]
 
             # Identify the closest of distances between the roundabout and
             # the FIRST_COORD and LAST_COORD of each road segment.

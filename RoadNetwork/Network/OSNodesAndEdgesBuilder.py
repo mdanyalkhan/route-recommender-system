@@ -152,6 +152,9 @@ class OSNodesAndEdgesBuilder(NodesAndEdgesBuilder):
                 first_coord = segment.FIRST_COORD
                 last_coord = segment.LAST_COORD
 
+                roads_gdf.loc[roads_gdf[INDEX] == index, FROM_NODE] = node_dict[N_NODE_ID][-1]
+                roads_gdf.loc[roads_gdf[INDEX] == index, TO_NODE] = node_dict[N_NODE_ID][-1]
+
                 connected_at_start = other_roads_gdf.loc[(other_roads_gdf[FIRST_COORD] == first_coord) |
                                                          (other_roads_gdf[FIRST_COORD] == last_coord)]
 

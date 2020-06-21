@@ -145,7 +145,7 @@ class RoadNetworkBuilder:
         current_segment = roads_df.loc[roads_df["INDEX"] == road_index]
         current_segment = current_segment.iloc[0]
 
-        coords = extract_list_of_coords_from_geom_object(current_segment.geometry)
+        # coords = extract_list_of_coords_from_geom_object(current_segment.geometry)
         length = current_segment.SEC_LENGTH
         road_segment_index = [road_index]
 
@@ -157,7 +157,7 @@ class RoadNetworkBuilder:
         while not pd.isna(current_segment.NEXT_IND):
             current_segment = roads_df.loc[roads_df[INDEX] == int(current_segment.NEXT_IND)]
             current_segment = current_segment.iloc[0]
-            coords += extract_list_of_coords_from_geom_object(current_segment.geometry)
+            # coords += extract_list_of_coords_from_geom_object(current_segment.geometry)
             length += current_segment.SEC_LENGTH
             road_segment_index.extend([current_segment.INDEX])
 
@@ -165,7 +165,7 @@ class RoadNetworkBuilder:
         d["ROAD_ID"] = road_id
         d["LENGTH"] = length
         d["road_segment_index"] = road_segment_index
-        d["geometry"] = coords
+        # d["geometry"] = coords
 
         return d, final_node
 
@@ -189,13 +189,16 @@ class RoadNetworkBuilder:
                                        (edges_gdf["FUNCT_NAME"] == "Slip Road")]
 
         start_segments = start_segments.loc[pd.isna(edges_gdf["PREV_IND"])]
+        n = 1
 
-        for _, start_segment in start_segments.iterrows():
+        for index, start_segment in start_segments.iterrows():
+            print(index)
             segment_index = start_segment.INDEX
             from_node = start_segment.FROM_NODE
             attr, to_node = self.merge_road_segments(edges_gdf, segment_index)
             net.add_edge(from_node, to_node, attr=attr)
             if not start_segment.IS_DIREC:
+                print('bi-directional')
                 net.add_edge(to_node, from_node, attr=attr)
 
         print("Finished Graph")

@@ -97,11 +97,15 @@ def build_multiple_networks_from_os(in_path, out_path):
 
 if __name__ == "__main__":
 
-    # merge_HE_and_OS_gdf()
-    # base_prog_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country/out/base/connected"
-    # aux_prog_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country/out/aux/connected"
-    final_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country/out/final"
-    RoadNetworkBuilder().create_graph(final_path)
-    # base_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country/base"
-    # aux_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country/aux"
-    # RoadNetworkBuilder().build_network(base_path, aux_path, is_base_conversion_required=False, is_aux_conversion_required=True)
+    base_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country_os/base"
+    aux_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/country_os/aux"
+
+    roadNetworkBuilder = RoadNetworkBuilder(base_builder=OSNodesAndEdgesBuilder(),
+                                            aux_builder=OSNodesAndEdgesBuilder(),
+                                            base_converter=OSToToStdConverter(),
+                                            aux_converter=OSToToStdConverter(),
+                                            merger=NodesAndEdgesMerger())
+
+    roadNetworkBuilder.build_network(base_path, aux_path, is_base_conversion_required=True, is_base_directional=False,
+                                     is_aux_conversion_required=True, is_aux_directional=False)
+    print(base_path)

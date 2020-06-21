@@ -27,7 +27,8 @@ class NodesAndEdgesMerger:
         aux_e = aux_edges_gdf.copy()
         aux_n = aux_nodes_gdf.copy()
 
-        aux_e, aux_n = self._exclude_roads(base_e, aux_e, aux_n)
+        # aux_e, aux_n = self._exclude_roads(base_e, aux_e, aux_n)
+
         # Establish connections between all Base roundabout nodes and dead-end nodes to other auxiliary nodes
         aux_e, aux_n, base_n = self._connect_by_nodes(base_n, aux_n, aux_e, N_ROUNDABOUT)
         aux_e, aux_n, base_n = self._connect_by_nodes(base_n, aux_n, aux_e, N_DEAD_END)
@@ -36,11 +37,13 @@ class NodesAndEdgesMerger:
         base_e, base_n, aux_n = self._connect_by_nodes(aux_n, base_n, base_e, N_ROUNDABOUT)
         base_e, base_n, aux_n = self._connect_by_nodes(aux_n, base_n, base_e, N_DEAD_END)
 
-        aux_e, aux_n = self._expunge_redundant_edges(aux_e, aux_n, base_n)
+        # aux_e, aux_n = self._expunge_redundant_edges(aux_e, aux_n, base_e, base_n)
+
         aux_e = self._reindex_to_base_edges(base_e, aux_e)
         base_e = pd.concat([base_e, aux_e])
         base_n = pd.concat([base_n, aux_n])
-        base_n = self._remove_redundant_nodes(base_n, base_e)
+
+        # base_n = self._remove_redundant_nodes(base_n, base_e)
 
         return base_e, base_n
 
@@ -196,10 +199,11 @@ class NodesAndEdgesMerger:
 
         return combined_n
 
-    def _expunge_redundant_edges(self, aux_e: gpd.GeoDataFrame, aux_n: gpd.GeoDataFrame, base_n: gpd.GeoDataFrame) \
+    def _expunge_redundant_edges(self, aux_e: gpd.GeoDataFrame, aux_n: gpd.GeoDataFrame,
+                                 base_e: gpd.GeoDataFrame, base_n: gpd.GeoDataFrame) \
             -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
         """
-        Identifies and removes any edges that are not connected to the base network
+        Iterates through each edge and removes this from the dataframe if not connected to the base network
         :param aux_e: dataframe of auxiliary edges
         :param aux_n: dataframe of auxiliary nodes
         :param base_n: dataframe of nodes representing the base network
@@ -211,11 +215,22 @@ class NodesAndEdgesMerger:
         connected_nodes = base_n[N_NODE_ID].tolist()
         indices = aux_e.INDEX.values.tolist()
         aux_e[IN_NETWORK] = 0
+
+        roundabout_nodes = list(aux_n.loc[aux_n[N_TYPE] == N_ROUNDABOUT, N_NODE_ID].values)
+        used_nodes_from = list(base_e.loc[base_e[FROM_NODE].isin(roundabout_nodes), FROM_NODE].unique())
+        used_nodes_to = list(base_e.loc[base_e[TO_NODE].isin(roundabout_nodes), TO_NODE].unique())
+
+        used_nodes = used_nodes_to
+        used_nodes.extend(used_nodes_from)
+        used_nodes = list(set(used_nodes))
+        aux_e.loc[((aux_e[FROM_NODE].isin(used_nodes)) | (aux_e[TO_NODE].isin(used_nodes))) &
+                  (aux_e[STD_FUNCT_NAME] == STD_ROUNDABOUT), IN_NETWORK] = 1
+
         aux_e[VISITED] = False
 
         for index in indices:
-            # if aux_e.loc[index][STD_FUNCT_NAME] == STD_ROUNDABOUT:
-            #     continue
+            if aux_e.loc[index][STD_FUNCT_NAME] == STD_ROUNDABOUT:
+                continue
             if aux_e.loc[index][IN_NETWORK] == 0:
                 aux_e = self._search_road_network_iter(index, aux_e, aux_n, connected_nodes)
                 if len(aux_e.loc[(aux_e[VISITED] == True) & (aux_e[IN_NETWORK] == 1)]) > 0:
@@ -224,14 +239,23 @@ class NodesAndEdgesMerger:
                     aux_e.loc[aux_e[VISITED] == True, IN_NETWORK] = -1
                 aux_e[VISITED] = False
 
-        aux_e.drop(index=aux_e.index[aux_e[IN_NETWORK] == -1], inplace=True)
-
+        aux_e.loc[(aux_e[STD_FUNCT_NAME] == STD_ROUNDABOUT) & (aux_e[IN_NETWORK] == 0), IN_NETWORK] = -1
+        aux_e.drop(index=aux_e.index[(aux_e[IN_NETWORK] == -1)], inplace=True)
         aux_e.drop([IN_NETWORK, VISITED], axis=1, inplace=True)
 
         return aux_e, aux_n
 
     def _search_road_network_iter(self, edge_ind: int, aux_e: gpd.GeoDataFrame, aux_n: gpd.GeoDataFrame,
                                   list_nodes: list) -> gpd.GeoDataFrame:
+        """
+        Runs through all connections starting from edge_ind and identifies whether the starting edge and all
+        other connections are connected to at least one of the nodes of the base network.
+        :param edge_ind: Index of the starting edge
+        :param aux_e: edge dataframe of the auxiliary network
+        :param aux_n: nodes dataframe of the auxiliary network
+        :param list_nodes: List of nodes that form the base network
+        :return: Returns an updated edges dataframe of the auxiliary network
+        """
         VISITED = "visited"
         IN_NETWORK = "in_network"
 
@@ -262,7 +286,6 @@ class NodesAndEdgesMerger:
                 elif not prev_edge.visited.values[0]:
                     index_queue.put(int(edge.PREV_IND.values[0]))
 
-
             # If edge is connected to a node, then run through _search_node
             if edge.TO_NODE.values[0] != STD_NONE:
                 node_id = edge.TO_NODE.values[0]
@@ -277,14 +300,13 @@ class NodesAndEdgesMerger:
     def _search_node_iter(self, node_id: str, curr_ind: int, aux_e: gpd.GeoDataFrame, aux_n: gpd.GeoDataFrame,
                           list_nodes: list, index_queue: Queue) -> (gpd.GeoDataFrame, Queue):
         """
-        Checks if node is part of list_nodes, and returns true. Otherwise recusively searches through next
-        unvisited connected edge, returns false otherwise.
+        Checks if node is part of list_nodes, and inserts all connecting edges from this node into the queue to be
+        checked (if unvisited).
         :param node_id: ID of node to be examined
         :param curr_ind: Index of edge that the node is connected to
         :param aux_e: dataframe of edges of the network that is being assessed
         :param list_nodes: List of nodes that to be used as a basis to check if the edge is connected
-        :return: True if node is in list_nodes, otherwise if all edges connected to node have been visited, then
-        returns false
+        :return: Updated edges framework of the auxiliary network, as well as updated queue
         """
         VISITED = "visited"
         IN_NETWORK = "in_network"
@@ -293,12 +315,15 @@ class NodesAndEdgesMerger:
             aux_e.at[aux_e[INDEX] == curr_ind, IN_NETWORK] = 1
         else:
 
-            connected_edges = aux_e.loc[(aux_e[VISITED] == False) & ((aux_e[FROM_NODE] == node_id) |
-                                                                     (aux_e[TO_NODE] == node_id))]
+            if aux_n.loc[aux_n[N_NODE_ID] == node_id][N_TYPE].values[0] == N_ROUNDABOUT:
+                aux_e.loc[(aux_e[STD_FUNCT_NAME] == STD_ROUNDABOUT) &
+                          ((aux_e[FROM_NODE] == node_id) | (aux_e[TO_NODE] == node_id)), VISITED] = True
+
+            connected_edges = aux_e.loc[(aux_e[VISITED] == False) & (aux_e[STD_FUNCT_NAME] != STD_ROUNDABOUT) &
+                                        ((aux_e[FROM_NODE] == node_id) | (aux_e[TO_NODE] == node_id))]
             connected_edges = connected_edges[connected_edges[INDEX] != curr_ind]
 
             if len(connected_edges) > 0:
-                # next_edge_index = connected_edges.iloc[0][INDEX]
                 next_edge_indices = connected_edges.INDEX.values
                 if len(connected_edges.loc[connected_edges[IN_NETWORK] == 1]) > 0:
                     aux_e.at[aux_e[INDEX] == curr_ind, IN_NETWORK] = 1
