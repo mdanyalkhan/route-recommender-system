@@ -2,6 +2,7 @@ from src.utilities.aux_func import *
 from src.utilities.file_directories import FileDirectories as fd
 import geopandas as gpd
 from RoadNetwork import *
+from RoadGraph.util import *
 import RoadGraph
 import os
 
@@ -101,9 +102,14 @@ def build_std_gdf_from_os_gdf():
     RoadGraph.OSToStdGdfConverter().convert_to_std_gdf_from_path(in_path, out_path)
 
 
-if __name__ == "__main__":
-
+def build_nodes_edges_from_std_gdf():
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/OS_converted.shp"
     out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os"
-
     RoadGraph.NodesEdgesGdfBuilder().build_nodes_and_edges_gdf_from_path(in_path, out_path, 'X')
+
+
+if __name__ == "__main__":
+
+    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/original"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os"
+    filter_minor_roads_and_remove_duplicates_from_os_roads(in_path, out_path)

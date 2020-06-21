@@ -18,12 +18,27 @@ class NodesEdgesGdfBuilder:
 
     def build_nodes_and_edges_gdf_from_path(self, in_path: str, out_path: str = None,
                                             node_tag: str = "") -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
+        """
+        Decorator function that builds nodes and edges via a file path instead
+        :param in_path: File path containing shapefile
+        :param out_path: Optional parameter of file path where edges and nodes geodataframes will be saved
+        :param node_tag: Optional node prefix to be added for every new node ID
+        :return: The nodes and edges geodataframe
+        """
         std_gdf = gpd.read_file(in_path)
         return self.build_nodes_and_edges_gdf(std_gdf, out_path, node_tag)
 
     def build_nodes_and_edges_gdf(self, std_gdf: gpd.GeoDataFrame, out_path: str = None,
                                   node_tag: str = "") -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
+        """
+        Builds the nodes geodataframe and edges geodataframe based on the information provided within the
+        std_gdf.
 
+        :param std_gdf: Geodataframe containing details of the road segments, must be standardised
+        :param out_path: Optional parameter of file path where the edges and nodes geodataframe can be saved.
+        :param node_tag: Optional prefix added to each new node ID
+        :return: Nodes and edges geodataframe structures
+        """
         self.node_tag = node_tag
         std_gdf.insert(loc=0, column=STD_INDEX, value=std_gdf.index)
 
