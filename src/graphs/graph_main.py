@@ -95,9 +95,15 @@ def build_multiple_networks_from_os(in_path, out_path):
         node_gdf.to_file(shp_full_paths_out[i] + "/" + shp_tags[i] + "_nodes.shp")
 
 
-
-if __name__ == "__main__":
-
+def build_std_gdf_from_os_gdf():
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/OS_roads.shp"
     out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/OS_converted.shp"
     RoadGraph.OSToStdGdfConverter().convert_to_std_gdf_from_path(in_path, out_path)
+
+
+if __name__ == "__main__":
+
+    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/OS_converted.shp"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os"
+
+    RoadGraph.NodesEdgesGdfBuilder().build_nodes_and_edges_gdf_from_path(in_path, out_path, 'X')
