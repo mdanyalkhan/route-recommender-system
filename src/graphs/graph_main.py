@@ -129,9 +129,17 @@ def connect_both_node_edges_std_gdfs():
     out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/final"
     RoadGraph.StdNodesEdgesGdfConnector().connect_two_nodeEdges_std_gdfs_from_paths(SD_in_path, SJ_in_path, out_path)
 
+def loadNetworkResults(file_name):
+    with open(file_name, 'rb') as target:
+        network_results = pickle.load(target)
+    return network_results
 
 if __name__ == "__main__":
-    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/refined"
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb"
-    final_path = RoadGraph.StdRoadGraphBuilder().build_road_graph(in_path, out_path, is_conversion_required=True)
+    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
+
+    net = loadNetworkResults(in_path)
+
+    print(net['A_1513']['A_1521'])
+
+
 

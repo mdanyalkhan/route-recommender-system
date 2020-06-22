@@ -17,8 +17,15 @@ class StdRoadGraphBuilder:
         self.builder = builder
         self.connector = connector
 
-    def build_road_graph(self, in_path, target_path, is_conversion_required=True):
-
+    def build_road_graph(self, in_path: str, target_path: str, is_conversion_required: bool = True) -> nx.Graph:
+        """
+        Constructs a Networkx Object from the original geo spatial roads dataframe, saving the intermediate
+        dataframe within specified paths via target_path
+        :param in_path: Path containing all roads dataframe shpfiles
+        :param target_path: Path to save the Networkx object (in .pickle) and other intermediate dataframes
+        :param is_conversion_required: Conversion of the original geo spatial dataframe into a standardised dataframe
+        :return: A Networkx Graph object representing the roads geoDataFrame.
+        """
         curr_path = in_path
         out_path = self._create_file_path(target_path + "/out")
 
@@ -40,14 +47,14 @@ class StdRoadGraphBuilder:
 
         return net
 
-    def _convert_gdfs(self, in_path, out_path):
+    def _convert_gdfs(self, in_path: str, out_path: str) -> str:
 
         """
         Converts multiple shp geospatial roads dataframes into the standard GeoDataFrame used for this project.
         The results are saved in the out_path directory
         :param in_path: File path containing all shp files that are to be converted
         :param out_path: File path in which the converted standard dataframes are to be saved
-        :param roads_to_exclude: Any roads to be excluded (should be in list form)
+        :return converted_path: the path in which the converted geodataframes are saved
         """
         converted_path = self._create_file_path(out_path + "/converted")
         list_of_files = os.listdir(in_path)
@@ -62,8 +69,13 @@ class StdRoadGraphBuilder:
 
         return converted_path
 
-    def _build_edges_nodes_gdfs(self, in_path, out_path):
-
+    def _build_edges_nodes_gdfs(self, in_path: str, out_path: str) -> str:
+        """
+        Builds the nodes and edges geoDataFrames for each roads geoDataFrame saved in in_path
+        :param in_path: Path in which the roads geoDataFrame is saved
+        :param out_path: Path in which the nodes and edges GeoDataFrames will be saved
+        :return: Path in which all the nodes and edges geoDataFrames are saved
+        """
         connected_path = self._create_file_path((out_path + "/connected"))
         prefix = 'A'
 
@@ -87,8 +99,13 @@ class StdRoadGraphBuilder:
 
         return connected_path
 
-    def _connect_edges_and_nodes_gdfs(self, in_path, out_path):
-
+    def _connect_edges_and_nodes_gdfs(self, in_path: str, out_path: str) -> str:
+        """
+        Merges/connects the nodes and edges geoDataFrame into a single GeoDataFrame.
+        :param in_path: Path in which the all nodes and edges GeoDataFrames are saved
+        :param out_path: Path to save the single combined GeoDataFrame
+        :return: Path in which the single combined GeoDataFrame is saved
+        """
         list_of_files = os.listdir(in_path)
         shp_full_paths_in = [in_path + "/" + x for x in list_of_files if not x.startswith(".")]
         final_path = self._create_file_path(out_path + "/final")
@@ -110,28 +127,28 @@ class StdRoadGraphBuilder:
         return final_path
 
 
-    def merge_road_segments(self, roads_df, road_index):
+    def merge_road_segments(self, edges_gdf: gpd.GeoDataFrame, edge_index: int) -> (dict, int):
         """
         Merges all linked road segments and condense information into a dict
-        :param road_index: index of starting road segment
-        :param roads_df: Linked Road segments geodataframe
-        :return: d: a dictionary containing coordinates, length, indices and unique road ID of road
+        :param edge_index: index of starting road segment
+        :param edges_gdf: Linked Road segments geodataframe
+        :return: d: a dictionary the total length, indices and unique road IDs of the edge
                 final_node: final node that this road connects to
         """
         d = {}
 
-        current_segment = roads_df.loc[roads_df[STD_INDEX] == road_index]
+        current_segment = edges_gdf.loc[edges_gdf[STD_INDEX] == edge_index]
         current_segment = current_segment.iloc[0]
 
         length = current_segment[STD_LENGTH]
-        road_segment_index = [road_index]
+        road_segment_index = [edge_index]
         road_id = current_segment[STD_ROAD_NO] + "_" + current_segment[STD_ROAD_TYPE]
 
         while not pd.isna(current_segment[STD_NEXT_IND]):
-            current_segment = roads_df.loc[roads_df[STD_INDEX] == int(current_segment[STD_NEXT_IND])]
+            current_segment = edges_gdf.loc[edges_gdf[STD_INDEX] == int(current_segment[STD_NEXT_IND])]
             current_segment = current_segment.iloc[0]
             length += current_segment[STD_LENGTH]
-            road_segment_index.extend([STD_INDEX])
+            road_segment_index.extend([current_segment[STD_INDEX]])
 
         final_node = current_segment[STD_TO_NODE]
         d["Road_id"] = road_id
@@ -142,7 +159,7 @@ class StdRoadGraphBuilder:
 
     def create_graph(self, nodes_gdf, edges_gdf):
         """
-        Creates a graph NetworkX object using roads_gdf and nodes_gdf
+        Creates a graph NetworkX object using roads_gdf and edges_gdf
         :param edges_gdf: geodataframe of roads
         :param nodes_gdf: geodataframe of nodes
         :return: net: A networkX object representing road network.
@@ -174,7 +191,12 @@ class StdRoadGraphBuilder:
 
         return net
 
-    def _extract_shp_names(self, file_path):
+    def _extract_shp_names(self, file_path: str):
+        """
+        Extracts all shp files from file_path
+        :param file_path: target path to extract shp files
+        :return: Either a list of all shp file names, or a single shp file name
+        """
         list_of_files = os.listdir(file_path)
         shp_tags = [x for x in list_of_files if ".shp" in x]
 
@@ -183,7 +205,12 @@ class StdRoadGraphBuilder:
         else:
             return shp_tags
 
-    def _create_file_path(self, file_path):
+    def _create_file_path(self, file_path: str) -> str:
+        """
+        Either returns or creates and returns a directory corresponding to file_path
+        :param file_path: Name of file path that needs to be created in the computer's directory tree
+        :return: the file path following confirmation that it exists
+        """
         if not os.path.exists(file_path):
             os.makedirs(file_path)
 

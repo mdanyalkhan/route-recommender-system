@@ -11,8 +11,15 @@ class StdNodesEdgesGdfConnector:
     def __init__(self, threshold=0):
         self.THRESHOLD = threshold
 
-    def connect_two_nodeEdges_std_gdfs_from_paths(self, first_path, second_path, out_path=None):
-
+    def connect_two_nodeEdges_std_gdfs_from_paths(self, first_path: str, second_path: str, out_path: str = None) \
+            -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
+        """
+        Decorator function that that executes connection between edges and nodes from file path inputs
+        :param first_path: File path containing the nodes and edges dataframe of the first road network
+        :param second_path: File path containing the nodes and edges dataframe of the second road network
+        :param out_path: (Optional) File path to write out the compiled nodes and edges dataframe
+        :return: Merged/connected nodes and edges dataframe based on dataframes from first path and second path
+        """
         edges_a = gpd.read_file(first_path + "/edges.shp")
         nodes_a = gpd.read_file(first_path + "/nodes.shp")
         edges_b = gpd.read_file(second_path + "/edges.shp")
@@ -20,8 +27,19 @@ class StdNodesEdgesGdfConnector:
 
         return self.connect_two_nodeEdges_std_gdfs(edges_a, nodes_a, edges_b, nodes_b, out_path)
 
-    def connect_two_nodeEdges_std_gdfs(self, edges_a, nodes_a, edges_b, nodes_b, out_path=None):
-
+    def connect_two_nodeEdges_std_gdfs(self, edges_a: gpd.GeoDataFrame, nodes_a: gpd.GeoDataFrame,
+                                       edges_b: gpd.GeoDataFrame, nodes_b: gpd.GeoDataFrame,
+                                       out_path: str = None) -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
+        """
+        Connects two nodes and edges dataframes into a single geographical dataframe based on the nodal coordinates
+        :param edges_a: Edges geoDataFrame of the first source
+        :param nodes_a: Nodes geoDataFrame of the first source
+        :param edges_b: Edges geoDataFrame of the second source
+        :param nodes_b: Nodes geoDataFrame of the second source
+        :param out_path: (Optional) file path to write out the merged/connected new geodataframes of the nodes and
+        edges.
+        :return: Merged/connected nodes and edges dataframe based on dataframes from first path and second sources
+        """
         base_e = edges_a.copy()
         base_n = nodes_a.copy()
         aux_e = edges_b.copy()
@@ -49,7 +67,7 @@ class StdNodesEdgesGdfConnector:
                           node_type: str) -> (gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame):
         """
         Establishes connections between all nodes of a particular 'node_type' in the base dataframe to other
-        dead-end node in the aux dataframe.
+        terminal node in the aux dataframe.
         :param base_n: Dataframe of nodes in which nodes of node_type will be extracted and used to establish
         connections with other nodes in aux dataframe
         :param aux_n: Dataframe of nodes used to identify any that are close enough to the node of node_type
