@@ -18,5 +18,3 @@ STD_NEXT_IND = "NEXT_IND"
 STD_NODE_ID = "node_id"
 STD_N_TYPE = "Type"
 STD_N_ROUNDABOUT_EXTENT = "Extent"
-STD_N_COORD = "Coord"
-

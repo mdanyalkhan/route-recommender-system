@@ -10,11 +10,13 @@ from RoadGraph.StdColNames import *
 from RoadGraph.StdKeyWords import *
 
 # Constants used in this class
+from RoadGraph.util import euclidean_distance
+
 FIRST_COORD = "FIRST_COORD"
 LAST_COORD = "LAST_COORD"
 
 
-class NodesEdgesGdfBuilder:
+class StdNodesEdgesGdfBuilder:
 
     def build_nodes_and_edges_gdf_from_path(self, in_path: str, out_path: str = None,
                                             node_tag: str = "") -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
@@ -263,17 +265,6 @@ class NodesEdgesGdfBuilder:
 
         return roads_gdf, node_dict
 
-    def _euclidean_distance(self, coord1: tuple, coord2: tuple):
-        """
-        Calculates the Euclidean distance between two coordinates
-        :param coord1: Tuple of numerical digits
-        :param coord2: Second tupe of numerical digits
-        :return: Returns the Euclidean distance between two coordinates
-        """
-        x1, y1 = coord1
-        x2, y2 = coord2
-        return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2))
-
     def _assign_new_node_id(self, node_dict: dict, coords: tuple, node_type: str,
                             roundabout_extent=pd.NA) -> dict:
         """
@@ -330,7 +321,7 @@ class NodesEdgesGdfBuilder:
         radius = 0
 
         for line_coord in line_coords:
-            temp_distance = self._euclidean_distance(line_coord, central_point)
+            temp_distance = euclidean_distance(line_coord, central_point)
             if temp_distance > radius:
                 radius = temp_distance
 

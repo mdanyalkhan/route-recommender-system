@@ -2,6 +2,8 @@
 Miscillaneous functions important for processing geospatial dataframes
 """
 import os
+from math import sqrt
+
 import geopandas as gpd
 
 
@@ -30,3 +32,15 @@ def filter_minor_roads_and_remove_duplicates_from_os_roads(in_path: str, out_pat
         identifier.extend(new_identifiers)
 
         curr_gdf.to_file(shp_full_paths_out[i])
+
+
+def euclidean_distance(coord1: tuple, coord2: tuple):
+    """
+    Calculates the Euclidean distance between two coordinates
+    :param coord1: Tuple of numerical digits
+    :param coord2: Second tupe of numerical digits
+    :return: Returns the Euclidean distance between two coordinates
+    """
+    x1, y1 = coord1
+    x2, y2 = coord2
+    return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2))

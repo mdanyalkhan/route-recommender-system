@@ -6,6 +6,7 @@ from RoadGraph.util import *
 import RoadGraph
 import os
 
+
 # TODO: Update HERoadsNetworkBuilder to consider what to do in the case where the direction is not disclosed
 
 def connect_he_gdf():
@@ -96,20 +97,41 @@ def build_multiple_networks_from_os(in_path, out_path):
         node_gdf.to_file(shp_full_paths_out[i] + "/" + shp_tags[i] + "_nodes.shp")
 
 
-def build_std_gdf_from_os_gdf():
-    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/OS_roads.shp"
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/OS_converted.shp"
-    RoadGraph.OSToStdGdfConverter().convert_to_std_gdf_from_path(in_path, out_path)
-
-
-def build_nodes_edges_from_std_gdf():
-    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/OS_converted.shp"
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os"
-    RoadGraph.NodesEdgesGdfBuilder().build_nodes_and_edges_gdf_from_path(in_path, out_path, 'X')
-
-
-if __name__ == "__main__":
-
+def remove_duplicates_from_os():
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/original"
     out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os"
     filter_minor_roads_and_remove_duplicates_from_os_roads(in_path, out_path)
+
+
+def build_std_gdf_from_os_gdf():
+    SD_in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/SD_RoadLink.shp"
+    SD_out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/SD_STD_RoadLink.shp"
+    SJ_in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/SJ_RoadLink.shp"
+    SJ_out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/SJ_STD_RoadLink.shp"
+
+    RoadGraph.OSToStdGdfConverter().convert_to_std_gdf_from_path(SD_in_path, SD_out_path)
+    RoadGraph.OSToStdGdfConverter().convert_to_std_gdf_from_path(SJ_in_path, SJ_out_path)
+
+
+def build_nodes_edges_from_std_gdf():
+    SD_in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/SD_STD_RoadLink.shp"
+    SD_out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/SD"
+    SJ_in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/SJ_STD_RoadLink.shp"
+    SJ_out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/SJ"
+
+    RoadGraph.StdNodesEdgesGdfBuilder().build_nodes_and_edges_gdf_from_path(SD_in_path, SD_out_path, 'SD')
+    RoadGraph.StdNodesEdgesGdfBuilder().build_nodes_and_edges_gdf_from_path(SJ_in_path, SJ_out_path, 'SJ')
+
+
+def connect_both_node_edges_std_gdfs():
+    SD_in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/SD"
+    SJ_in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/SJ"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/final"
+    RoadGraph.StdNodesEdgesGdfConnector().connect_two_nodeEdges_std_gdfs_from_paths(SD_in_path, SJ_in_path, out_path)
+
+
+if __name__ == "__main__":
+    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/refined"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb"
+    final_path = RoadGraph.StdRoadGraphBuilder().build_road_graph(in_path, out_path, is_conversion_required=True)
+
