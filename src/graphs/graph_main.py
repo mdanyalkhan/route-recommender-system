@@ -134,12 +134,44 @@ def loadNetworkResults(file_name):
         network_results = pickle.load(target)
     return network_results
 
+def count_no_of_line_features(in_path):
+    list_of_files = os.listdir(in_path)
+    shp_full_paths_in = [in_path + "/" + x for x in list_of_files if "_RoadLink.shp" in x]
+
+    no = 0
+    x = 0
+    for shp in shp_full_paths_in:
+        print(x)
+        x += 1
+        gdf = gpd.read_file(shp)
+        no += len(gdf)
+    print(no)
+
 if __name__ == "__main__":
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
+    gdf_path_edges = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
+    gdf_path_nodes = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
+    shortest_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths"
 
     net = loadNetworkResults(in_path)
 
-    print(net['A_1513']['A_1521'])
+    # source_node = 'F_1068'
+    #
+    # for u, e in net.succ[source_node].items():
+    #     print(u)
+    #     print(e.get('Length'))
+
+    edges_gdf = gpd.read_file(gdf_path_edges)
+    nodes_gdf = gpd.read_file(gdf_path_nodes)
+
+    source_node = 'F_1068'
+    target_node = 'G_1876'
+
+    s_edges_gdf, s_nodes_gdf = shortest_path_gdf_all_paths(net, edges_gdf, nodes_gdf, source_node, target_node)
+    s_edges_gdf.to_file(shortest_path + "/s_all_edges_gdf.shp")
+    s_nodes_gdf.to_file(shortest_path + "/s_all_nodes_gdf.shp")
+
+
 
 
 
