@@ -1,3 +1,6 @@
+from heapq import heappush, heappop
+from itertools import count
+
 import geopandas as gpd
 import pandas as pd
 from RoadGraph.StdColNames import *
@@ -17,7 +20,7 @@ class StdRoadGraph:
         source_distances = nodes_gdf['coordinates'].apply(lambda x: euclidean_distance(x, source_coord))
         min_index = source_distances.index[source_distances == source_distances.min()].values[0]
         nearest_source_node = nodes_gdf.loc[min_index][STD_NODE_ID]
-        
+
         target_distances = nodes_gdf['coordinates'].apply(lambda x: euclidean_distance(x, target_coord))
         min_index = source_distances.index[target_distances == target_distances.min()].values[0]
         nearest_target_node = nodes_gdf.loc[min_index][STD_NODE_ID]
