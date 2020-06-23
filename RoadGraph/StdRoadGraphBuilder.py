@@ -4,7 +4,7 @@ import pickle
 import os
 import networkx as nx
 
-from RoadGraph import OSToStdGdfConverter, StdNodesEdgesGdfBuilder, StdNodesEdgesGdfConnector
+from RoadGraph import OSToStdGdfConverter, StdNodesEdgesGdfBuilder, StdNodesEdgesGdfConnector, extract_coord_at_index
 from RoadGraph.StdColNames import *
 from RoadGraph.StdKeyWords import *
 
@@ -151,9 +151,10 @@ class StdRoadGraphBuilder:
             road_segment_index.extend([current_segment[STD_INDEX]])
 
         final_node = current_segment[STD_TO_NODE]
-        d["Road_id"] = road_id
-        d["Length"] = length
-        d["Road_segment_indices"] = road_segment_index
+        d["road_id"] = road_id
+        d["length"] = length
+        d["road_segment_indices"] = road_segment_index
+        d['weight'] = length
 
         return d, final_node
 
@@ -169,7 +170,8 @@ class StdRoadGraphBuilder:
         net = nx.DiGraph()
         # for each slip road and roundabout node dataframe do:
         for _, node in nodes_gdf.iterrows():
-            net.add_node(node.node_id, coordinates=node.geometry)
+            coords = extract_coord_at_index(node[STD_GEOMETRY], 0)
+            net.add_node(node.node_id, coordinates=coords)
 
         start_segments = edges_gdf.loc[(edges_gdf[STD_ROAD_TYPE] == STD_MAIN_CARRIAGEWAY) |
                                        (edges_gdf[STD_ROAD_TYPE] == STD_SLIP_ROAD)]
@@ -184,7 +186,6 @@ class StdRoadGraphBuilder:
             attr, to_node = self.merge_road_segments(edges_gdf, segment_index)
             net.add_edge(from_node, to_node, attr=attr)
             if not start_segment[STD_IS_DIREC]:
-                print('bi-directional')
                 net.add_edge(to_node, from_node, attr=attr)
 
         print("Finished Graph")

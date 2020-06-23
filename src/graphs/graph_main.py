@@ -151,25 +151,33 @@ if __name__ == "__main__":
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
     gdf_path_edges = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
     gdf_path_nodes = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
+
+    # edges_gdf = gpd.read_file(gdf_path_edges)
+    # nodes_gdf = gpd.read_file(gdf_path_nodes)
+    #
+    # net = RoadGraph.StdRoadGraphBuilder().create_graph(nodes_gdf, edges_gdf)
+    #
+    # with open(in_path, 'wb') as target:
+    #     pickle.dump(net, target)
     shortest_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths"
 
     net = loadNetworkResults(in_path)
-
-    # source_node = 'F_1068'
+    print(net['F_2696']['F_2682'])
+    # # source_node = 'F_1068'
+    # #
+    # # for u, e in net.succ[source_node].items():
+    # #     print(u)
+    # #     print(e.get('Length'))
     #
-    # for u, e in net.succ[source_node].items():
-    #     print(u)
-    #     print(e.get('Length'))
-
-    edges_gdf = gpd.read_file(gdf_path_edges)
-    nodes_gdf = gpd.read_file(gdf_path_nodes)
-
-    source_node = 'F_1068'
-    target_node = 'G_1876'
-
-    s_edges_gdf, s_nodes_gdf = shortest_path_gdf_all_paths(net, edges_gdf, nodes_gdf, source_node, target_node)
-    s_edges_gdf.to_file(shortest_path + "/s_all_edges_gdf.shp")
-    s_nodes_gdf.to_file(shortest_path + "/s_all_nodes_gdf.shp")
+    # edges_gdf = gpd.read_file(gdf_path_edges)
+    # nodes_gdf = gpd.read_file(gdf_path_nodes)
+    #
+    # source_node = 'F_1068'
+    # target_node = 'G_1876'
+    #
+    # s_edges_gdf, s_nodes_gdf = shortest_path_gdf_all_paths(net, edges_gdf, nodes_gdf, source_node, target_node)
+    # s_edges_gdf.to_file(shortest_path + "/s_all_edges_gdf.shp")
+    # s_nodes_gdf.to_file(shortest_path + "/s_all_nodes_gdf.shp")
 
 
 
