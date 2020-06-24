@@ -151,10 +151,10 @@ class StdRoadGraphBuilder:
             road_segment_index.extend([current_segment[STD_INDEX]])
 
         final_node = current_segment[STD_TO_NODE]
-        d["road_id"] = road_id
-        d["length"] = length
-        d["road_segment_indices"] = road_segment_index
-        d['weight'] = length
+        d[STD_Nx_ROAD_ID] = road_id
+        d[STD_Nx_LENGTH] = length
+        d[STD_Nx_ROAD_IND] = road_segment_index
+        d[STD_Nx_WEIGHT] = length
 
         return d, final_node
 
@@ -176,7 +176,7 @@ class StdRoadGraphBuilder:
         start_segments = edges_gdf.loc[(edges_gdf[STD_ROAD_TYPE] == STD_MAIN_CARRIAGEWAY) |
                                        (edges_gdf[STD_ROAD_TYPE] == STD_SLIP_ROAD)]
 
-        start_segments = start_segments.loc[pd.isna(edges_gdf["PREV_IND"])]
+        start_segments = start_segments.loc[pd.isna(edges_gdf[STD_PREV_IND])]
         n = 1
 
         for index, start_segment in start_segments.iterrows():

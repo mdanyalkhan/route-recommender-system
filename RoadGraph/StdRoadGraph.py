@@ -1,10 +1,11 @@
 from heapq import heappush, heappop
 from itertools import count
-
+import numpy as np
 import geopandas as gpd
 import pandas as pd
-from RoadGraph.StdColNames import *
 from RoadGraph import euclidean_distance, extract_coord_at_index
+from RoadGraph.StdColNames import *
+from RoadGraph.StdKeyWords import *
 
 
 class StdRoadGraph:
@@ -14,24 +15,48 @@ class StdRoadGraph:
         self.nodes = nodes_gdf
         self.edges = edges_gdf
 
-    def shortest_path_between_coords(self, source_coord: tuple, target_coord: tuple):
+    def shortest_path_between_coords(self, source_coord: tuple, target_coord: tuple)\
+            ->(gpd.GeoDataFrame, gpd.GeoDataFrame):
+        """
+        Finds the shortest path between the source coord to the target coord using the nearest nodes through
+        the roads graph
+        :param source_coord: Tuple coordinates of the source coordinates
+        :param target_coord: Tuple coordinates of the target coordinates
+        :return: The nodes and edges geoDataFrame corresponding to the shortest path between source and target
+        coordinates
+        """
         nodes_gdf = self.nodes
-        nodes_gdf['coordinates'] = nodes_gdf['geometry'].apply(lambda x: extract_coord_at_index(x, 0))
-        source_distances = nodes_gdf['coordinates'].apply(lambda x: euclidean_distance(x, source_coord))
+        COORDINATES = "coordinates"
+        nodes_gdf[COORDINATES] = nodes_gdf[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
+        source_distances = nodes_gdf[COORDINATES].apply(lambda x: euclidean_distance(x, source_coord))
         min_index = source_distances.index[source_distances == source_distances.min()].values[0]
         nearest_source_node = nodes_gdf.loc[min_index][STD_NODE_ID]
 
-        target_distances = nodes_gdf['coordinates'].apply(lambda x: euclidean_distance(x, target_coord))
+        target_distances = nodes_gdf[COORDINATES].apply(lambda x: euclidean_distance(x, target_coord))
         min_index = source_distances.index[target_distances == target_distances.min()].values[0]
         nearest_target_node = nodes_gdf.loc[min_index][STD_NODE_ID]
 
-        nodes_gdf.drop(['coordinates'], axis=1, inplace=True)
+        nodes_gdf.drop([COORDINATES], axis=1, inplace=True)
 
         return self.shortest_path_betwen_nodes(nearest_source_node, nearest_target_node)
 
-    def shortest_path_betwen_nodes(self, source_node: str, target_node: str):
+    def set_road_closure(self, from_node: str, to_node: str):
 
-        get_weight = lambda u, v, data: data.get('attr').get('Length')
+        self.net[from_node][to_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = np.inf
+        self.net[to_node][from_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = np.inf
+        pass
+
+    def remove_road_closure(self, from_node: str, to_node: str):
+        pass
+
+    def shortest_path_betwen_nodes(self, source_node: str, target_node: str) -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
+        """
+        Finds the shortest path between two pair of nodes.
+        :param source_node: Name of source node to start the shortest path algorithm from
+        :param target_node: Name of Target node
+        :return: The nodes and edges geoDataFrame corresponding to the shortest path between source and target
+        """
+        get_weight = lambda u, v, data: data.get(STD_Nx_ATTR).get(STD_Nx_LENGTH)
         graph = self.net
         edges_gdf = self.edges
         nodes_gdf = self.nodes
@@ -47,12 +72,12 @@ class StdRoadGraph:
         shortest_nodes_gdf = gpd.GeoDataFrame()
 
         for i in range(n):
-            indices = (graph[shortest_path[i]][shortest_path[i + 1]]).get('attr').get('road_segment_indices')
+            indices = (graph[shortest_path[i]][shortest_path[i + 1]]).get(STD_Nx_ATTR).get(STD_Nx_ROAD_IND)
             shortest_edges_gdf = pd.concat([shortest_edges_gdf, edges_gdf.loc[indices, :]])
             shortest_nodes_gdf = pd.concat(
-                [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf["node_id"] == shortest_path[i]]])
+                [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf[STD_NODE_ID] == shortest_path[i]]])
             shortest_nodes_gdf = pd.concat(
-                [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf["node_id"] == shortest_path[i + 1]]])
+                [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf[STD_NODE_ID] == shortest_path[i + 1]]])
 
         return shortest_edges_gdf, shortest_nodes_gdf
 

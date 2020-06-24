@@ -18,3 +18,10 @@ STD_NEXT_IND = "NEXT_IND"
 STD_NODE_ID = "node_id"
 STD_N_TYPE = "Type"
 STD_N_ROUNDABOUT_EXTENT = "Extent"
+
+#Netx attr dataframe column names
+STD_Nx_ATTR = 'attr'
+STD_Nx_ROAD_ID = "road_id"
+STD_Nx_LENGTH = "length"
+STD_Nx_ROAD_IND = "road_segment_indices"
+STD_Nx_WEIGHT = "weight"

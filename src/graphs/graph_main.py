@@ -169,16 +169,22 @@ if __name__ == "__main__":
     # s_nodes_gdf.to_file(
     #     parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/s_coord_nodes.shp")
 
-    so_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/converted/SO_RoadLink.shp"
-    out_edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/so_edges.shp"
-    out_nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/so_nodes.shp"
+    # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/converted"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out"
+    #
+    # in_path = RoadGraph.StdRoadGraphBuilder()._build_edges_nodes_gdfs(in_path, out_path)
+    # curr_path = RoadGraph.StdRoadGraphBuilder()._connect_edges_and_nodes_gdfs(in_path, out_path)
+    curr_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final"
+    edges_gdf = gpd.read_file(curr_path + "/edges.shp")
+    nodes_gdf = gpd.read_file(curr_path + "/nodes.shp")
 
-    gdf = gpd.read_file(so_path)
+    net = RoadGraph.StdRoadGraphBuilder().create_graph(nodes_gdf, edges_gdf)
+    target_path = RoadGraph.StdRoadGraphBuilder()._create_file_path(out_path + "/netx")
+    target_file = target_path + "/roadGraph.pickle"
 
-    edges_gdf, nodes_gdf = RoadGraph.StdNodesEdgesGdfBuilder().build_nodes_and_edges_gdf(gdf, node_tag='E')
+    with open(target_file, 'wb') as target:
+        pickle.dump(net, target)
 
-    edges_gdf.to_file(out_edges_path)
-    nodes_gdf.to_file(out_nodes_path)
 
 
 
