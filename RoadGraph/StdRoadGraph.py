@@ -41,13 +41,24 @@ class StdRoadGraph:
         return self.shortest_path_betwen_nodes(nearest_source_node, nearest_target_node)
 
     def set_road_closure(self, from_node: str, to_node: str):
-
+        """
+        Sets weight of edge between nodes as infinite
+        :param from_node: Name of first node
+        :param to_node: Name of second node
+        """
         self.net[from_node][to_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = np.inf
         self.net[to_node][from_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = np.inf
-        pass
 
     def remove_road_closure(self, from_node: str, to_node: str):
-        pass
+        """
+        Set weights of edge back to original length
+        :param from_node: Name of first node
+        :param to_node: Name of second node
+        """
+        self.net[from_node][to_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = self.net[from_node][to_node]\
+            .get(STD_Nx_ATTR).get(STD_Nx_LENGTH)
+        self.net[to_node][from_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = self.net[from_node][to_node]\
+            .get(STD_Nx_ATTR).get(STD_Nx_LENGTH)
 
     def shortest_path_betwen_nodes(self, source_node: str, target_node: str) -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
         """
@@ -56,7 +67,7 @@ class StdRoadGraph:
         :param target_node: Name of Target node
         :return: The nodes and edges geoDataFrame corresponding to the shortest path between source and target
         """
-        get_weight = lambda u, v, data: data.get(STD_Nx_ATTR).get(STD_Nx_LENGTH)
+        get_weight = lambda u, v, data: data.get(STD_Nx_ATTR).get(STD_Nx_WEIGHT)
         graph = self.net
         edges_gdf = self.edges
         nodes_gdf = self.nodes
@@ -66,7 +77,6 @@ class StdRoadGraph:
 
         shortest_path = paths[target_node]
 
-        print(shortest_path)
         n = len(shortest_path) - 1
         shortest_edges_gdf = gpd.GeoDataFrame()
         shortest_nodes_gdf = gpd.GeoDataFrame()

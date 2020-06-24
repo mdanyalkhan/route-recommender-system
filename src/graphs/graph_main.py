@@ -148,43 +148,52 @@ def count_no_of_line_features(in_path):
     print(no)
 
 if __name__ == "__main__":
-    # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
-    # gdf_path_edges = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
-    # gdf_path_nodes = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
-    #
-    # edges_gdf = gpd.read_file(gdf_path_edges)
-    # nodes_gdf = gpd.read_file(gdf_path_nodes)
-    #
-    # net = loadNetworkResults(in_path)
-    # roadGraph = RoadGraph.StdRoadGraph(net, nodes_gdf, edges_gdf)
-    #
-    # source_node = 'F_1068'
-    # target_node = 'G_1876'
+    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
+    gdf_path_edges = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
+    gdf_path_nodes = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
+
+    edges_gdf = gpd.read_file(gdf_path_edges)
+    nodes_gdf = gpd.read_file(gdf_path_nodes)
+
+    net = loadNetworkResults(in_path)
+    roadGraph = RoadGraph.StdRoadGraph(net, nodes_gdf, edges_gdf)
+
+    source_node = 'F_1623'
+    target_node = 'E_997'
     #
     # source_coord = (429686, 193786)
     # target_coord = (348161, 276721)
     #
-    # s_edges_gdf, s_nodes_gdf = roadGraph.shortest_path_between_coords(source_coord, target_coord)
-    # s_edges_gdf.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/s_coord_edges.shp")
-    # s_nodes_gdf.to_file(
-    #     parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/s_coord_nodes.shp")
 
-    # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/converted"
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out"
+    roadGraph.set_road_closure('G_1399', 'G_1401')
+    s_edges_gdf, s_nodes_gdf = roadGraph.shortest_path_betwen_nodes(source_node, target_node)
+
+    s_edges_gdf.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/s_edges_2.shp")
+    s_nodes_gdf.to_file(
+        parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/s_nodes_2.shp")
     #
+    # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/converted"
+    # out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out"
+    # #
     # in_path = RoadGraph.StdRoadGraphBuilder()._build_edges_nodes_gdfs(in_path, out_path)
     # curr_path = RoadGraph.StdRoadGraphBuilder()._connect_edges_and_nodes_gdfs(in_path, out_path)
-    curr_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final"
-    edges_gdf = gpd.read_file(curr_path + "/edges.shp")
-    nodes_gdf = gpd.read_file(curr_path + "/nodes.shp")
+    # edges_gdf = gpd.read_file(curr_path + "/edges.shp")
+    # nodes_gdf = gpd.read_file(curr_path + "/nodes.shp")
+    #
+    # net = RoadGraph.StdRoadGraphBuilder().create_graph(nodes_gdf, edges_gdf)
+    # target_path = RoadGraph.StdRoadGraphBuilder()._create_file_path(out_path + "/netx")
+    # target_file = target_path + "/roadGraph.pickle"
+    #
+    # with open(target_file, 'wb') as target:
+    #     pickle.dump(net, target)
 
-    net = RoadGraph.StdRoadGraphBuilder().create_graph(nodes_gdf, edges_gdf)
-    target_path = RoadGraph.StdRoadGraphBuilder()._create_file_path(out_path + "/netx")
-    target_file = target_path + "/roadGraph.pickle"
-
-    with open(target_file, 'wb') as target:
-        pickle.dump(net, target)
-
+    # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/converted/SP_RoadLink.shp"
+    # out_nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/sp_nodes.shp"
+    # out_edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/sp_edges.shp"
+    # gdf = gpd.read_file(in_path)
+    # edges, nodes = RoadGraph.StdNodesEdgesGdfBuilder().build_nodes_and_edges_gdf(gdf,node_tag='G')
+    # edges.to_file(out_edges_path)
+    # nodes.to_file(out_nodes_path)
 
 
 

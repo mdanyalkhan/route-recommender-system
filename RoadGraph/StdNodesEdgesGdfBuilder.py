@@ -1,3 +1,4 @@
+from heapq import heappush, heappop
 from math import sqrt
 from queue import Queue
 
@@ -104,10 +105,16 @@ class StdNodesEdgesGdfBuilder:
 
             if not roads_gdf.iloc[i][VISITED]:
                 segment_queue = Queue()
+                connections_queue = Queue()
                 segment_queue.put(i)
 
-                while not segment_queue.empty():
-                    current_i = segment_queue.get()
+                while not segment_queue.empty() or not connections_queue.empty():
+
+                    if not segment_queue.empty():
+                        current_i = segment_queue.get()
+                    else:
+                        current_i = connections_queue.get()
+
                     segment = roads_gdf.iloc[current_i, :]
                     index = int(segment[STD_INDEX])
 
@@ -118,11 +125,13 @@ class StdNodesEdgesGdfBuilder:
                     if pd.isna(segment[STD_NEXT_IND]) and segment[STD_TO_NODE] == "None":
                         node_dict, roads_gdf, segment_queue = self._find_connections(roads_gdf, index, last_coord,
                                                                                      node_dict, road_no, segment_queue,
+                                                                                     connections_queue,
                                                                                      is_last_coord=True)
 
                     if pd.isna(segment[STD_PREV_IND]) and segment[STD_FROM_NODE] == "None":
                         node_dict, roads_gdf, segment_queue = self._find_connections(roads_gdf, index, first_coord,
                                                                                      node_dict, road_no, segment_queue,
+                                                                                     connections_queue,
                                                                                      is_last_coord=False)
                     roads_gdf.at[index, VISITED] = True
 
@@ -132,8 +141,8 @@ class StdNodesEdgesGdfBuilder:
         return roads_gdf, node_dict
 
     def _find_connections(self, roads_gdf: gpd.GeoDataFrame, index: int,
-                          target_coord: (float, float), node_dict: dict, road_no: str, queue: Queue,
-                          is_last_coord: bool) -> (dict, gpd.GeoDataFrame):
+                          target_coord: (float, float), node_dict: dict, road_no: str, seg_queue: Queue,
+                          con_queue: Queue, is_last_coord: bool) -> (dict, gpd.GeoDataFrame):
         """
         Establishes connections between the road feature corresponding to index, and assigns nodes
         where there are either multiple connections or a connection between two different carriageways
@@ -170,9 +179,10 @@ class StdNodesEdgesGdfBuilder:
             roads_gdf.at[connecting_index, INDEX_B] = index
 
             if not is_last_coord:
-                roads_gdf = self._swap_coords(roads_gdf, connecting_index)
+                roads_gdf = self._swap(roads_gdf, connecting_index, FIRST_COORD, LAST_COORD)
+                roads_gdf = self._swap(roads_gdf, connecting_index, STD_FROM_NODE, STD_TO_NODE)
 
-            queue.put(connecting_index)
+            seg_queue.put(connecting_index)
 
         elif len(connected_to_road_a) == 0 and len(connected_to_road_b) == 1 \
                 and connected_to_road_b[STD_ROAD_NO].values[0] == road_no:
@@ -183,9 +193,10 @@ class StdNodesEdgesGdfBuilder:
 
             # Reconfigure coordinate orientation
             if is_last_coord:
-                roads_gdf = self._swap_coords(roads_gdf, connecting_index)
+                roads_gdf = self._swap(roads_gdf, connecting_index, FIRST_COORD, LAST_COORD)
+                roads_gdf = self._swap(roads_gdf, connecting_index, STD_FROM_NODE, STD_TO_NODE)
 
-            queue.put(connecting_index)
+            seg_queue.put(connecting_index)
 
         elif len(connected_to_road_a) >= 1 or len(connected_to_road_b) >= 1:
             node_dict = self._assign_new_node_id(node_dict, target_coord, STD_N_JUNCTION)
@@ -196,12 +207,12 @@ class StdNodesEdgesGdfBuilder:
             roads_gdf.loc[connected_to_road_b[STD_INDEX].values, STD_TO_NODE] = node_id
 
             for i in connected_to_road_a[STD_INDEX].values:
-                queue.put(i)
+                con_queue.put(i)
 
-            for i in connected_to_road_b[STD_INDEX].values:
-                queue.put(i)
+            # for i in connected_to_road_b[STD_INDEX].values:
+            #     con_queue.put(i)
 
-        return node_dict, roads_gdf, queue
+        return node_dict, roads_gdf, seg_queue
 
     def _assign_terminal_nodes(self, roads_gdf: gpd.GeoDataFrame,
                                node_dict: dict) -> (gpd.GeoDataFrame, dict):
@@ -333,19 +344,21 @@ class StdNodesEdgesGdfBuilder:
 
         return radius
 
-    def _swap_coords(self, roads_gdf: gpd.GeoDataFrame, index: int) -> gpd.GeoDataFrame:
+    def _swap(self, roads_gdf: gpd.GeoDataFrame, index: int, colA: str, colB: str) -> gpd.GeoDataFrame:
         """
         Swaps first_coord and last_coord
         :param roads_gdf: geodataframe of roads
         :param index: index of road feature where swap is to take place
         :return: updated roads_gdf
         """
-        first_coord = roads_gdf.at[index, FIRST_COORD]
-        last_coord = roads_gdf.at[index, LAST_COORD]
-        roads_gdf.at[index, FIRST_COORD] = last_coord
-        roads_gdf.at[index, LAST_COORD] = first_coord
+        first = roads_gdf.at[index, colA]
+        second = roads_gdf.at[index, colB]
+        roads_gdf.at[index, colA] = second
+        roads_gdf.at[index, colB] = first
 
         return roads_gdf
+
+
 
     def _coords_of_roundabout(self, roundabout_gdf):
 
