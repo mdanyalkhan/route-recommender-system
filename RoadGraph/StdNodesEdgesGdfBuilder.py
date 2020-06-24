@@ -195,6 +195,12 @@ class StdNodesEdgesGdfBuilder:
             roads_gdf.loc[connected_to_road_a[STD_INDEX].values, STD_FROM_NODE] = node_id
             roads_gdf.loc[connected_to_road_b[STD_INDEX].values, STD_TO_NODE] = node_id
 
+            for i in connected_to_road_a[STD_INDEX].values:
+                queue.put(i)
+
+            for i in connected_to_road_b[STD_INDEX].values:
+                queue.put(i)
+
         return node_dict, roads_gdf, queue
 
     def _assign_terminal_nodes(self, roads_gdf: gpd.GeoDataFrame,
