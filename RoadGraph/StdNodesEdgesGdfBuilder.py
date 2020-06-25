@@ -282,6 +282,42 @@ class StdNodesEdgesGdfBuilder:
 
         return roads_gdf, node_dict
 
+    def _remove_redundant_carriageways(self, edges_gdf, nodes_gdf):
+        """
+        Function not used yet, TO BE TESTED
+        :param edges_gdf:
+        :param nodes_gdf:
+        :return:
+        """
+        roundabout_nodes = nodes_gdf.loc[nodes_gdf[STD_N_TYPE] == STD_N_ROUNDABOUT]
+
+        redundant_indices = edges_gdf.index[(edges_gdf[STD_ROAD_TYPE] == STD_MAIN_CARRIAGEWAY) &
+                                            (edges_gdf[STD_FROM_NODE].isin(roundabout_nodes)) &
+                                            (edges_gdf[STD_TO_NODE].isin(roundabout_nodes)) &
+                                            (edges_gdf[STD_FROM_NODE] == edges_gdf[STD_TO_NODE])]
+
+        edges_gdf.drop(index=redundant_indices, inplace=True)
+
+        edges_gdf = self._reindex(edges_gdf)
+
+        return edges_gdf
+
+    def _reindex(self, aux_e: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+        """
+        Resets indices of the dataframe aux_e, and also updates the prev_ind and next_ind columns
+        :param aux_e: Dataframe of edges
+        :return: Updated aux_e
+        """
+        old_ind = aux_e[STD_INDEX].tolist()
+
+        aux_e.reset_index(drop=True, inplace=True)
+        aux_e[STD_INDEX] = aux_e.index
+        aux_e[STD_PREV_IND] = aux_e.loc[pd.isna(aux_e[STD_PREV_IND]) == False, STD_PREV_IND]. \
+            apply(lambda x: old_ind.index(int(x)))
+        aux_e[STD_NEXT_IND] = aux_e.loc[pd.isna(aux_e[STD_NEXT_IND]) == False, STD_NEXT_IND]. \
+            apply(lambda x: old_ind.index(int(x)))
+        return aux_e
+
     def _assign_new_node_id(self, node_dict: dict, coords: tuple, node_type: str,
                             roundabout_extent=pd.NA) -> dict:
         """
