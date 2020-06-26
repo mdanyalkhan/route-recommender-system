@@ -1,13 +1,10 @@
 from src.utilities.aux_func import *
-from src.utilities.file_directories import FileDirectories as fd
-import geopandas as gpd
 from RoadNetwork import *
 from RoadGraph.util import *
 import RoadGraph
 import os
-
-
-# TODO: Update HERoadsNetworkBuilder to consider what to do in the case where the direction is not disclosed
+from pyproj import CRS
+from pyproj.transformer import Transformer
 
 def connect_he_gdf():
     he_original_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/clipped_roads.shp"
@@ -152,6 +149,7 @@ def count_no_of_line_features(in_path):
 
 if __name__ == "__main__":
 
+
     # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/original"
     # target_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb"
     #
@@ -159,26 +157,32 @@ if __name__ == "__main__":
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
     gdf_path_edges = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
     gdf_path_nodes = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
+    rm_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
 
     edges_gdf = gpd.read_file(gdf_path_edges)
     nodes_gdf = gpd.read_file(gdf_path_nodes)
-
     net = loadNetworkResults(in_path)
-    roadGraph = RoadGraph.StdRoadGraph(net, nodes_gdf, edges_gdf)
+    key_sites = gpd.read_file(rm_path)
+    roadGraph = RoadGraph.StdRoadGraph(net, nodes_gdf, edges_gdf, key_sites=key_sites)
+    s_edges, s_nodes = roadGraph.shortest_path_between_key_sites('LONDON CENTRAL MC', 'SOUTHAMPTON MC')
 
-    source_node = 'F_3085'
-    target_node = 'D_146'
+    s_edges.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/London_Southampton_e.shp")
+    s_nodes.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/London_Southampton_n.shp")
+
     #
-    source_coord = (429686, 193786)
-    target_coord = (348161, 276721)
-
-
-    roadGraph.set_road_closure('G_1399', 'G_1401')
-    s_edges_gdf, s_nodes_gdf = roadGraph.shortest_path_betwen_nodes(source_node, target_node)
-
-    s_edges_gdf.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/London_Bristol_e.shp")
-    s_nodes_gdf.to_file(
-        parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/London_Bristol_n.shp")
+    # source_node = 'F_3085'
+    # target_node = 'D_146'
+    # #
+    # source_coord = (429686, 193786)
+    # target_coord = (348161, 276721)
+    #
+    #
+    # roadGraph.set_road_closure('G_1399', 'G_1401')
+    # s_edges_gdf, s_nodes_gdf = roadGraph.shortest_path_betwen_nodes(source_node, target_node)
+    #
+    # s_edges_gdf.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/London_Bristol_e.shp")
+    # s_nodes_gdf.to_file(
+    #     parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/London_Bristol_n.shp")
     #
     # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/converted"
     # out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out"

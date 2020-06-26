@@ -2,14 +2,14 @@
 Miscillaneous functions important for processing geospatial dataframes
 """
 import os
-from heapq import heappush, heappop
-from itertools import count
 from math import sqrt
-import networkx as nx
 import geopandas as gpd
 import pandas as pd
+from pyproj import CRS
+from pyproj.transformer import Transformer
+from shapely import wkt
 
-from GeoDataFrameAux import extract_coord_at_index
+from GeoDataFrameAux import extract_coord_at_index, GeoPointDataFrameBuilder
 
 
 def filter_minor_roads_and_remove_duplicates_from_os_roads(in_path: str, out_path: str):
@@ -50,8 +50,32 @@ def euclidean_distance(coord1: tuple, coord2: tuple):
     x2, y2 = coord2
     return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2))
 
-def check_node_positions_are_unique(nodes_gdf):
+def convert_rm_sites_to_shpfile(in_path: str) -> gpd.GeoDataFrame:
+    """
+    Converts a royal mail csv file into a shapefile projected onto the British National Grid
+    :param in_path:
+    :return:
+    """
+    df = pd.read_csv(in_path)
+    df['lat_lon'] = df[['lat', 'lon']].values.tolist()
+    df['geometry'] = df['lat_lon'].apply(project_to_british_national_grid)
+    df.drop('lat_lon', axis=1, inplace=True)
+    df['geometry'] = df['geometry'].apply(GeoPointDataFrameBuilder()._build_geometry_object)
+    df['geometry'] = df['geometry'].apply(wkt.loads)
 
-    nodes_gdf['coords'] = nodes_gdf['geometry'].apply(lambda x: extract_coord_at_index(x, 0))
+    gdf = gpd.GeoDataFrame(df, geometry='geometry')
+    gdf.crs = {'init': 'epsg:27700'}
 
-    nodes_gdf.drop('coords', axis=1, inplace=True)
+    return gdf
+
+def project_to_british_national_grid(coords: list):
+    """
+    Projects a list of coordinates into british national grid
+    :param coords: Latitude and longitude in a list
+    :return: Tuple of coordinates converted to british national grid
+    """
+    crs_4326 = CRS("WGS84")
+    crs_proj = CRS("EPSG:27700")
+
+    transformer = Transformer.from_crs(crs_4326, crs_proj)
+    return transformer.transform(coords[0], coords[1])
