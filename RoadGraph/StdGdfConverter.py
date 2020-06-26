@@ -13,7 +13,8 @@ class StdGdfConverter(ABC):
 
     def __init__(self, srn_list=None):
         self.srn_list = srn_list
-        self.std_column_names = [STD_ROAD_NO, STD_ROAD_TYPE, STD_LENGTH, STD_IS_SRN, STD_IS_DIREC, STD_GEOMETRY]
+        self.std_column_names = [STD_ROAD_NO, STD_ROAD_TYPE, STD_FORMOFWAY, STD_SPEED, STD_LENGTH, STD_IS_SRN,
+                                 STD_IS_DIREC, STD_GEOMETRY]
 
     def convert_to_std_gdf(self, orig_gdf: gpd.GeoDataFrame, out_path: str = None) -> gpd.GeoDataFrame:
         """

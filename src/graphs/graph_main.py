@@ -129,10 +129,12 @@ def connect_both_node_edges_std_gdfs():
     out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/final"
     RoadGraph.StdNodesEdgesGdfConnector().connect_two_nodeEdges_std_gdfs_from_paths(SD_in_path, SJ_in_path, out_path)
 
+
 def loadNetworkResults(file_name):
     with open(file_name, 'rb') as target:
         network_results = pickle.load(target)
     return network_results
+
 
 def count_no_of_line_features(in_path):
     list_of_files = os.listdir(in_path)
@@ -147,7 +149,13 @@ def count_no_of_line_features(in_path):
         no += len(gdf)
     print(no)
 
+
 if __name__ == "__main__":
+
+    # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/original"
+    # target_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb"
+    #
+    # RoadGraph.StdRoadGraphBuilder().build_road_graph(in_path, target_path, is_conversion_required=True)
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
     gdf_path_edges = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
     gdf_path_nodes = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
@@ -158,19 +166,19 @@ if __name__ == "__main__":
     net = loadNetworkResults(in_path)
     roadGraph = RoadGraph.StdRoadGraph(net, nodes_gdf, edges_gdf)
 
-    source_node = 'F_1623'
-    target_node = 'E_997'
+    source_node = 'F_3085'
+    target_node = 'D_146'
     #
-    # source_coord = (429686, 193786)
-    # target_coord = (348161, 276721)
-    #
+    source_coord = (429686, 193786)
+    target_coord = (348161, 276721)
+
 
     roadGraph.set_road_closure('G_1399', 'G_1401')
     s_edges_gdf, s_nodes_gdf = roadGraph.shortest_path_betwen_nodes(source_node, target_node)
 
-    s_edges_gdf.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/s_edges_2.shp")
+    s_edges_gdf.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/London_Bristol_e.shp")
     s_nodes_gdf.to_file(
-        parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/s_nodes_2.shp")
+        parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/London_Bristol_n.shp")
     #
     # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/converted"
     # out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out"
@@ -191,14 +199,12 @@ if __name__ == "__main__":
     # out_nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/sp_nodes.shp"
     # out_edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/sp_edges.shp"
     # gdf = gpd.read_file(in_path)
-    # edges, nodes = RoadGraph.StdNodesEdgesGdfBuilder().build_nodes_and_edges_gdf(gdf,node_tag='G')
+    # edges, nodes = RoadGraph.StdNodesEdgesGdfBuilder().build_nodes_and_edges_gdf(gdf, node_tag='G')
     # edges.to_file(out_edges_path)
     # nodes.to_file(out_nodes_path)
 
-
-
-
-
-
-
-
+    # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/original/SP_RoadLink.shp"
+    # out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/sp_converted.shp"
+    # gdf = gpd.read_file(in_path)
+    # sp_converted = RoadGraph.OSToStdGdfConverter().convert_to_std_gdf(gdf)
+    # sp_converted.to_file(out_path)

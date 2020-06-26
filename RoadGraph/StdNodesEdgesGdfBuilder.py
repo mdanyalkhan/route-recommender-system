@@ -60,13 +60,15 @@ class StdNodesEdgesGdfBuilder:
         # Set up a dict of nodes
         nodes = {}
 
-        std_gdf, nodes = self._assign_junction_nodes(std_gdf, nodes)
         std_gdf, nodes = self._assign_roundabout_nodes(std_gdf, nodes)
+        std_gdf, nodes = self._assign_junction_nodes(std_gdf, nodes)
         std_gdf, nodes = self._assign_terminal_nodes(std_gdf, nodes)
 
         std_gdf.drop([FIRST_COORD, LAST_COORD], axis=1, inplace=True)
 
         nodes_gdf = self._convert_points_dict_to_gdf(nodes)
+        std_gdf = self._remove_redundant_roads(std_gdf, nodes_gdf)
+
         print("Finished building gdf of the road network")
 
         if out_path is not None and type(out_path) == str:
@@ -209,9 +211,6 @@ class StdNodesEdgesGdfBuilder:
             for i in connected_to_road_a[STD_INDEX].values:
                 con_queue.put(i)
 
-            # for i in connected_to_road_b[STD_INDEX].values:
-            #     con_queue.put(i)
-
         return node_dict, roads_gdf, seg_queue
 
     def _assign_terminal_nodes(self, roads_gdf: gpd.GeoDataFrame,
@@ -282,7 +281,7 @@ class StdNodesEdgesGdfBuilder:
 
         return roads_gdf, node_dict
 
-    def _remove_redundant_carriageways(self, edges_gdf, nodes_gdf):
+    def _remove_redundant_roads(self, edges_gdf, nodes_gdf):
         """
         Function not used yet, TO BE TESTED
         :param edges_gdf:
@@ -291,9 +290,11 @@ class StdNodesEdgesGdfBuilder:
         """
         roundabout_nodes = nodes_gdf.loc[nodes_gdf[STD_N_TYPE] == STD_N_ROUNDABOUT]
 
-        redundant_indices = edges_gdf.index[(edges_gdf[STD_ROAD_TYPE] == STD_MAIN_CARRIAGEWAY) &
-                                            (edges_gdf[STD_FROM_NODE].isin(roundabout_nodes)) &
-                                            (edges_gdf[STD_TO_NODE].isin(roundabout_nodes)) &
+        roundabout_nodes_list = roundabout_nodes[STD_NODE_ID].tolist()
+
+        redundant_indices = edges_gdf.index[(edges_gdf[STD_ROAD_TYPE] != STD_ROUNDABOUT) &
+                                            (edges_gdf[STD_FROM_NODE].isin(roundabout_nodes_list)) &
+                                            (edges_gdf[STD_TO_NODE].isin(roundabout_nodes_list)) &
                                             (edges_gdf[STD_FROM_NODE] == edges_gdf[STD_TO_NODE])]
 
         edges_gdf.drop(index=redundant_indices, inplace=True)

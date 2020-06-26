@@ -141,6 +141,7 @@ class StdRoadGraphBuilder:
         current_segment = current_segment.iloc[0]
 
         length = current_segment[STD_LENGTH]
+        time = length/current_segment[STD_SPEED]
         road_segment_index = [edge_index]
         road_id = current_segment[STD_ROAD_NO] + "_" + current_segment[STD_ROAD_TYPE]
 
@@ -148,13 +149,15 @@ class StdRoadGraphBuilder:
             current_segment = edges_gdf.loc[edges_gdf[STD_INDEX] == int(current_segment[STD_NEXT_IND])]
             current_segment = current_segment.iloc[0]
             length += current_segment[STD_LENGTH]
+            time += length/current_segment[STD_SPEED]
             road_segment_index.extend([current_segment[STD_INDEX]])
 
         final_node = current_segment[STD_TO_NODE]
         d[STD_Nx_ROAD_ID] = road_id
         d[STD_Nx_LENGTH] = length
+        d[STD_Nx_TIME] = time
         d[STD_Nx_ROAD_IND] = road_segment_index
-        d[STD_Nx_WEIGHT] = length
+        d[STD_Nx_WEIGHT] = time
 
         return d, final_node
 

@@ -21,6 +21,8 @@ OS_MOTORWAY = "Motorway"
 OS_A_ROAD = "A Road"
 OS_SLIP_ROAD = "Slip Road"
 OS_ROUNDABOUT = "Roundabout"
+OS_SINGLE_CARRIAGEWAY = "Single Carriageway"
+OS_DUAL_CARRIAGEWAY_LIST = ["Dual Carriageway", "Collapsed Dual Carriageway", "Shared User Carriageway"]
 OS_MAIN_CARRIAGEWAY_LIST = ["Single Carriageway", "Dual Carriageway",
                             "Collapsed Dual Carriageway", "Shared User Carriageway"]
 
@@ -66,6 +68,12 @@ class OSToStdGdfConverter(StdGdfConverter):
         road_types = sel_gdf[OS_ROAD_TYPE].apply(self._convert_to_std_road_type)
         std_df.loc[:, STD_ROAD_TYPE] = road_types.values
 
+        #Insert Form of way
+        std_df.loc[:, STD_FORMOFWAY] = sel_gdf[OS_ROAD_TYPE].values
+
+        #Insert speed limit
+        std_df.loc[:, STD_SPEED] = std_df[STD_FORMOFWAY].apply(self._set_speed_limits)
+
         # Insert length
         std_df.loc[:, STD_LENGTH] = sel_gdf[OS_LENGTH].values
 
@@ -100,6 +108,23 @@ class OSToStdGdfConverter(StdGdfConverter):
             return STD_ROUNDABOUT
         else:
             return STD_NONE
+
+    def _set_speed_limits(self, form_of_way: str) -> str:
+        """
+        Sets the speed limit of each road segment based on the form of way of the road
+        :param form_of_way: Effectively the road type
+        :return: Speed in int
+        """
+
+        if pd.isna(form_of_way):
+            return STD_SPEED_DEFAULT
+
+        if form_of_way == OS_SINGLE_CARRIAGEWAY:
+            return STD_SPEED_SC
+        elif form_of_way in OS_DUAL_CARRIAGEWAY_LIST:
+            return STD_SPEED_DC
+        else:
+            return STD_SPEED_DEFAULT
 
     def _convert_LineString_to_2D(self, coords_3D) -> list:
         """
