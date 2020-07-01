@@ -5,16 +5,16 @@ import geopandas as gpd
 import pandas as pd
 from RoadGraph import euclidean_distance, extract_coord_at_index
 from RoadGraph.StdColNames import *
-from RoadGraph.StdKeyWords import *
 
 
 class StdRoadGraph:
 
-    def __init__(self, netx_graph, nodes_gdf, edges_gdf, key_sites=None):
+    def __init__(self, netx_graph, nodes_gdf, edges_gdf, key_sites=None, is_lazy=True):
         self.net = netx_graph
         self.nodes = nodes_gdf
         self.edges = edges_gdf
         self.key_sites = key_sites
+        self.is_lazy = is_lazy
 
     def shortest_path_between_key_sites(self, source_site: str, target_site: str) -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
         """
@@ -23,13 +23,20 @@ class StdRoadGraph:
         :param target_site: Name of target Royal Mail Sites
         :return: nodes and edges geodataframe of the shortest path between source and target key sites
         """
-        geom_obj = self.key_sites.loc[self.key_sites['location_n'] == source_site, 'geometry'].values[0]
-        source_coord = extract_coord_at_index(geom_obj, 0)
 
-        geom_obj = self.key_sites.loc[self.key_sites['location_n'] == target_site, 'geometry'].values[0]
-        target_coord = extract_coord_at_index(geom_obj, 0)
+        if self.is_lazy:
+            geom_obj = self.key_sites.loc[self.key_sites['location_n'] == source_site, 'geometry'].values[0]
+            source_coord = extract_coord_at_index(geom_obj, 0)
 
-        return self.shortest_path_between_coords(source_coord, target_coord)
+            geom_obj = self.key_sites.loc[self.key_sites['location_n'] == target_site, 'geometry'].values[0]
+            target_coord = extract_coord_at_index(geom_obj, 0)
+
+            return self.shortest_path_between_coords(source_coord, target_coord)
+        else:
+            source_node = self.key_sites.loc[self.key_sites['location_n'] == source_site, 'node']
+            target_node = self.key_sites.loc[self.key_sites['location_n'] == target_site, 'node']
+            return self.shortest_path_betwen_nodes(source_node, target_node)
+
 
     def shortest_path_between_coords(self, source_coord: tuple, target_coord: tuple)\
             ->(gpd.GeoDataFrame, gpd.GeoDataFrame):

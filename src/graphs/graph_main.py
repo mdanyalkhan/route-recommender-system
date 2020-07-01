@@ -67,7 +67,7 @@ def shortest_path_london_southampton():
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
     gdf_path_edges = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
     gdf_path_nodes = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
-    rm_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
+    rm_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/new_rm_lbb.shp"
     edges_gdf = gpd.read_file(gdf_path_edges)
     nodes_gdf = gpd.read_file(gdf_path_nodes)
     net = loadNetworkResults(in_path)
@@ -81,9 +81,8 @@ def shortest_path_london_southampton():
 
 
 if __name__ == "__main__":
+    rm_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
+    gdf_path_nodes = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
+    rm_lbb = map_rm_sites_to_nodes(gpd.read_file(rm_path), gpd.read_file(gdf_path_nodes))
+    rm_lbb.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/new_rm_lbb.shp")
 
-    test_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_edges.shp"
-    gdf = gpd.read_file(test_path)
-    grid_gdf = grid_for_shpfile(gdf, 1)
-
-    grid_gdf.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_grid.shp")

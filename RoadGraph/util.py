@@ -8,7 +8,7 @@ import pandas as pd
 from pyproj import CRS
 from pyproj.transformer import Transformer
 from shapely import wkt
-
+from RoadGraph.StdColNames import *
 from GeoDataFrameAux import extract_coord_at_index, GeoPointDataFrameBuilder, GeoPolyDataFrameBuilder
 
 
@@ -107,3 +107,22 @@ def grid_for_shpfile(shpfile: gpd.GeoDataFrame, size_km: float):
         y += size_m
 
     return gdf
+
+def map_rm_sites_to_nodes(rm_sites: gpd.GeoDataFrame, nodes: gpd.GeoDataFrame):
+
+    COORDINATES = "coordinates"
+    NEAREST_NODE = "node"
+    nodes[COORDINATES] = nodes[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
+    rm_sites[NEAREST_NODE] = ""
+
+    for index, rm_site in rm_sites.iterrows():
+        geom_coord = rm_site[STD_GEOMETRY]
+        coord = extract_coord_at_index(geom_coord, 0)
+        distances = nodes[COORDINATES].apply(lambda x: euclidean_distance(x, coord))
+        min_index = distances.index[distances == distances.min()].values[0]
+        rm_sites.at[index, NEAREST_NODE] = nodes.loc[min_index, STD_NODE_ID]
+
+    nodes.drop([COORDINATES], axis=1, inplace=True)
+
+    return rm_sites
+
