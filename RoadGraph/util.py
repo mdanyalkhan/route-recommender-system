@@ -125,4 +125,3 @@ def map_rm_sites_to_nodes(rm_sites: gpd.GeoDataFrame, nodes: gpd.GeoDataFrame):
     nodes.drop([COORDINATES], axis=1, inplace=True)
 
     return rm_sites
-

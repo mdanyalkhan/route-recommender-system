@@ -81,8 +81,17 @@ def shortest_path_london_southampton():
 
 
 if __name__ == "__main__":
-    rm_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
+    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
+    gdf_path_edges = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
     gdf_path_nodes = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
-    rm_lbb = map_rm_sites_to_nodes(gpd.read_file(rm_path), gpd.read_file(gdf_path_nodes))
-    rm_lbb.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/new_rm_lbb.shp")
+    rm_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/new_rm_lbb.shp"
+    edges_gdf = gpd.read_file(gdf_path_edges)
+    nodes_gdf = gpd.read_file(gdf_path_nodes)
+    net = loadNetworkResults(in_path)
+    key_sites = gpd.read_file(rm_path)
+    roadGraph = RoadGraph.StdRoadGraph(net, nodes_gdf, edges_gdf, key_sites=key_sites)
+
+    bounds, sites_within_bounds = RoadGraph.calculate_shortest_paths_between_sites(roadGraph)
+    bounds.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/lbb_boundary.shp")
+    sites_within_bounds.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/rm_lbb.shp")
 
