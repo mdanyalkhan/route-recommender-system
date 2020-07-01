@@ -84,5 +84,6 @@ if __name__ == "__main__":
 
     test_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_edges.shp"
     gdf = gpd.read_file(test_path)
-    polygon_bounds = bounds_of_shpfile(gdf)
-    polygon_bounds.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_boundary.shp")
+    grid_gdf = grid_for_shpfile(gdf, 1)
+
+    grid_gdf.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/temp/OS_grid.shp")

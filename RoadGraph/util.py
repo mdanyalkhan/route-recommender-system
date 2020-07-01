@@ -88,3 +88,22 @@ def bounds_of_shpfile(shpfile: gpd.GeoDataFrame):
     minx, miny, maxx, maxy = bounds[0], bounds[1], bounds[2], bounds[3]
     coordinates = [(minx, miny), (minx, maxy), (maxx, maxy), (maxx, miny)]
     return GeoPolyDataFrameBuilder().build_geo_frame(coordinates, 'epsg:27700')
+
+def grid_for_shpfile(shpfile: gpd.GeoDataFrame, size_km: float):
+
+    bounds = list(shpfile.total_bounds)
+    minx, miny, maxx, maxy = bounds[0], bounds[1], bounds[2], bounds[3]
+    size_m = size_km * 1000
+    y = miny
+    gdf = gpd.GeoDataFrame()
+
+    while y < maxy:
+        x = minx
+        while x < maxx:
+            coordinates = [(x, y), (x, y + size_m), (x + size_m, y + size_m), (x + size_m, y)]
+            polygon = GeoPolyDataFrameBuilder().build_geo_frame(coordinates, 'epsg:27700')
+            gdf = pd.concat([gdf, polygon])
+            x += size_m
+        y += size_m
+
+    return gdf
