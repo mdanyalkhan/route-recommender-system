@@ -9,7 +9,7 @@ from pyproj import CRS
 from pyproj.transformer import Transformer
 from shapely import wkt
 
-from GeoDataFrameAux import extract_coord_at_index, GeoPointDataFrameBuilder
+from GeoDataFrameAux import extract_coord_at_index, GeoPointDataFrameBuilder, GeoPolyDataFrameBuilder
 
 
 def filter_minor_roads_and_remove_duplicates_from_os_roads(in_path: str, out_path: str):
@@ -50,6 +50,7 @@ def euclidean_distance(coord1: tuple, coord2: tuple):
     x2, y2 = coord2
     return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2))
 
+
 def convert_rm_sites_to_shpfile(in_path: str) -> gpd.GeoDataFrame:
     """
     Converts a royal mail csv file into a shapefile projected onto the British National Grid
@@ -68,6 +69,7 @@ def convert_rm_sites_to_shpfile(in_path: str) -> gpd.GeoDataFrame:
 
     return gdf
 
+
 def project_to_british_national_grid(coords: list):
     """
     Projects a list of coordinates into british national grid
@@ -79,3 +81,10 @@ def project_to_british_national_grid(coords: list):
 
     transformer = Transformer.from_crs(crs_4326, crs_proj)
     return transformer.transform(coords[0], coords[1])
+
+def bounds_of_shpfile(shpfile: gpd.GeoDataFrame):
+
+    bounds = list(shpfile.total_bounds)
+    minx, miny, maxx, maxy = bounds[0], bounds[1], bounds[2], bounds[3]
+    coordinates = [(minx, miny), (minx, maxy), (maxx, maxy), (maxx, miny)]
+    return GeoPolyDataFrameBuilder().build_geo_frame(coordinates, 'epsg:27700')
