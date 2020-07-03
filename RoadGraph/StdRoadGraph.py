@@ -16,12 +16,16 @@ class StdRoadGraph:
         self.key_sites = key_sites
         self.is_lazy = is_lazy
 
-    def shortest_path_between_key_sites(self, source_site: str, target_site: str) -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
+    def shortest_path_between_key_sites(self, source_site: str, target_site: str, get_path=True, get_dist=False) \
+            -> (gpd.GeoDataFrame, gpd.GeoDataFrame, float):
         """
         Finds the shortest path between two sites within the key sites library
+        :param get_dist: Will return length of path if set to true
+        :param get_path: Will return path (i.e. nodes and edges traversed) if set to true
         :param source_site: Name of first Royal Mail Sites
         :param target_site: Name of target Royal Mail Sites
-        :return: nodes and edges geodataframe of the shortest path between source and target key sites
+        :return: nodes and edges geodataframe of the shortest path between source and target key sites, and shortest
+        distance in units of the weight
         """
 
         if self.is_lazy:
@@ -31,20 +35,21 @@ class StdRoadGraph:
             geom_obj = self.key_sites.loc[self.key_sites['location_n'] == target_site, 'geometry'].values[0]
             target_coord = extract_coord_at_index(geom_obj, 0)
 
-            return self.shortest_path_between_coords(source_coord, target_coord)
+            return self.shortest_path_between_coords(source_coord, target_coord, get_path, get_dist)
         else:
             source_node = self.key_sites.loc[self.key_sites['location_n'] == source_site, 'node']
             target_node = self.key_sites.loc[self.key_sites['location_n'] == target_site, 'node']
-            return self.shortest_path_betwen_nodes(source_node, target_node)
+            return self.shortest_path_between_nodes(source_node, target_node, get_path, get_dist)
 
-
-    def shortest_path_between_coords(self, source_coord: tuple, target_coord: tuple)\
-            ->(gpd.GeoDataFrame, gpd.GeoDataFrame):
+    def shortest_path_between_coords(self, source_coord: tuple, target_coord: tuple, get_path=True, get_dist=False) \
+            -> (gpd.GeoDataFrame, gpd.GeoDataFrame, float):
         """
         Finds the shortest path between the source coord to the target coord using the nearest nodes through
         the roads graph
         :param source_coord: Tuple coordinates of the source coordinates
         :param target_coord: Tuple coordinates of the target coordinates
+        :param get_dist: Will return length of path if set to true
+        :param get_path: Will return path (i.e. nodes and edges traversed) if set to true
         :return: The nodes and edges geoDataFrame corresponding to the shortest path between source and target
         coordinates
         """
@@ -61,7 +66,7 @@ class StdRoadGraph:
 
         nodes_gdf.drop([COORDINATES], axis=1, inplace=True)
 
-        return self.shortest_path_betwen_nodes(nearest_source_node, nearest_target_node)
+        return self.shortest_path_between_nodes(nearest_source_node, nearest_target_node, get_path, get_dist)
 
     def set_road_closure(self, from_node: str, to_node: str):
         """
@@ -74,21 +79,26 @@ class StdRoadGraph:
 
     def remove_road_closure(self, from_node: str, to_node: str):
         """
-        Set weights of edge back to original length
+        Set weights of edge back to original time
         :param from_node: Name of first node
         :param to_node: Name of second node
         """
-        self.net[from_node][to_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = self.net[from_node][to_node]\
-            .get(STD_Nx_ATTR).get(STD_Nx_LENGTH)
-        self.net[to_node][from_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = self.net[from_node][to_node]\
-            .get(STD_Nx_ATTR).get(STD_Nx_LENGTH)
 
-    def shortest_path_betwen_nodes(self, source_node: str, target_node: str) -> (gpd.GeoDataFrame, gpd.GeoDataFrame):
+        self.net[from_node][to_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = self.net[from_node][to_node] \
+            .get(STD_Nx_ATTR).get(STD_Nx_TIME)
+        self.net[to_node][from_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = self.net[from_node][to_node] \
+            .get(STD_Nx_ATTR).get(STD_Nx_TIME)
+
+    def shortest_path_between_nodes(self, source_node: str, target_node: str, get_path=True, get_dist=False)\
+            -> (gpd.GeoDataFrame, gpd.GeoDataFrame, float):
         """
         Finds the shortest path between two pair of nodes.
         :param source_node: Name of source node to start the shortest path algorithm from
         :param target_node: Name of Target node
-        :return: The nodes and edges geoDataFrame corresponding to the shortest path between source and target
+        :param get_dist: Will return length of path if set to true
+        :param get_path: Will return path (i.e. nodes and edges traversed) if set to true
+        :return: The nodes and edges geoDataFrame corresponding to the shortest path between source and target, and
+        the shortest path if get_dist is set to true.
         """
         get_weight = lambda u, v, data: data.get(STD_Nx_ATTR).get(STD_Nx_WEIGHT)
         graph = self.net
@@ -96,9 +106,13 @@ class StdRoadGraph:
         nodes_gdf = self.nodes
         paths = {source_node: [source_node]}
 
-        _, paths = self.dijkstra(graph, source_node, get_weight, paths=paths)
+        dist, paths = self.dijkstra(graph, source_node, get_weight, paths=paths)
 
         shortest_path = paths[target_node]
+        shortest_dist = dist[target_node]
+
+        if get_dist and not get_path:
+            return shortest_dist
 
         n = len(shortest_path) - 1
         shortest_edges_gdf = gpd.GeoDataFrame()
@@ -112,7 +126,10 @@ class StdRoadGraph:
             shortest_nodes_gdf = pd.concat(
                 [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf[STD_NODE_ID] == shortest_path[i + 1]]])
 
-        return shortest_edges_gdf, shortest_nodes_gdf
+        if get_path and not get_dist:
+            return shortest_edges_gdf, shortest_nodes_gdf
+        else:
+            return shortest_edges_gdf, shortest_nodes_gdf, shortest_dist
 
     def dijkstra(self, G, source, get_weight, pred=None, paths=None, cutoff=None,
                  target=None):
