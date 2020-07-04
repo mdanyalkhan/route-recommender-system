@@ -82,18 +82,7 @@ def shortest_path_london_southampton():
 
 if __name__ == "__main__":
 
-    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
-    gdf_path_edges = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
-    gdf_path_nodes = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
-    rm_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/new_rm_lbb.shp"
-    edges_gdf = gpd.read_file(gdf_path_edges)
-    nodes_gdf = gpd.read_file(gdf_path_nodes)
-    net = loadNetworkResults(in_path)
+    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/original"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing"
 
-    key_sites = gpd.read_file(rm_path)
-    roadGraph = RoadGraph.StdRoadGraph(net, nodes_gdf, edges_gdf, key_sites=key_sites)
-
-    grids_measure = RoadGraph.calculate_shortest_paths_between_sites(roadGraph)
-
-    grids_measure.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/grids.shp")
-
+    RoadGraph.StdRoadGraphBuilder().build_road_graph(in_path, out_path)

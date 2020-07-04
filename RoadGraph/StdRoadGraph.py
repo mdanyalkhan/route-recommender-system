@@ -100,13 +100,10 @@ class StdRoadGraph:
         :return: The nodes and edges geoDataFrame corresponding to the shortest path between source and target, and
         the shortest path if get_dist is set to true.
         """
-        get_weight = lambda u, v, data: data.get(STD_Nx_ATTR).get(STD_Nx_WEIGHT)
         graph = self.net
         edges_gdf = self.edges
         nodes_gdf = self.nodes
-        paths = {source_node: [source_node]}
-
-        dist, paths = self.dijkstra(graph, source_node, get_weight, paths=paths)
+        dist, paths = self.dijkstra_with_weight(source_node, target_node)
 
         shortest_path = paths[target_node]
         shortest_dist = dist[target_node]
@@ -131,7 +128,21 @@ class StdRoadGraph:
         else:
             return shortest_edges_gdf, shortest_nodes_gdf, shortest_dist
 
-    def dijkstra(self, G, source, get_weight, pred=None, paths=None, cutoff=None,
+    def dijkstra_with_weight(self, source_node, target_node):
+        """
+        Sets up weight criterion for the application of dijkstra's algorithm.
+        :param source_node: Name of source node to start the shortest path algorithm from
+        :param target_node: Name of Target node
+        :return: dist dictionary of distances from source node to all other nodes before hitting target node, and
+        paths dictionary of all nodes traversed before hitting target node
+        """
+        get_weight = lambda u, v, data: data.get(STD_Nx_ATTR).get(STD_Nx_WEIGHT)
+        paths = {source_node: [source_node]}
+        dist, paths = self.dijkstra(source=source_node, get_weight=get_weight, paths=paths,
+                                    target=target_node)
+        return dist, paths
+
+    def dijkstra(self, source, get_weight, pred=None, paths=None, cutoff=None,
                  target=None):
         """Implementation of Dijkstra's algorithm
         Original Authors:
@@ -143,8 +154,6 @@ class StdRoadGraph:
 
         Parameters
         ----------
-        G : NetworkX graph
-
         source : node label
            Starting node for path
 
@@ -177,6 +186,7 @@ class StdRoadGraph:
         distance : dictionary
            Dictionary of shortest lengths keyed by target.
         """
+        G = self.net
         G_succ = G.succ if G.is_directed() else G.adj
 
         push = heappush

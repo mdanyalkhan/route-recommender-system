@@ -106,6 +106,7 @@ def grid_for_shpfile(shpfile: gpd.GeoDataFrame, size_km: float):
             x += size_m
         y += size_m
 
+    gdf.reset_index(drop=True, inplace=True)
     return gdf
 
 def map_rm_sites_to_nodes(rm_sites: gpd.GeoDataFrame, nodes: gpd.GeoDataFrame):
