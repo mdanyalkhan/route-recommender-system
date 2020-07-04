@@ -9,49 +9,46 @@ from RoadGraph.StdColNames import *
 
 class StdRoadGraph:
 
-    def __init__(self, netx_graph, nodes_gdf, edges_gdf, key_sites=None, is_lazy=True):
+    def __init__(self, netx_graph, nodes_gdf, edges_gdf):
         self.net = netx_graph
         self.nodes = nodes_gdf
         self.edges = edges_gdf
-        self.key_sites = key_sites
-        self.is_lazy = is_lazy
 
-    def shortest_path_between_key_sites(self, source_site: str, target_site: str, get_path=True, get_dist=False) \
+    def shortest_path_between_key_sites(self, source_site: str, target_site: str, key_sites_gdf: gpd.GeoDataFrame,
+                                        key_site_col_name: str, get_gdfs=False) \
             -> (gpd.GeoDataFrame, gpd.GeoDataFrame, float):
         """
-        Finds the shortest path between two sites within the key sites library
-        :param get_dist: Will return length of path if set to true
-        :param get_path: Will return path (i.e. nodes and edges traversed) if set to true
+        Decorator function that calls on shortest_path_between_coords based on specified key sites.
         :param source_site: Name of first Royal Mail Sites
         :param target_site: Name of target Royal Mail Sites
-        :return: nodes and edges geodataframe of the shortest path between source and target key sites, and shortest
-        distance in units of the weight
+        :param key_sites_gdf: Database containing list of key sites and its corresponding coordinates
+        :param key_site_col_name: The name of the column in key_sites_gdf that contains the name of the sites
+        :param get_gdfs: If set to true, this will convert the shortest path into its equivalent nodes and edges
+        GeoDataFrame
+        :return: Will either return the shortest path (list)  and shortest distance (float), or shortest path (list),
+        shortest distance(float), the edges and nodes GeoDataFrames depending on whether get_gdfs is set to True
+        or not.
         """
 
-        if self.is_lazy:
-            geom_obj = self.key_sites.loc[self.key_sites['location_n'] == source_site, 'geometry'].values[0]
-            source_coord = extract_coord_at_index(geom_obj, 0)
+        geom_obj = key_sites_gdf.loc[key_sites_gdf[key_site_col_name] == source_site, STD_GEOMETRY].values[0]
+        source_coord = extract_coord_at_index(geom_obj, 0)
 
-            geom_obj = self.key_sites.loc[self.key_sites['location_n'] == target_site, 'geometry'].values[0]
-            target_coord = extract_coord_at_index(geom_obj, 0)
+        geom_obj = key_sites_gdf.loc[key_sites_gdf[key_site_col_name] == target_site, STD_GEOMETRY].values[0]
+        target_coord = extract_coord_at_index(geom_obj, 0)
 
-            return self.shortest_path_between_coords(source_coord, target_coord, get_path, get_dist)
-        else:
-            source_node = self.key_sites.loc[self.key_sites['location_n'] == source_site, 'node']
-            target_node = self.key_sites.loc[self.key_sites['location_n'] == target_site, 'node']
-            return self.shortest_path_between_nodes(source_node, target_node, get_path, get_dist)
+        return self.shortest_path_between_coords(source_coord, target_coord, get_gdfs)
 
-    def shortest_path_between_coords(self, source_coord: tuple, target_coord: tuple, get_path=True, get_dist=False) \
+    def shortest_path_between_coords(self, source_coord: tuple, target_coord: tuple, get_gdfs=False) \
             -> (gpd.GeoDataFrame, gpd.GeoDataFrame, float):
         """
-        Finds the shortest path between the source coord to the target coord using the nearest nodes through
-        the roads graph
+        Decorator function that calls on shortest_path_between_nodes based on specified coordinates.
         :param source_coord: Tuple coordinates of the source coordinates
         :param target_coord: Tuple coordinates of the target coordinates
-        :param get_dist: Will return length of path if set to true
-        :param get_path: Will return path (i.e. nodes and edges traversed) if set to true
-        :return: The nodes and edges geoDataFrame corresponding to the shortest path between source and target
-        coordinates
+        :param get_gdfs: If set to true, this will convert the shortest path into its equivalent nodes and edges
+        GeoDataFrame
+        :return: Will either return the shortest path (list)  and shortest distance (float), or shortest path (list),
+        shortest distance(float), the edges and nodes GeoDataFrames depending on whether get_gdfs is set to True
+        or not.
         """
         nodes_gdf = self.nodes
         COORDINATES = "coordinates"
@@ -66,7 +63,7 @@ class StdRoadGraph:
 
         nodes_gdf.drop([COORDINATES], axis=1, inplace=True)
 
-        return self.shortest_path_between_nodes(nearest_source_node, nearest_target_node, get_path, get_dist)
+        return self.shortest_path_between_nodes(nearest_source_node, nearest_target_node, get_gdfs)
 
     def set_road_closure(self, from_node: str, to_node: str):
         """
@@ -89,27 +86,31 @@ class StdRoadGraph:
         self.net[to_node][from_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = self.net[from_node][to_node] \
             .get(STD_Nx_ATTR).get(STD_Nx_TIME)
 
-    def shortest_path_between_nodes(self, source_node: str, target_node: str, get_path=True, get_dist=False)\
-            -> (gpd.GeoDataFrame, gpd.GeoDataFrame, float):
+    def shortest_path_between_nodes(self, source_node: str, target_node: str, get_gdfs=False) \
+            -> (list, float, gpd.GeoDataFrame, gpd.GeoDataFrame):
         """
         Finds the shortest path between two pair of nodes.
         :param source_node: Name of source node to start the shortest path algorithm from
         :param target_node: Name of Target node
-        :param get_dist: Will return length of path if set to true
-        :param get_path: Will return path (i.e. nodes and edges traversed) if set to true
-        :return: The nodes and edges geoDataFrame corresponding to the shortest path between source and target, and
-        the shortest path if get_dist is set to true.
+        :param get_gdfs: If set to true, this will convert the shortest path into its equivalent nodes and edges
+        GeoDataFrame
+        :return: Will either return the shortest path (list)  and shortest distance (float), or shortest path (list),
+        shortest distance(float), the edges and nodes GeoDataFrames depending on whether get_gdfs is set to True
+        or not.
         """
         graph = self.net
         edges_gdf = self.edges
         nodes_gdf = self.nodes
-        dist, paths = self.dijkstra_with_weight(source_node, target_node)
+        get_weight = lambda u, v, data: data.get(STD_Nx_ATTR).get(STD_Nx_WEIGHT)
+        paths = {source_node: [source_node]}
+        dist, paths = self.dijkstra(source=source_node, get_weight=get_weight, paths=paths,
+                                    target=target_node)
 
         shortest_path = paths[target_node]
         shortest_dist = dist[target_node]
 
-        if get_dist and not get_path:
-            return shortest_dist
+        if not get_gdfs:
+            return shortest_path, shortest_dist
 
         n = len(shortest_path) - 1
         shortest_edges_gdf = gpd.GeoDataFrame()
@@ -123,10 +124,7 @@ class StdRoadGraph:
             shortest_nodes_gdf = pd.concat(
                 [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf[STD_NODE_ID] == shortest_path[i + 1]]])
 
-        if get_path and not get_dist:
-            return shortest_edges_gdf, shortest_nodes_gdf
-        else:
-            return shortest_edges_gdf, shortest_nodes_gdf, shortest_dist
+        return shortest_path, shortest_dist, shortest_edges_gdf, shortest_nodes_gdf
 
     def dijkstra_with_weight(self, source_node, target_node):
         """

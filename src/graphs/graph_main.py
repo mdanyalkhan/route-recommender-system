@@ -4,6 +4,7 @@ import RoadGraph
 import os
 import pickle
 
+
 def remove_duplicates_from_os():
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/original"
     out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os"
@@ -81,8 +82,24 @@ def shortest_path_london_southampton():
 
 
 if __name__ == "__main__":
+    netx_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/netx/roadGraph.pickle"
+    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/final/edges.shp"
+    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/final/nodes.shp"
+    key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/rm_sites/test_rm_locations.shp"
 
-    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/original"
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing"
+    net = loadNetworkResults(netx_path)
+    edges = gpd.read_file(edges_path)
+    nodes = gpd.read_file(nodes_path)
+    key_sites = gpd.read_file(key_sites_path)
 
-    RoadGraph.StdRoadGraphBuilder().build_road_graph(in_path, out_path)
+    graph = RoadGraph.StdRoadGraph(net, nodes, edges)
+
+    _, _, shortest_edges, shortest_nodes = graph.shortest_path_between_key_sites('WARRINGTON RAIL TERMINAL HUB',
+                                                                                 'BIRKENHEAD PORT', key_sites,
+                                                                                 'location_n', get_gdfs=True)
+
+    shortest_edges.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/shortest_paths/"
+                                                                    "shortest_edges_path.shp")
+
+    shortest_nodes.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/shortest_paths/"
+                                                                    "shortest_nodes_path.shp")
