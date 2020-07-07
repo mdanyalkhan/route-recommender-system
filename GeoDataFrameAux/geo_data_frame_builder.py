@@ -15,8 +15,7 @@ class GeoDataFrameBuilder(object):
         """
         geom_str = self._build_geometry_object(coords)
         df = pd.DataFrame(
-            {'id': [1],
-             "geometry": [geom_str]})
+            {"geometry": [geom_str]})
 
         df['geometry'] = df['geometry'].apply(wkt.loads)
         gdf = gpd.GeoDataFrame(df, geometry='geometry')

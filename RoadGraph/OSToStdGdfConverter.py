@@ -142,7 +142,7 @@ class OSToStdGdfConverter(StdGdfConverter):
 
     def _rename_roundabouts(self, std_df: pd.DataFrame) -> pd.DataFrame:
         """
-        Identifies and assigns unique roundabout IDs to each roundabout from the OS
+        Identifies and assigsns unique roundabout IDs to each roundabout from the OS
         dataset. This ensures each roundabout does not have the same road number (as
         was the case in the original dataset).
 

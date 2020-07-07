@@ -94,12 +94,13 @@ if __name__ == "__main__":
 
     graph = RoadGraph.StdRoadGraph(net, nodes, edges)
 
-    _, _, shortest_edges, shortest_nodes = graph.shortest_path_between_key_sites('WARRINGTON RAIL TERMINAL HUB',
-                                                                                 'BIRKENHEAD PORT', key_sites,
-                                                                                 'location_n', get_gdfs=True)
+    vuln_analyser = RoadGraph.VulnerabilityAnalyser(graph)
+    results = vuln_analyser.vulnerability_between_two_sites('WARRINGTON MC', 'NORTH WEST DC',
+                                                                             key_sites, 'location_n')
 
-    shortest_edges.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/shortest_paths/"
-                                                                    "shortest_edges_path.shp")
+    results['base'][1].to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/vulnerability/base_path.shp")
+    results['least_resilient'][1].to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/vulnerability/vuln_path.shp")
+    results['grid_reference'].to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/vulnerability/square.shp")
 
-    shortest_nodes.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/shortest_paths/"
-                                                                    "shortest_nodes_path.shp")
+
+

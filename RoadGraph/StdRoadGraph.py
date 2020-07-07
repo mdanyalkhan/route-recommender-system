@@ -98,9 +98,6 @@ class StdRoadGraph:
         shortest distance(float), the edges and nodes GeoDataFrames depending on whether get_gdfs is set to True
         or not.
         """
-        graph = self.net
-        edges_gdf = self.edges
-        nodes_gdf = self.nodes
         get_weight = lambda u, v, data: data.get(STD_Nx_ATTR).get(STD_Nx_WEIGHT)
         paths = {source_node: [source_node]}
         dist, paths = self.dijkstra(source=source_node, get_weight=get_weight, paths=paths,
@@ -112,7 +109,15 @@ class StdRoadGraph:
         if not get_gdfs:
             return shortest_path, shortest_dist
 
+        shortest_edges_gdf, shortest_nodes_gdf = self.convert_path_to_gdfs(shortest_path)
+
+        return shortest_path, shortest_dist, shortest_edges_gdf, shortest_nodes_gdf
+
+    def convert_path_to_gdfs(self, shortest_path):
         n = len(shortest_path) - 1
+        graph = self.net
+        edges_gdf = self.edges
+        nodes_gdf = self.nodes
         shortest_edges_gdf = gpd.GeoDataFrame()
         shortest_nodes_gdf = gpd.GeoDataFrame()
 
@@ -124,7 +129,7 @@ class StdRoadGraph:
             shortest_nodes_gdf = pd.concat(
                 [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf[STD_NODE_ID] == shortest_path[i + 1]]])
 
-        return shortest_path, shortest_dist, shortest_edges_gdf, shortest_nodes_gdf
+        return shortest_edges_gdf, shortest_nodes_gdf
 
     def dijkstra_with_weight(self, source_node, target_node):
         """
