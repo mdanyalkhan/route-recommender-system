@@ -95,12 +95,15 @@ if __name__ == "__main__":
     graph = RoadGraph.StdRoadGraph(net, nodes, edges)
 
     vuln_analyser = RoadGraph.VulnerabilityAnalyser(graph)
-    results = vuln_analyser.vulnerability_between_two_sites('WARRINGTON MC', 'BIRKENHEAD PORT',
-                                                                             key_sites, 'location_n', deactivation=3)
 
-    results['base'][1].to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/vulnerability/base_path.shp")
-    results['least_resilient'][1].to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/vulnerability/vuln_path.shp")
-    results['grid_reference'].to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/vulnerability/square.shp")
+    vuln_analyser.vulnerability_between_all_sites(key_sites, key_site_col='location_n')
+    # results = vuln_analyser.vulnerability_between_two_sites('WARRINGTON MC', 'BIRKENHEAD PORT',
+    #                                                                          key_sites, 'location_n', deactivation=3)
+    #
+    # print(results['resilience_index'])
+    # results['base'][1].to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/vulnerability/base_path.shp")
+    # results['least_resilient'][1].to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/vulnerability/vuln_path.shp")
+    # results['grid_reference'].to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/vulnerability/square.shp")
 
 
 
