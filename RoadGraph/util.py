@@ -51,78 +51,18 @@ def euclidean_distance(coord1: tuple, coord2: tuple):
     return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2))
 
 
-def convert_rm_sites_to_shpfile(in_path: str) -> gpd.GeoDataFrame:
+def convert_csv_to_shpfile(in_path: str, lat_name: str, long_name: str) -> gpd.GeoDataFrame:
     """
     Converts a royal mail csv file into a shapefile projected onto the British National Grid
     :param in_path:
     :return:
     """
     df = pd.read_csv(in_path)
-    df['lat_lon'] = df[['lat', 'lon']].values.tolist()
-    df['geometry'] = df['lat_lon'].apply(project_to_british_national_grid)
-    df.drop('lat_lon', axis=1, inplace=True)
-    df['geometry'] = df['geometry'].apply(GeoPointDataFrameBuilder()._build_geometry_object)
-    df['geometry'] = df['geometry'].apply(wkt.loads)
+    gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df[long_name], df[lat_name]))
 
-    gdf = gpd.GeoDataFrame(df, geometry='geometry')
-    gdf.crs = {'init': 'epsg:27700'}
-
+    gdf.crs = "WGS84"
+    gdf.to_crs("EPSG:27700", inplace=True)
     return gdf
 
 
-def project_to_british_national_grid(coords: list):
-    """
-    Projects a list of coordinates into british national grid
-    :param coords: Latitude and longitude in a list
-    :return: Tuple of coordinates converted to british national grid
-    """
-    crs_4326 = CRS("WGS84")
-    crs_proj = CRS("EPSG:27700")
 
-    transformer = Transformer.from_crs(crs_4326, crs_proj)
-    return transformer.transform(coords[0], coords[1])
-
-def bounds_of_shpfile(shpfile: gpd.GeoDataFrame):
-
-    bounds = list(shpfile.total_bounds)
-    minx, miny, maxx, maxy = bounds[0], bounds[1], bounds[2], bounds[3]
-    coordinates = [(minx, miny), (minx, maxy), (maxx, maxy), (maxx, miny)]
-    return GeoPolyDataFrameBuilder().build_geo_frame(coordinates, 'epsg:27700')
-
-def grid_for_shpfile(shpfile: gpd.GeoDataFrame, size_km: float):
-
-    bounds = list(shpfile.total_bounds)
-    minx, miny, maxx, maxy = bounds[0], bounds[1], bounds[2], bounds[3]
-    size_m = size_km * 1000
-    y = miny
-    gdf = gpd.GeoDataFrame()
-
-    while y < maxy:
-        x = minx
-        while x < maxx:
-            coordinates = [(x, y), (x, y + size_m), (x + size_m, y + size_m), (x + size_m, y)]
-            polygon = GeoPolyDataFrameBuilder().build_geo_frame(coordinates, 'epsg:27700')
-            gdf = pd.concat([gdf, polygon])
-            x += size_m
-        y += size_m
-
-    gdf.reset_index(drop=True, inplace=True)
-    return gdf
-
-def map_rm_sites_to_nodes(rm_sites: gpd.GeoDataFrame, nodes: gpd.GeoDataFrame):
-
-    COORDINATES = "coordinates"
-    NEAREST_NODE = "node"
-    nodes[COORDINATES] = nodes[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
-    rm_sites[NEAREST_NODE] = ""
-
-    for index, rm_site in rm_sites.iterrows():
-        geom_coord = rm_site[STD_GEOMETRY]
-        coord = extract_coord_at_index(geom_coord, 0)
-        distances = nodes[COORDINATES].apply(lambda x: euclidean_distance(x, coord))
-        min_index = distances.index[distances == distances.min()].values[0]
-        rm_sites.at[index, NEAREST_NODE] = nodes.loc[min_index, STD_NODE_ID]
-
-    nodes.drop([COORDINATES], axis=1, inplace=True)
-
-    return rm_sites

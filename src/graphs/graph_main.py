@@ -82,21 +82,40 @@ def shortest_path_london_southampton():
 
 
 if __name__ == "__main__":
-    netx_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/netx/roadGraph.pickle"
-    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/final/edges.shp"
-    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/final/nodes.shp"
-    key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/rm_sites/test_rm_locations.shp"
+    cluster_path = parent_directory_at_level(__file__, 5) + "/Incoming/imperial_data/data_with_labels/20191002-" \
+                                                            "20200130_isotrak_legs_excl_5km_train"
+    filenames = os.listdir(cluster_path)
 
-    net = loadNetworkResults(netx_path)
-    edges = gpd.read_file(edges_path)
-    nodes = gpd.read_file(nodes_path)
-    key_sites = gpd.read_file(key_sites_path)
+    for filename in filenames:
+        df = pd.read_csv(f"{cluster_path}/{filename}")
+        print(f'--{filename}--')
+        print(df['from_depot'].unique())
+        print(df['to_depot'].unique())
 
-    graph = RoadGraph.StdRoadGraph(net, nodes, edges)
+    # gdf = convert_csv_to_shpfile(cluster_path + filenames[-1], lat_name='Event_Lat', long_name='Event_Long')
+    # gdf.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/cluster_shp/trial.shp")
 
-    vuln_analyser = RoadGraph.VulnerabilityAnalyser(graph)
+    # netx_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
+    # edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
+    # nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
+    # key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
+    #
+    # net = loadNetworkResults(netx_path)
+    # edges = gpd.read_file(edges_path)
+    # nodes = gpd.read_file(nodes_path)
+    # key_sites = gpd.read_file(key_sites_path)
+    #
+    # graph = RoadGraph.StdRoadGraph(net, nodes, edges)
+    # _, _, s_edges, s_nodes = graph.shortest_path_between_key_sites('NATIONAL DC', 'BRISTOL MC', key_sites, key_site_col_name='location_n',
+    #                                       get_gdfs= True)
+    #
+    # s_edges.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/National_Bristol_e.shp")
+    # s_nodes.to_file(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/shortest_paths/National_Bristol_n.shp")
 
-    vuln_analyser.vulnerability_between_all_sites(key_sites, key_site_col='location_n')
+    #
+    # vuln_analyser = RoadGraph.VulnerabilityAnalyser(graph)
+
+
     # results = vuln_analyser.vulnerability_between_two_sites('WARRINGTON MC', 'BIRKENHEAD PORT',
     #                                                                          key_sites, 'location_n', deactivation=3)
     #

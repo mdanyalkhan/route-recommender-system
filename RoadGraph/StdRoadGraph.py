@@ -29,7 +29,6 @@ class StdRoadGraph:
         shortest distance(float), the edges and nodes GeoDataFrames depending on whether get_gdfs is set to True
         or not.
         """
-
         geom_obj = key_sites_gdf.loc[key_sites_gdf[key_site_col_name] == source_site, STD_GEOMETRY].values[0]
         source_coord = extract_coord_at_index(geom_obj, 0)
 
