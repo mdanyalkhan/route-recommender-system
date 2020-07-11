@@ -1,3 +1,4 @@
+import pickle
 from os.path import *
 import pandas as pd
 import geopandas as gpd
@@ -36,4 +37,9 @@ def clip(layer: gpd.geodataframe, mask: gpd.geodataframe):
                             (layer.bounds["maxy"] <= max_y)]
 
     return in_boundary.copy()
+
+def loadNetworkResults(file_name):
+    with open(file_name, 'rb') as target:
+        network_results = pickle.load(target)
+    return network_results
 

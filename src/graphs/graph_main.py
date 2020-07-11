@@ -37,13 +37,6 @@ def connect_both_node_edges_std_gdfs():
     out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/final"
     RoadGraph.StdNodesEdgesGdfConnector().connect_two_nodeEdges_std_gdfs_from_paths(SD_in_path, SJ_in_path, out_path)
 
-
-def loadNetworkResults(file_name):
-    with open(file_name, 'rb') as target:
-        network_results = pickle.load(target)
-    return network_results
-
-
 def count_no_of_line_features(in_path):
     list_of_files = os.listdir(in_path)
     shp_full_paths_in = [in_path + "/" + x for x in list_of_files if "_RoadLink.shp" in x]

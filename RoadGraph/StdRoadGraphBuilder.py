@@ -7,6 +7,7 @@ import networkx as nx
 from RoadGraph import OSToStdGdfConverter, StdNodesEdgesGdfBuilder, StdNodesEdgesGdfConnector, extract_coord_at_index
 from RoadGraph.StdColNames import *
 from RoadGraph.StdKeyWords import *
+from RoadGraph.util import create_file_path
 
 
 class StdRoadGraphBuilder:
@@ -27,7 +28,7 @@ class StdRoadGraphBuilder:
         :return: A Networkx Graph object representing the roads geoDataFrame.
         """
         curr_path = in_path
-        out_path = self._create_file_path(target_path + "/out")
+        out_path = create_file_path(target_path + "/out")
 
         if is_conversion_required:
             curr_path = self._convert_gdfs(curr_path, out_path)
@@ -39,7 +40,7 @@ class StdRoadGraphBuilder:
         nodes_gdf = gpd.read_file(curr_path + "/nodes.shp")
 
         net = self.create_graph(nodes_gdf, edges_gdf)
-        target_path = self._create_file_path(out_path + "/netx")
+        target_path = create_file_path(out_path + "/netx")
         target_file = target_path + "/roadGraph.pickle"
 
         with open(target_file, 'wb') as target:
@@ -56,7 +57,7 @@ class StdRoadGraphBuilder:
         :param out_path: File path in which the converted standard dataframes are to be saved
         :return converted_path: the path in which the converted geodataframes are saved
         """
-        converted_path = self._create_file_path(out_path + "/converted")
+        converted_path = create_file_path(out_path + "/converted")
         list_of_files = os.listdir(in_path)
         shp_full_paths_in = [in_path + "/" + x for x in list_of_files if ".shp" in x]
         shp_full_paths_out = [converted_path + "/" + x for x in list_of_files if ".shp" in x]
@@ -76,7 +77,7 @@ class StdRoadGraphBuilder:
         :param out_path: Path in which the nodes and edges GeoDataFrames will be saved
         :return: Path in which all the nodes and edges geoDataFrames are saved
         """
-        connected_path = self._create_file_path((out_path + "/connected"))
+        connected_path = create_file_path((out_path + "/connected"))
         prefix = 'A'
 
         list_of_files = os.listdir(in_path)
@@ -93,7 +94,7 @@ class StdRoadGraphBuilder:
         for i in range(n):
             print("iteration: " + str(i + 1) + " out of " + str(n + 1))
             std_gdf = gpd.read_file(shp_full_paths_in[i])
-            self._create_file_path(shp_full_paths_out[i])
+            create_file_path(shp_full_paths_out[i])
             self.builder.build_nodes_and_edges_gdf(std_gdf, shp_full_paths_out[i], node_tag=prefix)
             prefix = chr(ord(prefix) + 1)
 
@@ -108,7 +109,7 @@ class StdRoadGraphBuilder:
         """
         list_of_files = os.listdir(in_path)
         shp_full_paths_in = [in_path + "/" + x for x in list_of_files if not x.startswith(".")]
-        final_path = self._create_file_path(out_path + "/final")
+        final_path = create_file_path(out_path + "/final")
 
         n = len(shp_full_paths_in)
         gdf_edges = gpd.read_file(shp_full_paths_in[0] + "/edges.shp")
@@ -136,7 +137,7 @@ class StdRoadGraphBuilder:
                 final_node: final node that this road connects to
         """
         d = {}
-
+        kph_to_mps_factor = 1000.0/3600.0
         current_segment = edges_gdf.loc[edges_gdf[STD_INDEX] == edge_index]
         current_segment = current_segment.iloc[0]
 
@@ -149,7 +150,7 @@ class StdRoadGraphBuilder:
             current_segment = edges_gdf.loc[edges_gdf[STD_INDEX] == int(current_segment[STD_NEXT_IND])]
             current_segment = current_segment.iloc[0]
             length += current_segment[STD_LENGTH]
-            time += length/current_segment[STD_SPEED]
+            time += length/(current_segment[STD_SPEED]*kph_to_mps_factor)
             road_segment_index.extend([current_segment[STD_INDEX]])
 
         final_node = current_segment[STD_TO_NODE]
@@ -208,16 +209,5 @@ class StdRoadGraphBuilder:
             return shp_tags[0]
         else:
             return shp_tags
-
-    def _create_file_path(self, file_path: str) -> str:
-        """
-        Either returns or creates and returns a directory corresponding to file_path
-        :param file_path: Name of file path that needs to be created in the computer's directory tree
-        :return: the file path following confirmation that it exists
-        """
-        if not os.path.exists(file_path):
-            os.makedirs(file_path)
-
-        return file_path
 
 

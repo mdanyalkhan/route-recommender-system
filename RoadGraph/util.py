@@ -65,4 +65,13 @@ def convert_csv_to_shpfile(in_path: str, lat_name: str, long_name: str) -> gpd.G
     return gdf
 
 
+def create_file_path(file_path: str) -> str:
+    """
+    Either returns or creates and returns a directory corresponding to file_path
+    :param file_path: Name of file path that needs to be created in the computer's directory tree
+    :return: the file path following confirmation that it exists
+    """
+    if not os.path.exists(file_path):
+        os.makedirs(file_path)
 
+    return file_path
