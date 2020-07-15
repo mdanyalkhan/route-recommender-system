@@ -102,6 +102,7 @@ class StdNodesEdgesGdfBuilder:
         VISITED = 'visited'
         roads_gdf[VISITED] = False
         funct_indices = roads_gdf.index[roads_gdf[STD_ROAD_TYPE] != STD_ROUNDABOUT]
+        print("Starting junction node assignment")
 
         for i in funct_indices:
 
@@ -123,16 +124,19 @@ class StdNodesEdgesGdfBuilder:
                     first_coord = segment[FIRST_COORD]
                     last_coord = segment[LAST_COORD]
                     road_no = segment[STD_ROAD_NO]
+                    road_type = segment[STD_ROAD_TYPE]
 
                     if pd.isna(segment[STD_NEXT_IND]) and segment[STD_TO_NODE] == "None":
                         node_dict, roads_gdf, segment_queue = self._find_connections(roads_gdf, index, last_coord,
-                                                                                     node_dict, road_no, segment_queue,
+                                                                                     node_dict, road_no, road_type,
+                                                                                     segment_queue,
                                                                                      connections_queue,
                                                                                      is_last_coord=True)
 
                     if pd.isna(segment[STD_PREV_IND]) and segment[STD_FROM_NODE] == "None":
                         node_dict, roads_gdf, segment_queue = self._find_connections(roads_gdf, index, first_coord,
-                                                                                     node_dict, road_no, segment_queue,
+                                                                                     node_dict, road_no, road_type,
+                                                                                     segment_queue,
                                                                                      connections_queue,
                                                                                      is_last_coord=False)
                     roads_gdf.at[index, VISITED] = True
@@ -143,7 +147,7 @@ class StdNodesEdgesGdfBuilder:
         return roads_gdf, node_dict
 
     def _find_connections(self, roads_gdf: gpd.GeoDataFrame, index: int,
-                          target_coord: (float, float), node_dict: dict, road_no: str, seg_queue: Queue,
+                          target_coord: (float, float), node_dict: dict, road_no: str, road_type: str, seg_queue: Queue,
                           con_queue: Queue, is_last_coord: bool) -> (dict, gpd.GeoDataFrame):
         """
         Establishes connections between the road feature corresponding to index, and assigns nodes
@@ -174,7 +178,8 @@ class StdNodesEdgesGdfBuilder:
             NODE_A = STD_FROM_NODE
 
         if len(connected_to_road_a) == 1 and len(connected_to_road_b) == 0 \
-                and connected_to_road_a[STD_ROAD_NO].values[0] == road_no:
+                and connected_to_road_a[STD_ROAD_NO].values[0] == road_no \
+                and connected_to_road_a[STD_ROAD_TYPE].values[0] == road_type:
 
             connecting_index = int(connected_to_road_a[STD_INDEX].values[0])
             roads_gdf.at[index, INDEX_A] = connecting_index
@@ -187,7 +192,8 @@ class StdNodesEdgesGdfBuilder:
             seg_queue.put(connecting_index)
 
         elif len(connected_to_road_a) == 0 and len(connected_to_road_b) == 1 \
-                and connected_to_road_b[STD_ROAD_NO].values[0] == road_no:
+                and connected_to_road_b[STD_ROAD_NO].values[0] == road_no \
+                and connected_to_road_b[STD_ROAD_TYPE].values[0] == road_type:
 
             connecting_index = int(connected_to_road_b[STD_INDEX].values[0])
             roads_gdf.at[index, INDEX_A] = connecting_index
@@ -249,6 +255,7 @@ class StdNodesEdgesGdfBuilder:
         :param node_dict: Dictionary containing list of node IDs
         :return: returns updated roads gdf and node dict
         """
+        print('Starting roundabout assignment')
         roundabouts_gdf = roads_gdf.loc[roads_gdf[STD_ROAD_TYPE] == STD_ROUNDABOUT]
         other_roads_gdf = roads_gdf.loc[roads_gdf[STD_ROAD_TYPE] != STD_ROUNDABOUT]
         roundabouts_names = roundabouts_gdf[STD_ROAD_NO].unique()
@@ -278,6 +285,7 @@ class StdNodesEdgesGdfBuilder:
                                                        (other_roads_gdf[LAST_COORD] == last_coord)]
 
                 roads_gdf.loc[connected_at_end[STD_INDEX], STD_TO_NODE] = node_dict[STD_NODE_ID][-1]
+        print('Finished roundabout assignment')
 
         return roads_gdf, node_dict
 

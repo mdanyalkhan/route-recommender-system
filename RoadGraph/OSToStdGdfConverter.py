@@ -1,6 +1,6 @@
 from queue import Queue
 
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Polygon
 
 from GeoDataFrameAux import extract_coord_at_index
 from RoadGraph.StdGdfConverter import *
@@ -15,7 +15,7 @@ OS_ROAD_NO = "roadNumber"
 OS_LENGTH = "length"
 OS_ROAD_TYPE = "formOfWay"
 OS_GEOMETRY = "geometry"
-
+OS_IS_TRUNK = "trunkRoad"
 # Key words pertaining to the OS geodataframe
 OS_MOTORWAY = "Motorway"
 OS_A_ROAD = "A Road"
@@ -28,6 +28,12 @@ OS_MAIN_CARRIAGEWAY_LIST = ["Single Carriageway", "Dual Carriageway",
 
 
 class OSToStdGdfConverter(StdGdfConverter):
+
+    def __init__(self, speed_criteria='Simple', built_up_gdf=None):
+        self.speed_criteria = speed_criteria
+        self._built_up_gdf = built_up_gdf
+        super().__init__()
+
     def _build_std_gdf(self, orig_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         """
         Converts a single os geodataframe to an equivalent HE geodataframe
@@ -40,6 +46,12 @@ class OSToStdGdfConverter(StdGdfConverter):
         # Insert geometry
         converted_gdf = gpd.GeoDataFrame(converted_df, geometry=STD_GEOMETRY)
         converted_gdf.crs = {'init': 'epsg:27700'}
+
+        # Insert speed limit
+        if self.speed_criteria == 'Simple':
+            converted_gdf.loc[:, STD_SPEED] = converted_gdf[STD_FORMOFWAY].apply(self._set_speed_limits_simple)
+        elif self.speed_criteria == 'Complex':
+            converted_gdf = self._set_speed_limits_complex(converted_gdf)
 
         return converted_gdf
 
@@ -71,9 +83,6 @@ class OSToStdGdfConverter(StdGdfConverter):
         #Insert Form of way
         std_df.loc[:, STD_FORMOFWAY] = sel_gdf[OS_ROAD_TYPE].values
 
-        #Insert speed limit
-        std_df.loc[:, STD_SPEED] = std_df[STD_FORMOFWAY].apply(self._set_speed_limits)
-
         # Insert length
         std_df.loc[:, STD_LENGTH] = sel_gdf[OS_LENGTH].values
 
@@ -83,6 +92,8 @@ class OSToStdGdfConverter(StdGdfConverter):
         #Insert whether road segment is SRN
         if self.srn_list is not None:
             std_df.loc[:, STD_IS_SRN] = std_df.loc[:, STD_ROAD_NO].apply(lambda x: x in self.srn_list)
+        else:
+            std_df.loc[:,STD_IS_SRN] = sel_gdf.loc[:, OS_IS_TRUNK].apply(lambda x: x == 'true')
 
         # Insert geometry
         geometry_2D = self._convert_LineString_to_2D(sel_gdf[OS_GEOMETRY].values)
@@ -109,7 +120,7 @@ class OSToStdGdfConverter(StdGdfConverter):
         else:
             return STD_NONE
 
-    def _set_speed_limits(self, form_of_way: str) -> str:
+    def _set_speed_limits_simple(self, form_of_way: str) -> str:
         """
         Sets the speed limit of each road segment based on the form of way of the road
         :param form_of_way: Effectively the road type
@@ -125,6 +136,40 @@ class OSToStdGdfConverter(StdGdfConverter):
             return STD_SPEED_DC
         else:
             return STD_SPEED_DEFAULT
+
+    def _set_speed_limits_complex(self, edges_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+
+        built_up = self._built_up_gdf
+        #Set default values
+        edges_gdf.loc[:, STD_SPEED] = STD_SPEED_DEFAULT
+        edges_gdf.loc[edges_gdf[STD_FORMOFWAY] == OS_SINGLE_CARRIAGEWAY, STD_SPEED] = STD_SPEED_SC
+        edges_gdf.loc[edges_gdf[STD_FORMOFWAY].isin(OS_DUAL_CARRIAGEWAY_LIST), STD_SPEED] = STD_SPEED_DC
+
+        #Set all roads within built up areas with lowest speed limit
+        bounds = list(edges_gdf.total_bounds)
+        minx, miny, maxx, maxy = bounds[0], bounds[1], bounds[2], bounds[3]
+        coordinates = [(minx, miny), (minx, maxy), (maxx, maxy), (maxx, miny), ]
+        bound_poly = Polygon(coordinates)
+
+        within_bounds = built_up[STD_GEOMETRY].apply(lambda x: x.intersects(bound_poly))
+        filtered_built_up = built_up.drop(index=within_bounds[within_bounds == False].index)
+        built_up_geom = filtered_built_up[STD_GEOMETRY].tolist()
+
+        i = 1
+        for poly in built_up_geom:
+            print(f'Speed set {i}')
+            within_poly = edges_gdf['geometry'].apply(lambda x: x.intersects(poly))
+            edges_gdf.loc[within_poly[within_poly == True].index, STD_SPEED] = STD_SPEED_BUILT_UP
+            i += 1
+
+        #Set all motorways back to national speed limit
+        edges_gdf.loc[edges_gdf[STD_ROAD_NO].str.startswith('M', na=False), STD_SPEED] = STD_SPEED_DC
+
+        #Set all trunk roads to national speed limit
+        edges_gdf.loc[edges_gdf[STD_IS_SRN] == True, STD_SPEED] = STD_SPEED_DC
+
+
+        return edges_gdf
 
     def _convert_LineString_to_2D(self, coords_3D) -> list:
         """

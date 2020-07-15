@@ -5,7 +5,7 @@ Equivalent to an enum file, containing the column names of the standard geodataf
 STD_INDEX = 'INDEX'
 STD_ROAD_NO = "ROAD_NO"
 STD_ROAD_TYPE = "ROAD_TYPE"
-STD_FORMOFWAY = "FORM_OF_WAY"
+STD_FORMOFWAY = "FORM_OF_WA"
 STD_SPEED = "Speed"
 STD_LENGTH = "Length"
 STD_IS_SRN = "IS_SRN"

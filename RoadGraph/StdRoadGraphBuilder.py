@@ -4,7 +4,8 @@ import pickle
 import os
 import networkx as nx
 
-from RoadGraph import OSToStdGdfConverter, StdNodesEdgesGdfBuilder, StdNodesEdgesGdfConnector, extract_coord_at_index
+from RoadGraph import OSToStdGdfConverter, StdNodesEdgesGdfBuilder, StdNodesEdgesGdfConnector, extract_coord_at_index, \
+    StdRoadGraph
 from RoadGraph.StdColNames import *
 from RoadGraph.StdKeyWords import *
 from RoadGraph.util import create_file_path
@@ -140,9 +141,8 @@ class StdRoadGraphBuilder:
         kph_to_mps_factor = 1000.0/3600.0
         current_segment = edges_gdf.loc[edges_gdf[STD_INDEX] == edge_index]
         current_segment = current_segment.iloc[0]
-
         length = current_segment[STD_LENGTH]
-        time = length/current_segment[STD_SPEED]
+        time = length/(current_segment[STD_SPEED]*kph_to_mps_factor)
         road_segment_index = [edge_index]
         road_id = current_segment[STD_ROAD_NO] + "_" + current_segment[STD_ROAD_TYPE]
 
@@ -150,7 +150,7 @@ class StdRoadGraphBuilder:
             current_segment = edges_gdf.loc[edges_gdf[STD_INDEX] == int(current_segment[STD_NEXT_IND])]
             current_segment = current_segment.iloc[0]
             length += current_segment[STD_LENGTH]
-            time += length/(current_segment[STD_SPEED]*kph_to_mps_factor)
+            time += current_segment[STD_LENGTH]/(current_segment[STD_SPEED]*kph_to_mps_factor)
             road_segment_index.extend([current_segment[STD_INDEX]])
 
         final_node = current_segment[STD_TO_NODE]
@@ -209,5 +209,4 @@ class StdRoadGraphBuilder:
             return shp_tags[0]
         else:
             return shp_tags
-
 

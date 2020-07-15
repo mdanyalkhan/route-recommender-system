@@ -53,6 +53,10 @@ class StdNodesEdgesGdfConnector:
         base_e, base_n, aux_n = self._connect_by_nodes(aux_n, base_n, base_e, STD_N_ROUNDABOUT)
         base_e, base_n, aux_n = self._connect_by_nodes(aux_n, base_n, base_e, STD_N_TERMINAL)
 
+        # Establish connections between terminal nodes and potential edges from other map
+        aux_e = self._connect_by_edge(base_n, aux_e)
+        base_e = self._connect_by_edge(aux_n, base_e)
+
         aux_e = self._reindex_to_base_edges(base_e, aux_e)
         base_e = pd.concat([base_e, aux_e])
         base_n = pd.concat([base_n, aux_n])
@@ -81,7 +85,6 @@ class StdNodesEdgesGdfConnector:
         base_n[N_COORD] = base_n[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
         aux_n[N_COORD] = aux_n[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
         sel_nodes = base_n.loc[base_n[STD_N_TYPE] == node_type]
-
         for index, node in sel_nodes.iterrows():
             sel_coord = node[N_COORD]
             sel_buffer = node[STD_N_ROUNDABOUT_EXTENT]
@@ -104,6 +107,50 @@ class StdNodesEdgesGdfConnector:
         base_n.drop(N_COORD, axis=1, inplace=True)
 
         return aux_e, aux_n, base_n
+
+    def _connect_by_edge(self, base_n: gpd.GeoDataFrame, aux_e: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+
+        N_COORD = "coord"
+        FIRST_COORD = "FIRST_COORD"
+        LAST_COORD = "LAST_COORD"
+        # Filter nodes by terminal nodes
+        base_n[N_COORD] = base_n[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
+        sel_nodes = base_n.loc[base_n[STD_N_TYPE] != STD_N_ROUNDABOUT]
+
+        # Extract first and last coordinates from edges
+        aux_e[FIRST_COORD] = aux_e[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
+        aux_e[LAST_COORD] = aux_e[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, -1))
+
+        for _, node in sel_nodes.iterrows():
+            node_id = node[STD_NODE_ID]
+            n_coord = node[N_COORD]
+
+            is_connected = aux_e[FIRST_COORD].apply(lambda x: x == n_coord)
+            connected_index = aux_e.index[(is_connected == True) & (aux_e[STD_FROM_NODE] == 'None')]
+            if len(connected_index) > 0:
+                print(node_id)
+                base_n.loc[base_n[STD_NODE_ID] == node_id, STD_N_TYPE] = STD_N_JUNCTION
+                aux_e.loc[connected_index, STD_FROM_NODE] = node_id
+                prev_ind = aux_e.loc[connected_index, STD_PREV_IND]
+                aux_e.loc[connected_index, STD_PREV_IND] = pd.NA
+                aux_e.loc[aux_e[STD_INDEX].isin(prev_ind), STD_TO_NODE] = node_id
+                aux_e.loc[aux_e[STD_INDEX].isin(prev_ind), STD_NEXT_IND] = pd.NA
+
+            is_connected = aux_e[LAST_COORD].apply(lambda x: x == n_coord)
+            connected_index = aux_e.index[(is_connected == True) & (aux_e[STD_TO_NODE] == 'None')]
+            if len(connected_index) > 0:
+                print(node_id)
+                base_n.loc[base_n[STD_NODE_ID] == node_id, STD_N_TYPE] = STD_N_JUNCTION
+                aux_e.loc[connected_index, STD_TO_NODE] = node_id
+                next_ind = aux_e.loc[connected_index, STD_NEXT_IND]
+                aux_e.loc[connected_index, STD_NEXT_IND] = pd.NA
+                aux_e.loc[aux_e[STD_INDEX].isin(next_ind), STD_FROM_NODE] = node_id
+                aux_e.loc[aux_e[STD_INDEX].isin(next_ind), STD_PREV_IND] = pd.NA
+
+        base_n.drop([N_COORD], axis=1, inplace=True)
+        aux_e.drop([FIRST_COORD, LAST_COORD], axis=1, inplace=True)
+
+        return aux_e
 
     def _reindex_to_base_edges(self, base_e: gpd.GeoDataFrame, aux_e: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         """
