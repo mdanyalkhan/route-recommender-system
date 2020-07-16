@@ -115,7 +115,7 @@ class StdNodesEdgesGdfConnector:
         LAST_COORD = "LAST_COORD"
         # Filter nodes by terminal nodes
         base_n[N_COORD] = base_n[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
-        sel_nodes = base_n.loc[base_n[STD_N_TYPE] != STD_N_ROUNDABOUT]
+        sel_nodes = base_n.loc[base_n[STD_N_TYPE] == STD_N_TERMINAL]
 
         # Extract first and last coordinates from edges
         aux_e[FIRST_COORD] = aux_e[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
@@ -131,10 +131,7 @@ class StdNodesEdgesGdfConnector:
                 print(node_id)
                 base_n.loc[base_n[STD_NODE_ID] == node_id, STD_N_TYPE] = STD_N_JUNCTION
                 aux_e.loc[connected_index, STD_FROM_NODE] = node_id
-                prev_ind = aux_e.loc[connected_index, STD_PREV_IND]
                 aux_e.loc[connected_index, STD_PREV_IND] = pd.NA
-                aux_e.loc[aux_e[STD_INDEX].isin(prev_ind), STD_TO_NODE] = node_id
-                aux_e.loc[aux_e[STD_INDEX].isin(prev_ind), STD_NEXT_IND] = pd.NA
 
             is_connected = aux_e[LAST_COORD].apply(lambda x: x == n_coord)
             connected_index = aux_e.index[(is_connected == True) & (aux_e[STD_TO_NODE] == 'None')]
@@ -142,10 +139,7 @@ class StdNodesEdgesGdfConnector:
                 print(node_id)
                 base_n.loc[base_n[STD_NODE_ID] == node_id, STD_N_TYPE] = STD_N_JUNCTION
                 aux_e.loc[connected_index, STD_TO_NODE] = node_id
-                next_ind = aux_e.loc[connected_index, STD_NEXT_IND]
                 aux_e.loc[connected_index, STD_NEXT_IND] = pd.NA
-                aux_e.loc[aux_e[STD_INDEX].isin(next_ind), STD_FROM_NODE] = node_id
-                aux_e.loc[aux_e[STD_INDEX].isin(next_ind), STD_PREV_IND] = pd.NA
 
         base_n.drop([N_COORD], axis=1, inplace=True)
         aux_e.drop([FIRST_COORD, LAST_COORD], axis=1, inplace=True)

@@ -2,7 +2,8 @@ from src.utilities.aux_func import *
 from RoadGraph.util import *
 import RoadGraph
 import os
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, LineString
+
 
 def remove_duplicates_from_os():
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/original"
@@ -83,13 +84,11 @@ if __name__ == "__main__":
     # converter = RoadGraph.OSToStdGdfConverter(speed_criteria='Complex', built_up_gdf=built_up_areas_gdf)
     # roadGraphBuilder = RoadGraph.StdRoadGraphBuilder(converter=converter)
     # roadGraphBuilder.build_road_graph(in_path, out_path)
+    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/converted"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational/Data/out"
 
-    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/connected"
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/temp"
-
-    builder = RoadGraph.StdRoadGraphBuilder()
-    builder._connect_edges_and_nodes_gdfs(in_path, out_path)
-
+    roadGraphBuilder = RoadGraph.StdRoadGraphBuilder()
+    roadGraphBuilder.build_road_graph(in_path, out_path, is_conversion_required=False)
 
 
 

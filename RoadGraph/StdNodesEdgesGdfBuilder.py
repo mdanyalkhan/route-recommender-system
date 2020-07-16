@@ -5,6 +5,7 @@ from queue import Queue
 import geopandas as gpd
 import pandas as pd
 from shapely import wkt
+from shapely.geometry import LineString
 
 from GeoDataFrameAux import GeoPointDataFrameBuilder, extract_list_of_coords_from_geom_object, extract_coord_at_index
 from RoadGraph.StdColNames import *
@@ -178,8 +179,7 @@ class StdNodesEdgesGdfBuilder:
             NODE_A = STD_FROM_NODE
 
         if len(connected_to_road_a) == 1 and len(connected_to_road_b) == 0 \
-                and connected_to_road_a[STD_ROAD_NO].values[0] == road_no \
-                and connected_to_road_a[STD_ROAD_TYPE].values[0] == road_type:
+                and connected_to_road_a[STD_ROAD_NO].values[0] == road_no:
 
             connecting_index = int(connected_to_road_a[STD_INDEX].values[0])
             roads_gdf.at[index, INDEX_A] = connecting_index
@@ -188,12 +188,13 @@ class StdNodesEdgesGdfBuilder:
             if not is_last_coord:
                 roads_gdf = self._swap(roads_gdf, connecting_index, FIRST_COORD, LAST_COORD)
                 roads_gdf = self._swap(roads_gdf, connecting_index, STD_FROM_NODE, STD_TO_NODE)
+                geom = roads_gdf.loc[connecting_index, STD_GEOMETRY]
+                roads_gdf.at[connecting_index, STD_GEOMETRY] = LineString(list(geom.coords)[::-1])
 
             seg_queue.put(connecting_index)
 
         elif len(connected_to_road_a) == 0 and len(connected_to_road_b) == 1 \
-                and connected_to_road_b[STD_ROAD_NO].values[0] == road_no \
-                and connected_to_road_b[STD_ROAD_TYPE].values[0] == road_type:
+                and connected_to_road_b[STD_ROAD_NO].values[0] == road_no:
 
             connecting_index = int(connected_to_road_b[STD_INDEX].values[0])
             roads_gdf.at[index, INDEX_A] = connecting_index
@@ -203,6 +204,8 @@ class StdNodesEdgesGdfBuilder:
             if is_last_coord:
                 roads_gdf = self._swap(roads_gdf, connecting_index, FIRST_COORD, LAST_COORD)
                 roads_gdf = self._swap(roads_gdf, connecting_index, STD_FROM_NODE, STD_TO_NODE)
+                geom = roads_gdf.loc[connecting_index, STD_GEOMETRY]
+                roads_gdf.at[connecting_index, STD_GEOMETRY] = LineString(list(geom.coords)[::-1])
 
             seg_queue.put(connecting_index)
 
