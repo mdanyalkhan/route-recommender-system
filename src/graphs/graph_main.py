@@ -76,19 +76,28 @@ def shortest_path_london_southampton():
 
 if __name__ == "__main__":
 
+    built_up_areas_path = parent_directory_at_level(__file__, 4) + "/Other_incoming_data/BuiltUpAreas/built_up_areas.shp"
+    built_up_areas_gdf = gpd.read_file(built_up_areas_path)
 
-    # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/refined/"
-    # out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb"
-    # built_up_areas_path = parent_directory_at_level(__file__, 4) + "/Other_incoming_data/BuiltUpAreas/built_up_areas.shp"
-    # built_up_areas_gdf = gpd.read_file(built_up_areas_path)
-    # converter = RoadGraph.OSToStdGdfConverter(speed_criteria='Complex', built_up_gdf=built_up_areas_gdf)
-    # roadGraphBuilder = RoadGraph.StdRoadGraphBuilder(converter=converter)
-    # roadGraphBuilder.build_road_graph(in_path, out_path)
-    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/converted"
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational/Data/out"
+    # Build plcr
+    orig_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/original"
+    refined_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/refined"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr"
 
-    roadGraphBuilder = RoadGraph.StdRoadGraphBuilder()
-    roadGraphBuilder.build_road_graph(in_path, out_path, is_conversion_required=False)
+    filter_minor_roads_and_remove_duplicates_from_os_roads(orig_path, refined_path)
+
+    converter = RoadGraph.OSToStdGdfConverter(speed_criteria='Complex', built_up_gdf=built_up_areas_gdf)
+    roadGraphBuilder = RoadGraph.StdRoadGraphBuilder(converter=converter)
+    roadGraphBuilder.build_road_graph(refined_path, out_path)
+
+    #Build llb
+    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/refined/"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb"
+
+    roadGraphBuilder.build_road_graph(in_path, out_path)
+
+
+
 
 
 
