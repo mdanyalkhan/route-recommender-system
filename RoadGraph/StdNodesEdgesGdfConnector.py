@@ -109,7 +109,12 @@ class StdNodesEdgesGdfConnector:
         return aux_e, aux_n, base_n
 
     def _connect_by_edge(self, base_n: gpd.GeoDataFrame, aux_e: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-
+        """
+        Connects any remaining terminal nodes with free edges belonging to the second pair or tiles.
+        :param base_n: Dataframe of nodes of first pair
+        :param aux_e: Dataframe of edges of second pair
+        :return: Updated geoDataframe with edges potentially connected to nodes of the opposing set.
+        """
         N_COORD = "coord"
         FIRST_COORD = "FIRST_COORD"
         LAST_COORD = "LAST_COORD"

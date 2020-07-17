@@ -5,12 +5,6 @@ import os
 from math import sqrt
 import geopandas as gpd
 import pandas as pd
-from pyproj import CRS
-from pyproj.transformer import Transformer
-from shapely import wkt
-from RoadGraph.StdColNames import *
-from GeoDataFrameAux import extract_coord_at_index, GeoPointDataFrameBuilder, GeoPolyDataFrameBuilder
-
 
 def filter_minor_roads_and_remove_duplicates_from_os_roads(in_path: str, out_path: str):
     """
