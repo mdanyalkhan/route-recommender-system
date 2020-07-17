@@ -3,9 +3,9 @@ from itertools import count
 import numpy as np
 import geopandas as gpd
 import pandas as pd
-from RoadGraph.util import euclidean_distance, extract_coord_at_index
+from GeoDataFrameAux import extract_coord_at_index
+from RoadGraph.util import euclidean_distance
 from RoadGraph.StdColNames import *
-from RoadGraph.StdKeyWords import *
 
 
 class StdRoadGraph:

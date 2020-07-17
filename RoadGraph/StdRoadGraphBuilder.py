@@ -4,8 +4,7 @@ import pickle
 import os
 import networkx as nx
 
-from RoadGraph import OSToStdGdfConverter, StdNodesEdgesGdfBuilder, StdNodesEdgesGdfConnector, extract_coord_at_index, \
-    StdRoadGraph
+from RoadGraph import OSToStdGdfConverter, StdNodesEdgesGdfBuilder, StdNodesEdgesGdfConnector, extract_coord_at_index
 from RoadGraph.StdColNames import *
 from RoadGraph.StdKeyWords import *
 from RoadGraph.util import create_file_path
