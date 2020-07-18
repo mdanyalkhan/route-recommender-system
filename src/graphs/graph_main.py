@@ -2,8 +2,7 @@ from src.utilities.aux_func import *
 from RoadGraph.util import *
 import RoadGraph
 import os
-from shapely.geometry import Polygon, LineString
-
+import networkx as nx
 
 def remove_duplicates_from_os():
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/original"
@@ -76,26 +75,18 @@ def shortest_path_london_southampton():
 
 if __name__ == "__main__":
 
-    built_up_areas_path = parent_directory_at_level(__file__, 4) + "/Other_incoming_data/BuiltUpAreas/built_up_areas.shp"
-    built_up_areas_gdf = gpd.read_file(built_up_areas_path)
+    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/final/edges.shp"
+    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/final/nodes.shp"
+    out = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/netx/roadGraph.pickle"
+    edges_gdf = gpd.read_file(edges_path)
+    nodes_gdf = gpd.read_file(nodes_path)
 
-    # Build plcr
-    orig_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/original"
-    refined_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/refined"
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr"
+    builder = RoadGraph.StdRoadGraphBuilder()
 
-    filter_minor_roads_and_remove_duplicates_from_os_roads(orig_path, refined_path)
+    net = builder.create_graph(nodes_gdf, edges_gdf)
 
-    converter = RoadGraph.OSToStdGdfConverter(speed_criteria='Complex', built_up_gdf=built_up_areas_gdf)
-    roadGraphBuilder = RoadGraph.StdRoadGraphBuilder(converter=converter)
-    roadGraphBuilder.build_road_graph(refined_path, out_path)
-
-    #Build llb
-    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/refined/"
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb"
-
-    roadGraphBuilder.build_road_graph(in_path, out_path)
-
+    with open(out, 'wb') as target:
+        pickle.dump(net, target)
 
 
 

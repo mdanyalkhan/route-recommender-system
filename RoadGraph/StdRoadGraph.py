@@ -98,11 +98,10 @@ class StdRoadGraph:
         shortest distance(float), the edges and nodes GeoDataFrames depending on whether get_gdfs is set to True
         or not.
         """
-        get_weight = lambda u, v, data: data.get(STD_Nx_ATTR).get(STD_Nx_WEIGHT)
+        get_weight = lambda u, v, data: data.get(STD_Nx_WEIGHT)
         paths = {source_node: [source_node]}
         dist, paths = self.dijkstra(source=source_node, get_weight=get_weight, paths=paths,
                                     target=target_node)
-
         shortest_path = paths[target_node]
         shortest_dist = dist[target_node]
 
@@ -130,20 +129,6 @@ class StdRoadGraph:
                 [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf[STD_NODE_ID] == shortest_path[i + 1]]])
 
         return shortest_edges_gdf, shortest_nodes_gdf
-
-    def dijkstra_with_weight(self, source_node, target_node):
-        """
-        Sets up weight criterion for the application of dijkstra's algorithm.
-        :param source_node: Name of source node to start the shortest path algorithm from
-        :param target_node: Name of Target node
-        :return: dist dictionary of distances from source node to all other nodes before hitting target node, and
-        paths dictionary of all nodes traversed before hitting target node
-        """
-        get_weight = lambda u, v, data: data.get(STD_Nx_ATTR).get(STD_Nx_WEIGHT)
-        paths = {source_node: [source_node]}
-        dist, paths = self.dijkstra(source=source_node, get_weight=get_weight, paths=paths,
-                                    target=target_node)
-        return dist, paths
 
     def dijkstra(self, source, get_weight, pred=None, paths=None, cutoff=None,
                  target=None):

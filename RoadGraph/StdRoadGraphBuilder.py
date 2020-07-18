@@ -18,13 +18,15 @@ class StdRoadGraphBuilder:
         self.builder = builder
         self.connector = connector
 
-    def build_road_graph(self, in_path: str, target_path: str, is_conversion_required: bool = True) -> nx.Graph:
+    def build_road_graph(self, in_path: str, target_path: str, is_conversion_required: bool = True,
+                         weight_type: str = "Time") -> nx.Graph:
         """
         Constructs a Networkx Object from the original geo spatial roads dataframe, saving the intermediate
         dataframe within specified paths via target_path
         :param in_path: Path containing all roads dataframe shpfiles
         :param target_path: Path to save the Networkx object (in .pickle) and other intermediate dataframes
         :param is_conversion_required: Conversion of the original geo spatial dataframe into a standardised dataframe
+        :param weight_type: type of weight to be used for the edges, either 'Time' or 'Length'
         :return: A Networkx Graph object representing the roads geoDataFrame.
         """
         curr_path = in_path
@@ -39,7 +41,7 @@ class StdRoadGraphBuilder:
         edges_gdf = gpd.read_file(curr_path + "/edges.shp")
         nodes_gdf = gpd.read_file(curr_path + "/nodes.shp")
 
-        net = self.create_graph(nodes_gdf, edges_gdf)
+        net = self.create_graph(nodes_gdf, edges_gdf, weight_type)
         target_path = create_file_path(out_path + "/netx")
         target_file = target_path + "/roadGraph.pickle"
 
@@ -157,15 +159,15 @@ class StdRoadGraphBuilder:
         d[STD_Nx_LENGTH] = length
         d[STD_Nx_TIME] = time
         d[STD_Nx_ROAD_IND] = road_segment_index
-        d[STD_Nx_WEIGHT] = time
 
         return d, final_node
 
-    def create_graph(self, nodes_gdf, edges_gdf):
+    def create_graph(self, nodes_gdf, edges_gdf, weight_type: str = 'Time'):
         """
         Creates a graph NetworkX object using roads_gdf and edges_gdf
         :param edges_gdf: geodataframe of roads
         :param nodes_gdf: geodataframe of nodes
+        :param weight_type: type of weight to be used for the edges, either 'Time' or 'Length'
         :return: net: A networkX object representing road network.
         """
         print("Creating Graph")
@@ -187,9 +189,11 @@ class StdRoadGraphBuilder:
             segment_index = start_segment[STD_INDEX]
             from_node = start_segment[STD_FROM_NODE]
             attr, to_node = self.merge_road_segments(edges_gdf, segment_index)
-            net.add_edge(from_node, to_node, attr=attr)
+            weight = attr[STD_Nx_TIME] if weight_type == "Time" else attr[STD_Nx_TIME]
+
+            net.add_edge(from_node, to_node, attr=attr, weight=weight)
             if not start_segment[STD_IS_DIREC]:
-                net.add_edge(to_node, from_node, attr=attr)
+                net.add_edge(to_node, from_node, attr=attr, weight=weight)
 
         print("Finished Graph")
 
