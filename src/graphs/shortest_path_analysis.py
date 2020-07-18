@@ -1,9 +1,7 @@
 import RoadGraph
 import geopandas as gpd
-import numpy as np
 from scipy.spatial import cKDTree
 from GeoDataFrameAux import extract_list_of_coords_from_geom_object
-import matplotlib.pyplot as plt
 from pylab import *
 
 from src.utilities.aux_func import parent_directory_at_level, loadNetworkResults
@@ -61,7 +59,6 @@ def generate_distance_histogram(dist):
     plt.xlabel('Value')
     plt.ylabel('Frequency')
     plt.title('My Very Own Histogram')
-    # plt.text(23, 45, r'$\mu=15, b=3$')
     maxfreq = n.max()
     # Set a clean upper y-axis limit.
     plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
@@ -71,7 +68,7 @@ def generate_distance_histogram(dist):
 
 
 def shortest_path_analysis(roadGraph: RoadGraph.StdRoadGraph, key_sites_gdf: gpd.GeoDataFrame, key_sites_col_name: str,
-                           isotrack_path: str, k, out_path: str):
+                           isotrack_path: str, k, out_path: str = None):
     isotrack_gdf = convert_isotrack_to_shpfile(isotrack_path)
     most_used_isotrack_path_gdf = get_kth_most_used_isotrack_path(isotrack_gdf, k)
     source, target = get_key_site_pair_names(most_used_isotrack_path_gdf)
@@ -80,21 +77,23 @@ def shortest_path_analysis(roadGraph: RoadGraph.StdRoadGraph, key_sites_gdf: gpd
 
     distances_differences = distance_distribution(s_edges, most_used_isotrack_path_gdf)
     mean_difference = np.mean(distances_differences)
-    std_difference = np.std(mean_difference)
+    std_difference = np.std(distances_differences)
     plot = generate_distance_histogram(distances_differences)
-    plot.show()
-if __name__ == "__main__":
-    netx_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/netx/roadGraph.pickle"
-    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/final/edges.shp"
-    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/final/nodes.shp"
-    key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
-    isotrack_path = parent_directory_at_level(__file__, 5) + "/Incoming/imperial_data/data_with_labels/20191002-" \
-                                                             "20200130_isotrak_legs_excl_5km_train"
-    isotrack_list = [isotrack_path + '/20191002-20200130_isotrak_legs_excl_5km_TRAIN_NATIONAL DC_SHEFFIELD MC.csv',
-                     isotrack_path + '/20191002-20200130_isotrak_legs_excl_5km_TRAIN_NOTTINGHAM MC_EAST '
-                                     'MIDLANDS AIRPORT.csv']
 
-    roadGraph = RoadGraph.StdRoadGraph(loadNetworkResults(netx_path),gpd.read_file(nodes_path),
-                                       gpd.read_file(edges_path))
-    key_sites_gdf = gpd.read_file(key_sites_path)
-    shortest_path_analysis(roadGraph, key_sites_gdf, 'location_n', isotrack_list[0], 0, None)
+    if out_path:
+        isotrack_gdf.to_file(f"{out_path}/isotrack_all_paths.shp")
+        most_used_isotrack_path_gdf.to_file(f"{out_path}/isotrack_most_used.shp")
+        s_edges.to_file(f"{out_path}/edges_shortest_path.shp")
+        s_nodes.to_file(f"{out_path}/nodes_shortest_path.shp")
+
+        stats_output = f"Mean Difference in Distance: {mean_difference}\nStandard Deviation:{std_difference}"
+        with open(f"{out_path}/statistics.txt", 'w') as target:
+            target.write(stats_output)
+        target.close()
+
+        plot.savefig(f"{out_path}/Distance_Histogram.png")
+
+    return distances_differences, plot
+
+
+
