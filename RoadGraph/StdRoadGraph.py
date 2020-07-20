@@ -1,12 +1,12 @@
 from heapq import heappush, heappop
-from itertools import count
+from itertools import count, islice
 import numpy as np
 import geopandas as gpd
 import pandas as pd
 from GeoDataFrameAux import extract_coord_at_index
 from RoadGraph.util import euclidean_distance
 from RoadGraph.StdColNames import *
-
+from RoadGraph.shortest_paths import shortest_simple_paths
 
 class StdRoadGraph:
 
@@ -71,8 +71,8 @@ class StdRoadGraph:
         :param from_node: Name of first node
         :param to_node: Name of second node
         """
-        self.net[from_node][to_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = np.inf
-        self.net[to_node][from_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = np.inf
+        self.net[from_node][to_node][STD_Nx_WEIGHT] = np.inf
+        self.net[to_node][from_node][STD_Nx_WEIGHT] = np.inf
 
     def remove_road_closure(self, from_node: str, to_node: str):
         """
@@ -81,9 +81,9 @@ class StdRoadGraph:
         :param to_node: Name of second node
         """
 
-        self.net[from_node][to_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = self.net[from_node][to_node] \
+        self.net[from_node][to_node][STD_Nx_WEIGHT] = self.net[from_node][to_node] \
             .get(STD_Nx_ATTR).get(STD_Nx_TIME)
-        self.net[to_node][from_node][STD_Nx_ATTR][STD_Nx_WEIGHT] = self.net[from_node][to_node] \
+        self.net[to_node][from_node][STD_Nx_WEIGHT] = self.net[from_node][to_node] \
             .get(STD_Nx_ATTR).get(STD_Nx_TIME)
 
     def shortest_path_between_nodes(self, source_node: str, target_node: str, get_gdfs=False) \
@@ -129,6 +129,9 @@ class StdRoadGraph:
                 [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf[STD_NODE_ID] == shortest_path[i + 1]]])
 
         return shortest_edges_gdf, shortest_nodes_gdf
+
+    def k_shortest_paths(self, source_node, target_node, k):
+        return list(islice(shortest_simple_paths(self.net, source_node, target_node, weight=STD_Nx_WEIGHT), k))
 
     def dijkstra(self, source, get_weight, pred=None, paths=None, cutoff=None,
                  target=None):

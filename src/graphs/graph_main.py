@@ -75,19 +75,23 @@ def shortest_path_london_southampton():
 
 if __name__ == "__main__":
 
-    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/final/edges.shp"
-    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/final/nodes.shp"
-    out = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/netx/roadGraph.pickle"
+    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
+    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
+    net_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/shortest_paths"
     edges_gdf = gpd.read_file(edges_path)
     nodes_gdf = gpd.read_file(nodes_path)
+    net = loadNetworkResults(net_path)
 
-    builder = RoadGraph.StdRoadGraphBuilder()
+    roadGraph = RoadGraph.StdRoadGraph(net, nodes_gdf, edges_gdf)
 
-    net = builder.create_graph(nodes_gdf, edges_gdf)
+    k = 1
 
-    with open(out, 'wb') as target:
-        pickle.dump(net, target)
-
+    for path in roadGraph.k_shortest_paths('G_2260', 'G_371', 10):
+        s_edges, s_nodes = roadGraph.convert_path_to_gdfs(path)
+        s_edges.to_file(f"{out_path}/edges_{k}.shp")
+        k += 1
+        print(k)
 
 
 

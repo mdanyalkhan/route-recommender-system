@@ -10,6 +10,7 @@ from itertools import count
 import networkx as nx
 from networkx.utils import not_implemented_for
 from networkx.utils import pairwise
+import RoadGraph.StdColNames as std
 
 __author__ = """\n""".join(['Sérgio Nery Simões <sergionery@gmail.com>',
                             'Aric Hagberg <aric.hagberg@gmail.com>',
@@ -394,7 +395,7 @@ def shortest_simple_paths(G, source, target, weight=None):
         def length_func(path):
             return sum(G.adj[u][v][weight] for (u, v) in zip(path, path[1:]))
         shortest_path_func = _bidirectional_dijkstra
-
+    check_path = []
     listA = list()
     listB = PathBuffer()
     prev_path = None
@@ -424,12 +425,44 @@ def shortest_simple_paths(G, source, target, weight=None):
 
         if listB:
             path = listB.pop()
-            yield path
+            if listA and not path_is_trivial(G, check_path, path, 500):
+                check_path = path
+                print('Non trivial')
+                yield path
+            elif not listA:
+                print("somethings wrong")
+                check_path = path
             listA.append(path)
             prev_path = path
         else:
             break
 
+xyz = 0
+def path_is_trivial(G, prev_path, curr_path, threshold):
+
+    global xyz
+    print(xyz)
+    xyz += 1
+    max_len = len(curr_path) if len(curr_path) < len(prev_path) else len(prev_path)
+    for i in range(max_len):
+        if curr_path[i] != prev_path[i]:
+            return is_trivial_distance(G, prev_path, curr_path[i-1:], threshold)
+    return False
+
+def is_trivial_distance(G, prev_path, curr_path, threshold):
+
+    length = 0
+    u = curr_path[0]
+
+    for v in curr_path[1:]:
+        length += G.adj[u][v]['attr'][std.STD_Nx_LENGTH]
+        if v in prev_path:
+            if length < threshold:
+                return True
+            else:
+                return False
+        u = v
+    return False
 
 
 class PathBuffer(object):
