@@ -147,6 +147,11 @@ class StdRoadGraphBuilder:
         road_segment_index = [edge_index]
         road_id = current_segment[STD_ROAD_NO] + "_" + current_segment[STD_ROAD_TYPE]
 
+        if current_segment[STD_IS_SRN] == 1:
+            is_srn = True
+        else:
+            is_srn = False
+
         while not pd.isna(current_segment[STD_NEXT_IND]):
             current_segment = edges_gdf.loc[edges_gdf[STD_INDEX] == int(current_segment[STD_NEXT_IND])]
             current_segment = current_segment.iloc[0]
@@ -154,11 +159,15 @@ class StdRoadGraphBuilder:
             time += current_segment[STD_LENGTH]/(current_segment[STD_SPEED]*kph_to_mps_factor)
             road_segment_index.extend([current_segment[STD_INDEX]])
 
+            if current_segment[STD_IS_SRN] == 1:
+                is_srn = True
+
         final_node = current_segment[STD_TO_NODE]
         d[STD_Nx_ROAD_ID] = road_id
         d[STD_Nx_LENGTH] = length
         d[STD_Nx_TIME] = time
         d[STD_Nx_ROAD_IND] = road_segment_index
+        d[STD_Nx_IS_SRN] = is_srn
 
         return d, final_node
 
