@@ -75,23 +75,28 @@ def shortest_path_london_southampton():
 
 if __name__ == "__main__":
 
-    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
-    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
-    net_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/shortest_paths"
-    edges_gdf = gpd.read_file(edges_path)
-    nodes_gdf = gpd.read_file(nodes_path)
-    net = loadNetworkResults(net_path)
+    # original_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/original"
+    # out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing"
+    # built_up_path = parent_directory_at_level(__file__, 4) + "/Other_incoming_data/BuiltUpAreas/built_up_areas.shp"
+    #
+    # converter = RoadGraph.OSToStdGdfConverter(speed_criteria='Complex', built_up_gdf=gpd.read_file(built_up_path))
+    # builder = RoadGraph.StdRoadGraphBuilder(converter)
+    # builder.build_road_graph(original_path, out_path)
 
-    roadGraph = RoadGraph.StdRoadGraph(net, nodes_gdf, edges_gdf)
+    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/final/edges.shp"
+    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/final/nodes.shp"
+    net_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/netx/roadGraph.pickle"
+    key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
 
-    k = 1
+    roadGraph = RoadGraph.StdRoadGraph(loadNetworkResults(net_path), gpd.read_file(nodes_path),
+                                       gpd.read_file(edges_path))
+    key_sites_gdf = gpd.read_file(key_sites_path)
+    source, target = "WARRINGTON MC", "BIRKENHEAD PORT"
 
-    for path in roadGraph.k_shortest_paths('G_2260', 'G_371', 10):
-        s_edges, s_nodes = roadGraph.convert_path_to_gdfs(path)
-        s_edges.to_file(f"{out_path}/edges_{k}.shp")
-        k += 1
-        print(k)
+    RoadGraph.VulnerabilityAnalyser(roadGraph).\
+        resiliency_from_progressive_random_attacks_two_sites(source, target, key_sites_gdf,
+                                                                                           'location_n')
+
 
 
 
