@@ -83,15 +83,20 @@ if __name__ == "__main__":
     # builder = RoadGraph.StdRoadGraphBuilder(converter)
     # builder.build_road_graph(original_path, out_path)
 
-    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/final/edges.shp"
-    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/final/nodes.shp"
-    net_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/netx/roadGraph.pickle"
+    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
+    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
+    net_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
     key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
+
+    # builder = RoadGraph.StdRoadGraphBuilder()
+    # net = builder.create_graph(gpd.read_file(nodes_path), gpd.read_file(edges_path))
+    # with open(net_path, 'wb') as target:
+    #     pickle.dump(net, target)
 
     roadGraph = RoadGraph.StdRoadGraph(loadNetworkResults(net_path), gpd.read_file(nodes_path),
                                        gpd.read_file(edges_path))
     key_sites_gdf = gpd.read_file(key_sites_path)
-    source, target = "WARRINGTON MC", "BIRKENHEAD PORT"
+    source, target = "HEATHROW WORLDWIDE DC", "SOUTH WEST DC"
 
     RoadGraph.VulnerabilityAnalyser(roadGraph).\
         resiliency_from_progressive_random_attacks_two_sites(source, target, key_sites_gdf,
