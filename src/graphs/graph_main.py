@@ -4,6 +4,7 @@ import RoadGraph
 import os
 import networkx as nx
 
+
 def remove_duplicates_from_os():
     in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/original"
     out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os"
@@ -35,6 +36,7 @@ def connect_both_node_edges_std_gdfs():
     SJ_in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/SJ"
     out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/test_os/final"
     RoadGraph.StdNodesEdgesGdfConnector().connect_two_nodeEdges_std_gdfs_from_paths(SD_in_path, SJ_in_path, out_path)
+
 
 def count_no_of_line_features(in_path):
     list_of_files = os.listdir(in_path)
@@ -74,7 +76,6 @@ def shortest_path_london_southampton():
 
 
 if __name__ == "__main__":
-
     # original_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/original"
     # out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing"
     # built_up_path = parent_directory_at_level(__file__, 4) + "/Other_incoming_data/BuiltUpAreas/built_up_areas.shp"
@@ -83,10 +84,11 @@ if __name__ == "__main__":
     # builder = RoadGraph.StdRoadGraphBuilder(converter)
     # builder.build_road_graph(original_path, out_path)
 
-    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
-    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
-    net_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
+    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/final/edges.shp"
+    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/final/nodes.shp"
+    net_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/out/netx/roadGraph.pickle"
     key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/testing/vulnerability"
 
     # builder = RoadGraph.StdRoadGraphBuilder()
     # net = builder.create_graph(gpd.read_file(nodes_path), gpd.read_file(edges_path))
@@ -96,17 +98,8 @@ if __name__ == "__main__":
     roadGraph = RoadGraph.StdRoadGraph(loadNetworkResults(net_path), gpd.read_file(nodes_path),
                                        gpd.read_file(edges_path))
     key_sites_gdf = gpd.read_file(key_sites_path)
-    source, target = "HEATHROW WORLDWIDE DC", "SOUTH WEST DC"
+    source, target = "WARRINGTON MC", "BIRKENHEAD PORT"
 
-    RoadGraph.VulnerabilityAnalyser(roadGraph).\
-        resiliency_from_progressive_random_attacks_two_sites(source, target, key_sites_gdf,
-                                                                                           'location_n')
-
-
-
-
-
-
-
-
-
+    RoadGraph.VulnerabilityAnalyser(roadGraph). \
+        srn_vulnerability_two_sites(source, target, key_sites_gdf,
+                                    'location_n', out_path)
