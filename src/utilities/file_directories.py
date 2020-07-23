@@ -16,6 +16,7 @@ class FileDirectories(Enum):
     TEMP = "/temp/"
     OS_DATA = "/Other_incoming_data/oproad_essh_gb/data/"
     OS_SELECTED_DATA = "/Operational_data_OS_Open_Roads/"
+    CLOSURE_DATA = "/Operational_Data/closures/closure_data_210720.csv"
 
 
 
