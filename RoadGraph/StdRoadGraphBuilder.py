@@ -184,7 +184,7 @@ class StdRoadGraphBuilder:
         net = nx.DiGraph()
         # for each slip road and roundabout node dataframe do:
         for _, node in nodes_gdf.iterrows():
-            coords = extract_coord_at_index(node[STD_GEOMETRY], 0)
+            coords = node[STD_GEOMETRY]
             net.add_node(node.node_id, coordinates=coords)
 
         start_segments = edges_gdf.loc[(edges_gdf[STD_ROAD_TYPE] == STD_MAIN_CARRIAGEWAY) |
