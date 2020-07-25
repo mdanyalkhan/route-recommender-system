@@ -117,14 +117,24 @@ def map_junctions_to_nearest_nodes(G: netx.DiGraph, junctions: list, tolerance: 
         for junction in junctions:
             coordinates = junction[1]
             for node in nodes_in_graph:
-                print(node)
-                print(G._node[node])
                 node_coordinates = G._node[node]['coordinates']
                 distance = coordinates.distance(node_coordinates)
                 if distance <= tolerance:
                     nearest_nodes.append(node)
 
     return nearest_nodes
+
+def find_closure_edges(G: netx.DiGraph, nearest_nodes: list, road_id: str) -> list:
+
+    edge_closures = []
+
+    for node in nearest_nodes:
+        for neighbour, edge in G.succ[node].items():
+            edge_road_id = edge['attr']['road_id'].split('_')[0]
+            if edge_road_id == road_id:
+                edge_closures.append(f"{node}_{edge['attr']['road_id']}")
+
+    return edge_closures
 
 def assign_proposed_graph_closures(G: netx.DiGraph, road_ids: list, closure_descriptions: list, real_junctions: list,
                                    real_junction_coords: list) -> dict:
@@ -137,9 +147,9 @@ def assign_proposed_graph_closures(G: netx.DiGraph, road_ids: list, closure_desc
         road_id = road_ids[i]
 
         if road_id[-1] == 'M':
-            road_id[i] = f"{road_id[i][:-1]}({road_id[i][-1]})"
+            road_id = f"{road_id[:-1]}({road_id[-1]})"
 
-        closure_dict[key]["road_id"] = road_ids[i]
+        closure_dict[key]["road_id"] = road_id
         closure_dict[key]["closure_description"] = closure_descriptions[i]
         junc_candidates = parse_junctions(closure_descriptions[i])
         junc_candidates = augment_road_id_with_junc_name(road_id, junc_candidates)
@@ -148,6 +158,11 @@ def assign_proposed_graph_closures(G: netx.DiGraph, road_ids: list, closure_desc
 
         nearest_nodes = map_junctions_to_nearest_nodes(G, junc_candidates, 1000.0)
         closure_dict[key]['Graph Nodes'] = nearest_nodes
+
+        edges_to_close = find_closure_edges(G, nearest_nodes, road_id)
+        closure_dict[key]['Graph Edges'] = edges_to_close
+
+    print(closure_dict)
 
     return closure_dict
 
@@ -160,11 +175,13 @@ if __name__ == "__main__":
     junctions_df = gpd.read_file(junctions_path)
     net = loadNetworkResults(net_path)
 
-    print(net._node['G_15'])
-    # real_junctions = junctions_df['number'].tolist()
-    # real_junc_coordinates = junctions_df['geometry'].tolist()
-    # motorways = df.loc[:, 'Road'].tolist()
-    # junctions_raw = df.loc[:, 'Junctions'].tolist()
+
+    real_junctions = junctions_df['number'].tolist()
+    real_junc_coordinates = junctions_df['geometry'].tolist()
+    motorways = df.loc[:, 'Road'].tolist()
+    junctions_raw = df.loc[:, 'Junctions'].tolist()
+
+    assign_proposed_graph_closures(net, motorways, junctions_raw, real_junctions, real_junc_coordinates)
     #
     # accepted, rejected = locate_junction_names_from_source(motorways, junctions_raw, real_junctions,
     #                                                        real_junc_coordinates)

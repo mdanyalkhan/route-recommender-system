@@ -84,21 +84,21 @@ if __name__ == "__main__":
     # builder = RoadGraph.StdRoadGraphBuilder(converter)
     # builder.build_road_graph(original_path, out_path)
 
-    # edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
-    # nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
-    # net_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
-    # key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
-    # out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/vulnerability"
-    #
-    # builder = RoadGraph.StdRoadGraphBuilder()
-    # net = builder.create_graph(gpd.read_file(nodes_path), gpd.read_file(edges_path))
-    # with open(net_path, 'wb') as target:
-    #     pickle.dump(net, target)
+    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
+    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
+    net_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
+    key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
+    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/vulnerability"
 
-    in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/connected"
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out"
     builder = RoadGraph.StdRoadGraphBuilder()
-    builder._connect_edges_and_nodes_gdfs(in_path, out_path)
+    net = builder.create_graph(gpd.read_file(nodes_path), gpd.read_file(edges_path))
+    with open(net_path, 'wb') as target:
+        pickle.dump(net, target)
+
+    # in_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/connected"
+    # out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out"
+    # builder = RoadGraph.StdRoadGraphBuilder()
+    # builder._connect_edges_and_nodes_gdfs(in_path, out_path)
     # roadGraph = RoadGraph.StdRoadGraph(loadNetworkResults(net_path), gpd.read_file(nodes_path),
     #                                    gpd.read_file(edges_path))
     # key_sites_gdf = gpd.read_file(key_sites_path)
