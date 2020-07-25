@@ -116,9 +116,10 @@ class StdRoadGraphBuilder:
         n = len(shp_full_paths_in)
         gdf_edges = gpd.read_file(shp_full_paths_in[0] + "/edges.shp")
         gdf_nodes = gpd.read_file(shp_full_paths_in[0] + "/nodes.shp")
-
+        print(f"{shp_full_paths_in[0]}")
         for i in range(1, n):
             print("iteration: " + str(i + 1) + " out of " + str(n + 1))
+            print(f"{shp_full_paths_in[i]}")
             aux_edges = gpd.read_file(shp_full_paths_in[i] + "/edges.shp")
             aux_nodes = gpd.read_file(shp_full_paths_in[i] + "/nodes.shp")
             gdf_edges, gdf_nodes = self.connector.connect_two_nodeEdges_std_gdfs(gdf_edges, gdf_nodes,

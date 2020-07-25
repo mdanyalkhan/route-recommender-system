@@ -61,6 +61,8 @@ class StdNodesEdgesGdfConnector:
         base_e = pd.concat([base_e, aux_e])
         base_n = pd.concat([base_n, aux_n])
 
+        base_n.reset_index(drop=True, inplace=True)
+
         if out_path is not None:
             base_e.to_file(out_path + "/edges.shp")
             base_n.to_file(out_path + "/nodes.shp")
@@ -85,6 +87,7 @@ class StdNodesEdgesGdfConnector:
         base_n[N_COORD] = base_n[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
         aux_n[N_COORD] = aux_n[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
         sel_nodes = base_n.loc[base_n[STD_N_TYPE] == node_type]
+
         for index, node in sel_nodes.iterrows():
             sel_coord = node[N_COORD]
             sel_buffer = node[STD_N_ROUNDABOUT_EXTENT]
