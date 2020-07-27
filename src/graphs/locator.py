@@ -1,3 +1,7 @@
+import RoadGraph
+from RoadGraph.StdColNames import *
+from RoadGraph.StdKeyWords import *
+from RoadGraph import create_file_path
 from src.utilities.file_directories import FileDirectories as fd
 from src.utilities.aux_func import parent_directory_at_level, loadNetworkResults
 import pandas as pd
@@ -124,17 +128,17 @@ def map_junctions_to_nearest_nodes(G: netx.DiGraph, junctions: list, tolerance: 
 
     return nearest_nodes
 
-def find_closure_edges(G: netx.DiGraph, nearest_nodes: list, road_id: str) -> list:
+def find_closure_edges(G: netx.DiGraph, nearest_nodes: list, road_id: str) -> (list, list):
 
-    edge_closures = []
-
+    edge_indices = []
+    node_pairs = []
     for node in nearest_nodes:
         for neighbour, edge in G.succ[node].items():
             edge_road_id = edge['attr']['road_id'].split('_')[0]
             if edge_road_id == road_id:
-                edge_closures.append(f"{node}_{edge['attr']['road_id']}")
-
-    return edge_closures
+                edge_indices.extend(G[node][neighbour]['attr']["road_segment_indices"])
+                node_pairs.append((node, neighbour))
+    return edge_indices, node_pairs
 
 def assign_proposed_graph_closures(G: netx.DiGraph, road_ids: list, closure_descriptions: list, real_junctions: list,
                                    real_junction_coords: list) -> dict:
@@ -157,23 +161,39 @@ def assign_proposed_graph_closures(G: netx.DiGraph, road_ids: list, closure_desc
         closure_dict[key]['junction_nodes'] = [junction[0] for junction in junc_candidates]
 
         nearest_nodes = map_junctions_to_nearest_nodes(G, junc_candidates, 1000.0)
-        closure_dict[key]['Graph Nodes'] = nearest_nodes
-
-        edges_to_close = find_closure_edges(G, nearest_nodes, road_id)
-        closure_dict[key]['Graph Edges'] = edges_to_close
-
-    print(closure_dict)
+        edge_closures, node_pairs = find_closure_edges(G, nearest_nodes, road_id)
+        closure_dict[key]['node_pairs'] = node_pairs
+        closure_dict[key]['edge_indices'] = edge_closures
 
     return closure_dict
+
+def convert_closures_to_shp(roadGraph: RoadGraph.StdRoadGraph, closure_dict: dict, out_path: str):
+
+    for closure in closure_dict:
+        node_pairs = closure_dict[closure]['node_pairs']
+        edge_ind = closure_dict[closure]['edge_indices']
+
+        if node_pairs and edge_ind:
+            path = create_file_path(f"{out_path}/{closure}")
+            node_set = [node for node_pair in node_pairs for node in node_pair]
+            node_set = list(set(node_set))
+            sel_edges_gdf = roadGraph.edges.loc[roadGraph.edges[STD_INDEX].isin(edge_ind)]
+            sel_nodes_gdf = roadGraph.nodes.loc[roadGraph.nodes[STD_NODE_ID].isin(node_set)]
+
+            sel_edges_gdf.to_file(f'{path}/edges.shp')
+            sel_nodes_gdf.to_file(f'{path}/nodes.shp')
 
 if __name__ == "__main__":
     closure_path = parent_directory_at_level(__file__, 4) + fd.CLOSURE_DATA.value
     junctions_path = parent_directory_at_level(__file__, 5) + fd.HE_JUNCTIONS.value
     net_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
+    edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
+    nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
 
+    roadGraph = RoadGraph.StdRoadGraph(loadNetworkResults(net_path), gpd.read_file(nodes_path),
+                                       gpd.read_file(edges_path))
     df = pd.read_csv(closure_path)
     junctions_df = gpd.read_file(junctions_path)
-    net = loadNetworkResults(net_path)
 
 
     real_junctions = junctions_df['number'].tolist()
@@ -181,8 +201,14 @@ if __name__ == "__main__":
     motorways = df.loc[:, 'Road'].tolist()
     junctions_raw = df.loc[:, 'Junctions'].tolist()
 
-    assign_proposed_graph_closures(net, motorways, junctions_raw, real_junctions, real_junc_coordinates)
-    #
+    closure_dict = assign_proposed_graph_closures(roadGraph.net, motorways, junctions_raw, real_junctions,
+                                                  real_junc_coordinates)
+
+    data = [value for value in closure_dict.values()]
+    df = pd.DataFrame(data)
+    df.to_csv(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/closures/closure_data.csv")
+
+    convert_closures_to_shp(roadGraph,closure_dict, parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/closures")
     # accepted, rejected = locate_junction_names_from_source(motorways, junctions_raw, real_junctions,
     #                                                        real_junc_coordinates)
     #
