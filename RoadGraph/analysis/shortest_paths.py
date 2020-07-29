@@ -10,7 +10,7 @@ from itertools import count
 import networkx as nx
 from networkx.utils import not_implemented_for
 from networkx.utils import pairwise
-import RoadGraph.StdColNames as std
+import RoadGraph.constants.StdColNames as std
 
 __author__ = """\n""".join(['Sérgio Nery Simões <sergionery@gmail.com>',
                             'Aric Hagberg <aric.hagberg@gmail.com>',

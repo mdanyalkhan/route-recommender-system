@@ -2,8 +2,8 @@ import geopandas as gpd
 import pandas as pd
 from GeoDataFrameAux import extract_coord_at_index
 from RoadGraph import euclidean_distance
-from RoadGraph.StdColNames import *
-from RoadGraph.StdKeyWords import *
+from RoadGraph.constants.StdColNames import *
+from RoadGraph.constants.StdKeyWords import *
 
 
 class StdNodesEdgesGdfConnector:

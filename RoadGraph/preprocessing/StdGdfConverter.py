@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import geopandas as gpd
-from RoadGraph.StdColNames import *
+from RoadGraph.constants.StdColNames import *
 
 
 class NotToStandardColumnsError(Exception):

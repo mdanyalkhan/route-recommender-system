@@ -1,13 +1,16 @@
+from collections import deque
+
 import RoadGraph
-from RoadGraph.StdColNames import *
-from RoadGraph.StdKeyWords import *
+from RoadGraph.constants.StdColNames import *
+from RoadGraph.constants.StdKeyWords import *
 from RoadGraph import create_file_path
 from src.utilities.file_directories import FileDirectories as fd
-from src.utilities.aux_func import parent_directory_at_level, loadNetworkResults
+from src.utilities.aux_func import parent_directory_at_level
 import pandas as pd
 import geopandas as gpd
 import networkx as netx
 from shapely.geometry import Point
+import datetime
 
 def generate_potential_motorway_junction_name_candidates(m_input: list, j_input: list) -> dict:
     junction_suffix_candidates = []
@@ -183,34 +186,92 @@ def convert_closures_to_shp(roadGraph: RoadGraph.StdRoadGraph, closure_dict: dic
             sel_edges_gdf.to_file(f'{path}/edges.shp')
             sel_nodes_gdf.to_file(f'{path}/nodes.shp')
 
+def journey_times_from_closure_dict(closure_dict: dict):
+    all_node_pairs = []
+
+    for closure in closure_dict:
+        for node_pairs in closure_dict[closure]['node_pairs']:
+            all_node_pairs.append(node_pairs)
+
+    vuln_analyser = RoadGraph.VulnerabilityAnalyser(roadGraph)
+    res_matrix, res_dict = vuln_analyser.vulnerability_all_sites_by_node_pairs(rm_df, 'location_n', all_node_pairs)
+
+    res_ordered = [(key, val) for key, val in sorted(res_dict.items(), key=lambda item: item[1]['resilience_index'])]
+
+    for site_pair in res_ordered:
+        print(f"{site_pair[0]} \t {site_pair[1]['resilience_index']} \t "
+              f"{datetime.timedelta(seconds=site_pair[1]['journey_time'])} \t "
+              f"{datetime.timedelta(seconds=site_pair[1]['delayed_journey_time'])}")
+
+    return res_ordered
+
+def extract_node_pairs_from_edges_shp(edges: gpd.GeoDataFrame, sel_edges: gpd.GeoDataFrame):
+    all_node_pairs = []
+
+    edges['visited'] = False
+    sel_edges = sel_edges.loc[sel_edges[STD_ROAD_TYPE] != STD_ROUNDABOUT]
+    for i in range(len(sel_edges)):
+        index = sel_edges.iloc[i][STD_INDEX]
+        if not edges.loc[edges[STD_INDEX] == index, 'visited'].values[0]:
+            que = deque()
+            que.append(index)
+            while que:
+                sel_ind = que.popleft()
+                edges.at[edges[STD_INDEX] == sel_ind, 'visited'] = True
+                if edges.loc[edges[STD_INDEX] == sel_ind, STD_FROM_NODE].values[0] != STD_NONE:
+                    from_node = edges.loc[edges[STD_INDEX] == sel_ind, STD_FROM_NODE].values[0]
+                else:
+                    prev_ind = int(edges.loc[edges[STD_INDEX] == sel_ind, STD_PREV_IND].values[0])
+                    if not edges.loc[edges[STD_INDEX] == prev_ind, 'visited'].values[0]:
+                        que.append(prev_ind)
+
+                if edges.loc[edges[STD_INDEX] == sel_ind, STD_TO_NODE].values[0] != STD_NONE:
+                    to_node = edges.loc[edges[STD_INDEX] == sel_ind, STD_TO_NODE].values[0]
+                else:
+                    next_ind = int(edges.loc[edges[STD_INDEX] == sel_ind, STD_NEXT_IND].values[0])
+                    que.append(next_ind)
+                    if not edges.loc[edges[STD_INDEX] == next_ind, 'visited'].values[0]:
+                        que.append(next_ind)
+
+            all_node_pairs.append((from_node, to_node))
+
+    return all_node_pairs
+
+def convert_closures_to_csv(closure_dict: dict, out_path: str):
+
+    rows = [row for row in closure_dict.values()]
+    df = pd.DataFrame(rows)
+    df.to_csv(f"{out_path}/closure_data.csv")
+
 if __name__ == "__main__":
     closure_path = parent_directory_at_level(__file__, 4) + fd.CLOSURE_DATA.value
     junctions_path = parent_directory_at_level(__file__, 5) + fd.HE_JUNCTIONS.value
     net_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
     edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
     nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
+    rm_path = f"{parent_directory_at_level(__file__, 4)}/Operational_Data/lbb/lbb_rm_locations/lbb_rm_locations.shp"
 
-    roadGraph = RoadGraph.StdRoadGraph(loadNetworkResults(net_path), gpd.read_file(nodes_path),
-                                       gpd.read_file(edges_path))
-    df = pd.read_csv(closure_path)
-    junctions_df = gpd.read_file(junctions_path)
+    edges_gdf = gpd.read_file(edges_path)
+    sel_edges = gpd.read_file(parent_directory_at_level(__file__, 4) +
+                              "/Operational_Data/lbb/closures/closure_1/edges.shp")
+
+    extract_node_pairs_from_edges_shp(edges_gdf, sel_edges)
+
+    # roadGraph = RoadGraph.StdRoadGraph(loadNetworkResults(net_path), gpd.read_file(nodes_path),
+    #                                    gpd.read_file(edges_path))
+    # df = pd.read_csv(closure_path)
+    # junctions_df = gpd.read_file(junctions_path)
+    # rm_df = gpd.read_file(rm_path)
 
 
-    real_junctions = junctions_df['number'].tolist()
-    real_junc_coordinates = junctions_df['geometry'].tolist()
-    motorways = df.loc[:, 'Road'].tolist()
-    junctions_raw = df.loc[:, 'Junctions'].tolist()
-
-    closure_dict = assign_proposed_graph_closures(roadGraph.net, motorways, junctions_raw, real_junctions,
-                                                  real_junc_coordinates)
-
-    data = [value for value in closure_dict.values()]
-    df = pd.DataFrame(data)
-    df.to_csv(parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/closures/closure_data.csv")
-
-    convert_closures_to_shp(roadGraph,closure_dict, parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/closures")
-    # accepted, rejected = locate_junction_names_from_source(motorways, junctions_raw, real_junctions,
-    #                                                        real_junc_coordinates)
+    # real_junctions = junctions_df['number'].tolist()
+    # real_junc_coordinates = junctions_df['geometry'].tolist()
+    # motorways = df.loc[:, 'Road'].tolist()
+    # junctions_raw = df.loc[:, 'Junctions'].tolist()
     #
-    # nearest_nodes = map_junctions_to_nearest_nodes(net, accepted, 1000)
-    # # accepted_junctions = [junctions for values in accepted.values() for junctions in values]
+    # closure_dict = assign_proposed_graph_closures(roadGraph.net, motorways, junctions_raw, real_junctions,
+    #                                               real_junc_coordinates)
+
+
+
+

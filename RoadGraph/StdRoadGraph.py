@@ -5,8 +5,8 @@ import geopandas as gpd
 import pandas as pd
 from GeoDataFrameAux import extract_coord_at_index
 from RoadGraph.util import euclidean_distance
-from RoadGraph.StdColNames import *
-from RoadGraph.shortest_paths import shortest_simple_paths
+from RoadGraph.constants.StdColNames import *
+from RoadGraph.analysis.shortest_paths import shortest_simple_paths
 
 class StdRoadGraph:
 
@@ -62,7 +62,7 @@ class StdRoadGraph:
         nearest_target_node = nodes_gdf.loc[min_index][STD_NODE_ID]
 
         nodes_gdf.drop([COORDINATES], axis=1, inplace=True)
-
+        #TODO: Need to consider added weight from coordinates to nearest node as well.
         return self.shortest_path_between_nodes(nearest_source_node, nearest_target_node, get_gdfs)
 
     def set_road_closure(self, from_node: str, to_node: str):

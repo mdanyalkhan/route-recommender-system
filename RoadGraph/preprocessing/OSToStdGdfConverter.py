@@ -3,8 +3,8 @@ from queue import Queue
 from shapely.geometry import LineString, Polygon
 
 from GeoDataFrameAux import extract_coord_at_index
-from RoadGraph.StdGdfConverter import *
-from RoadGraph.StdKeyWords import *
+from RoadGraph.preprocessing.StdGdfConverter import *
+from RoadGraph.constants.StdKeyWords import *
 import pandas as pd
 import numpy as np
 

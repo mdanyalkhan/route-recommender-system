@@ -6,8 +6,8 @@ from shapely import wkt
 from shapely.geometry import LineString
 
 from GeoDataFrameAux import GeoPointDataFrameBuilder, extract_list_of_coords_from_geom_object, extract_coord_at_index
-from RoadGraph.StdColNames import *
-from RoadGraph.StdKeyWords import *
+from RoadGraph.constants.StdColNames import *
+from RoadGraph.constants.StdKeyWords import *
 
 # Constants used in this class
 from RoadGraph.util import euclidean_distance
