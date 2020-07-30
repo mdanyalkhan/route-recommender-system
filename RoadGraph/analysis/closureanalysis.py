@@ -1,6 +1,11 @@
-from shapely.geometry import Point
+from collections import deque
 
-from RoadGraph import StdRoadGraph
+from shapely.geometry import Point
+import os
+from RoadGraph import StdRoadGraph, create_file_path
+from RoadGraph.constants.StdColNames import *
+from RoadGraph.constants.StdKeyWords import *
+from RoadGraph.analysis import VulnerabilityAnalyser as va
 import pandas as pd
 import geopandas as gpd
 import networkx as netx
@@ -9,11 +14,96 @@ import networkx as netx
 NUMBER = 'number'
 GEOMETRY = 'geometry'
 ROAD = 'Road'
-JUNCTION = 'Junction'
+JUNCTION = 'Junctions'
+
+
+def journey_time_impact_closure_shp_path(road_graph: StdRoadGraph, key_sites: gpd.GeoDataFrame, closure_shp_path: str):
+    """
+    Examines the potential increase to journey times given the proposed closure of roads via shapefiles
+    :param road_graph: Road graph object that is representational of the UK road network
+    :param key_sites: Key sites to examine journey times between
+    :param closure_shp_path: Path where closure shapefile data is saved
+    :return:
+        A matrix of the resilience index for each site pair
+        A dictionary of the change in resilience index, as well as journey times before and after closure for impacted
+        sites.
+    """
+    list_of_files = os.listdir(closure_shp_path)
+
+    #Only consider directories with the prefix 'closure'
+    shp_full_paths_in = [closure_shp_path + "/" + x for x in list_of_files if x.startswith("closure") and not \
+        x.endswith('.csv')]
+
+    #Deduce node pairs corresponding to the proposed closure of the edges.
+    all_node_pairs = []
+    for shp_path in shp_full_paths_in:
+        edges_gdf = gpd.read_file(f'{shp_path}/edges.shp')
+        node_pairs = _extract_node_pairs_from_edges_shp(road_graph.edges, edges_gdf)
+        all_node_pairs.extend(node_pairs)
+
+    vuln_analyser = va.VulnerabilityAnalyser(road_graph)
+
+    return vuln_analyser.vulnerability_all_sites_by_node_pairs(key_sites, 'location_n', all_node_pairs)
+
+
+def journey_time_impact_closure_dict(road_graph: StdRoadGraph, key_sites: gpd.GeoDataFrame, closure_dict: dict):
+    """
+    Examines the potential increase in journey times given the provided closures of roads.
+    :param road_graph: Road graph object that is representational of the UK road network
+    :param key_sites: Key sites to examine journey times between
+    :param closure_dict: Data structure containing proposed closure of roads
+    :return:
+        A matrix of the resilience index for each site pair
+        A dictionary of the change in resilience index, as well as journey times before and after closure for impacted
+        sites.
+    """
+    vuln_analyser = va.VulnerabilityAnalyser(road_graph)
+    node_pairs = [node_pair for closure in closure_dict for node_pair in closure_dict[closure]['node_pairs']]
+    return vuln_analyser.vulnerability_all_sites_by_node_pairs(key_sites, 'location_n', node_pairs)
+
+
+def _extract_node_pairs_from_edges_shp(edges: gpd.GeoDataFrame, sel_edges: gpd.GeoDataFrame):
+    """
+    Extracts the nodes between the edges.
+    :param edges: Geo-Data Frame of the line segments that form the edges of the road network
+    :param sel_edges: Geo-Data Frame of the edges selected for closure
+    :return: List of tuples, each tuple containing the pair nodes that are connected to the proposed line segment to be
+    closed.
+    """
+    all_node_pairs = []
+
+    edges['visited'] = False
+    sel_edges = sel_edges.loc[sel_edges[STD_ROAD_TYPE] != STD_ROUNDABOUT]
+    for i in range(len(sel_edges)):
+        index = sel_edges.iloc[i][STD_INDEX]
+        if not edges.loc[edges[STD_INDEX] == index, 'visited'].values[0]:
+            que = deque()
+            que.append(index)
+            while que:
+                sel_ind = que.popleft()
+                edges.at[edges[STD_INDEX] == sel_ind, 'visited'] = True
+                if edges.loc[edges[STD_INDEX] == sel_ind, STD_FROM_NODE].values[0] != STD_NONE:
+                    from_node = edges.loc[edges[STD_INDEX] == sel_ind, STD_FROM_NODE].values[0]
+                else:
+                    prev_ind = int(edges.loc[edges[STD_INDEX] == sel_ind, STD_PREV_IND].values[0])
+                    if not edges.loc[edges[STD_INDEX] == prev_ind, 'visited'].values[0]:
+                        que.append(prev_ind)
+
+                if edges.loc[edges[STD_INDEX] == sel_ind, STD_TO_NODE].values[0] != STD_NONE:
+                    to_node = edges.loc[edges[STD_INDEX] == sel_ind, STD_TO_NODE].values[0]
+                else:
+                    next_ind = int(edges.loc[edges[STD_INDEX] == sel_ind, STD_NEXT_IND].values[0])
+                    que.append(next_ind)
+                    if not edges.loc[edges[STD_INDEX] == next_ind, 'visited'].values[0]:
+                        que.append(next_ind)
+
+            all_node_pairs.append((from_node, to_node))
+
+    return all_node_pairs
 
 
 def generate_road_closures(road_graph: StdRoadGraph, junctions_data: gpd.GeoDataFrame,
-                           closure_data: pd.DataFrame) -> dict:
+                           closure_data: pd.DataFrame, out_path: str = None) -> dict:
     """
     Generates a dictionary of edges and nodes to be closed based on each closure.
 
@@ -36,8 +126,47 @@ def generate_road_closures(road_graph: StdRoadGraph, junctions_data: gpd.GeoData
     closure_road_no = closure_data.loc[:, ROAD].tolist()
     closure_junc_desc = closure_data.loc[:, JUNCTION].tolist()
 
-    return _assign_proposed_graph_closures(road_graph.net, closure_road_no, closure_junc_desc, real_junctions,
-                                           real_junc_coordinates)
+    closure_dict = _assign_proposed_graph_closures(road_graph.net, closure_road_no, closure_junc_desc, real_junctions,
+                                                   real_junc_coordinates)
+
+    if out_path:
+        _convert_closures_to_csv(closure_dict, out_path)
+        _convert_closures_to_shp(road_graph, closure_dict, out_path)
+
+    return closure_dict
+
+
+def _convert_closures_to_csv(closure_dict: dict, out_path: str):
+    """
+    Saves closure_dict to csv through out_path
+    :param closure_dict: Data structure containing proposed closure data
+    :param out_path: Path in which to save the closure data to
+    """
+    rows = [row for row in closure_dict.values()]
+    df = pd.DataFrame(rows)
+    df.to_csv(f"{out_path}/closure_data.csv")
+
+
+def _convert_closures_to_shp(roadGraph: StdRoadGraph, closure_dict: dict, out_path: str):
+    """
+    Saves proposed closure of edges and nodes to a series of shapefiles.
+    :param roadGraph: Road graph representative of the UK road network
+    :param closure_dict: Data structure containing proposed road closures
+    :param out_path: Path in which to save the shapefiles to.
+    """
+    for closure in closure_dict:
+        node_pairs = closure_dict[closure]['node_pairs']
+        edge_ind = closure_dict[closure]['edge_indices']
+
+        if node_pairs and edge_ind:
+            path = create_file_path(f"{out_path}/{closure}")
+            node_set = [node for node_pair in node_pairs for node in node_pair]
+            node_set = list(set(node_set))
+            sel_edges_gdf = roadGraph.edges.loc[roadGraph.edges[STD_INDEX].isin(edge_ind)]
+            sel_nodes_gdf = roadGraph.nodes.loc[roadGraph.nodes[STD_NODE_ID].isin(node_set)]
+
+            sel_edges_gdf.to_file(f'{path}/edges.shp')
+            sel_nodes_gdf.to_file(f'{path}/nodes.shp')
 
 
 def _assign_proposed_graph_closures(G: netx.DiGraph, road_ids: list, closure_descriptions: list, real_junctions: list,
@@ -62,9 +191,9 @@ def _assign_proposed_graph_closures(G: netx.DiGraph, road_ids: list, closure_des
     closure_dict = {}
 
     for i in range(len(road_ids)):
-        key = f"closure_{i + 1}"
-        closure_dict[key] = {}
         road_id = road_ids[i]
+        key = f"closure_{i + 1}_{road_id}"
+        closure_dict[key] = {}
 
         if road_id[-1] == 'M':
             road_id = f"{road_id[:-1]}({road_id[-1]})"
@@ -190,6 +319,7 @@ def _map_junctions_to_nearest_nodes(G: netx.DiGraph, junctions: list, tolerance:
                 nearest_nodes.append(node)
 
     return nearest_nodes
+
 
 def _find_closure_edges(G: netx.DiGraph, nearest_nodes: list, road_id: str) -> (list, list):
     """
