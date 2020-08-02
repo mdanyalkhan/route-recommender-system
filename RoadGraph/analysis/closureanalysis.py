@@ -9,12 +9,56 @@ from RoadGraph.analysis import VulnerabilityAnalyser as va
 import pandas as pd
 import geopandas as gpd
 import networkx as netx
+import re
 
 # Column Names
 NUMBER = 'number'
 GEOMETRY = 'geometry'
 ROAD = 'Road'
 JUNCTION = 'Junctions'
+
+
+def output_res_dict_to_csv(res_dict: dict, out_path: str):
+    """
+    Outputs values pertaining to variables for every site pair. In order of worst affected.
+    :param res_dict: Dictionary of journey times for each site pair
+    :param out_path: Folder path in which to save the results
+    """
+    excluded_keys = [va.SHORTEST_PATH, va.DELAYED_SHORTEST_PATH]
+    out_path = create_file_path(f"{out_path}/results")
+
+    filtered_res_dict = {key: res_dict[key] for key in res_dict if key not in excluded_keys}
+    df = pd.DataFrame(filtered_res_dict, columns=list(filtered_res_dict.keys()))
+    df.sort_values(va.RES_INDEX, inplace=True)
+    df.to_csv(f"{out_path}/results.csv")
+
+
+def output_res_dict_shortest_path_as_shp(road_graph: StdRoadGraph, res_dict: dict, out_path: str,
+                                         no_of_paths: int = None):
+    """
+    Outputs no_of_paths shortest paths as shapefiles in out_path
+    :param road_graph: road graph that the shortest paths are based on.
+    :param res_dict: Dictionary of journey times for each site pair.
+    :param out_path: Folder path in which to save the results
+    :param no_of_paths: No of journey times to save as shapefile, saved in accordance with worst affected time.
+    """
+    out_path = create_file_path(f"{out_path}/results")
+    df = pd.DataFrame(res_dict, columns=list(res_dict.keys()))
+    df.sort_values(va.RES_INDEX, inplace=True)
+
+    if not no_of_paths:
+        no_of_paths = len(df)
+
+    for i in range(no_of_paths):
+        fname = re.sub('\s+', '_', df.iloc[i][va.SITE_PAIRS])
+        file_path = create_file_path(f"{out_path}/{fname}")
+        s_edges_gdf, s_nodes_gdf = road_graph.convert_path_to_gdfs(df.iloc[i][va.SHORTEST_PATH])
+        n_edges_gdf, n_nodes_gdf = road_graph.convert_path_to_gdfs(df.iloc[i][va.DELAYED_SHORTEST_PATH])
+
+        s_edges_gdf.to_file(f"{file_path}/s_edges.shp")
+        s_nodes_gdf.to_file(f"{file_path}/s_nodes.shp")
+        n_edges_gdf.to_file(f"{file_path}/n_edges.shp")
+        n_nodes_gdf.to_file(f"{file_path}/nodes.shp")
 
 
 def journey_time_impact_closure_shp_path(road_graph: StdRoadGraph, key_sites: gpd.GeoDataFrame, closure_shp_path: str):
@@ -30,13 +74,14 @@ def journey_time_impact_closure_shp_path(road_graph: StdRoadGraph, key_sites: gp
     """
     list_of_files = os.listdir(closure_shp_path)
 
-    #Only consider directories with the prefix 'closure'
+    # Only consider directories with the prefix 'closure'
     shp_full_paths_in = [closure_shp_path + "/" + x for x in list_of_files if x.startswith("closure") and not \
         x.endswith('.csv')]
 
-    #Deduce node pairs corresponding to the proposed closure of the edges.
+    # Deduce node pairs corresponding to the proposed closure of the edges.
     all_node_pairs = []
     for shp_path in shp_full_paths_in:
+        print(shp_path)
         edges_gdf = gpd.read_file(f'{shp_path}/edges.shp')
         node_pairs = _extract_node_pairs_from_edges_shp(road_graph.edges, edges_gdf)
         all_node_pairs.extend(node_pairs)
@@ -93,12 +138,11 @@ def _extract_node_pairs_from_edges_shp(edges: gpd.GeoDataFrame, sel_edges: gpd.G
                     to_node = edges.loc[edges[STD_INDEX] == sel_ind, STD_TO_NODE].values[0]
                 else:
                     next_ind = int(edges.loc[edges[STD_INDEX] == sel_ind, STD_NEXT_IND].values[0])
-                    que.append(next_ind)
                     if not edges.loc[edges[STD_INDEX] == next_ind, 'visited'].values[0]:
                         que.append(next_ind)
 
             all_node_pairs.append((from_node, to_node))
-
+    edges.drop(['visited'], axis=1, inplace=True)
     return all_node_pairs
 
 

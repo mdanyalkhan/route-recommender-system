@@ -6,29 +6,6 @@ from src.utilities.file_directories import FileDirectories as fd
 from src.utilities.aux_func import parent_directory_at_level, loadNetworkResults
 import pandas as pd
 import geopandas as gpd
-import datetime
-
-
-def journey_times_from_closure_dict(closure_dict: dict):
-    all_node_pairs = []
-
-    for closure in closure_dict:
-        for node_pairs in closure_dict[closure]['node_pairs']:
-            all_node_pairs.append(node_pairs)
-
-    vuln_analyser = RoadGraph.VulnerabilityAnalyser(roadGraph)
-    res_matrix, res_dict = vuln_analyser.vulnerability_all_sites_by_node_pairs(rm_df, 'location_n', all_node_pairs)
-
-    res_ordered = [(key, val) for key, val in sorted(res_dict.items(), key=lambda item: item[1]['resilience_index'])]
-
-    for site_pair in res_ordered:
-        print(f"{site_pair[0]} \t {site_pair[1]['resilience_index']} \t "
-              f"{datetime.timedelta(seconds=site_pair[1]['journey_time'])} \t "
-              f"{datetime.timedelta(seconds=site_pair[1]['delayed_journey_time'])}")
-
-    return res_ordered
-
-
 
 if __name__ == "__main__":
     closure_path = parent_directory_at_level(__file__, 4) + fd.CLOSURE_DATA.value
@@ -50,7 +27,9 @@ if __name__ == "__main__":
     junctions_df = gpd.read_file(junctions_path)
     rm_df = gpd.read_file(rm_path)
 
-    ca.journey_time_impact_closure_shp_path(roadGraph, rm_df, lbb_closure_path)
+    res_matrix, res_dict = ca.journey_time_impact_closure_shp_path(roadGraph, rm_df, lbb_closure_path)
+    ca.output_res_dict_to_csv(res_dict, lbb_closure_path)
+    ca.output_res_dict_shortest_path_as_shp(roadGraph, res_dict, lbb_closure_path, no_of_paths=10)
     #
     # closure_dict = ca.generate_road_closures(roadGraph, junctions_df, df, f"{parent_directory_at_level(__file__, 4)}"
     #                                                        f"/Operational_Data/lbb/closures")
