@@ -1,3 +1,4 @@
+import collections
 from heapq import heappush, heappop
 from itertools import count, islice
 import numpy as np
@@ -7,6 +8,7 @@ from GeoDataFrameAux import extract_coord_at_index
 from RoadGraph.util import euclidean_distance
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.analysis.shortest_paths import shortest_simple_paths
+import matplotlib.pyplot as plt
 
 class StdRoadGraph:
 
@@ -223,6 +225,48 @@ class StdRoadGraph:
         if pred is not None:
             return (pred, dist)
         return dist
+
+    def average_degree(self, type: str ='out') -> float:
+        """
+        Returns the average degree of the network
+        :param type: Whether 'in' or 'out', defaults to 'out'
+        :return: average degree of network
+        """
+        if type is 'out':
+            nodes_degrees = self.net.out_degree()
+        else:
+            nodes_degrees = self.net.in_degree()
+
+        degrees = [node_degree[1] for node_degree in nodes_degrees]
+
+        return sum(degrees)/len(degrees)
+
+    def degree_distribution_plot(self):
+
+        net = self.net
+
+        degree_sequence = sorted([d for n, d in net.out_degree()], reverse=True)  # degree sequence
+        degreeCount = collections.Counter(degree_sequence)
+        deg, cnt = zip(*degreeCount.items())
+        sum_cnt = sum(cnt)
+        rel_cnt = [i / sum_cnt for i in cnt]
+        fig, ax = plt.subplots()
+        plt.bar(deg, rel_cnt, width=0.80, color='b')
+
+        plt.title("Degree Distribution", fontname='Charter')
+        plt.ylabel("Relative Frequency $P(k_i)$", fontname='Charter')
+        plt.xlabel("Degree $k_i$", fontname='Charter')
+        ax.set_xticks([d + 0.4 for d in deg])
+        ax.set_xticklabels(deg)
+
+        for tick in ax.get_xticklabels():
+            tick.set_fontname('Charter')
+
+        for tick in ax.get_yticklabels():
+            tick.set_fontname('Charter')
+
+        plt.show()
+
 
 
 

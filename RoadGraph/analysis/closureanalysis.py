@@ -57,9 +57,23 @@ def output_res_dict_shortest_path_as_shp(road_graph: StdRoadGraph, res_dict: dic
 
         s_edges_gdf.to_file(f"{file_path}/s_edges.shp")
         s_nodes_gdf.to_file(f"{file_path}/s_nodes.shp")
-        n_edges_gdf.to_file(f"{file_path}/n_edges.shp")
-        n_nodes_gdf.to_file(f"{file_path}/nodes.shp")
+        n_edges_gdf.to_file(f"{file_path}/c_edges.shp")
+        n_nodes_gdf.to_file(f"{file_path}/c_nodes.shp")
 
+
+def merge_road_closure_shp_into_single_shp(closure_shp_path: str):
+    list_of_files = os.listdir(closure_shp_path)
+
+    # Only consider directories with the prefix 'closure'
+    shp_full_paths_in = [closure_shp_path + "/" + x for x in list_of_files if x.startswith("closure") and not \
+        x.endswith('.csv')]
+
+    merged_gdf = gpd.GeoDataFrame()
+    for shp_path in shp_full_paths_in:
+        edges_gdf = gpd.read_file(f"{shp_path}/edges.shp")
+        merged_gdf = gpd.GeoDataFrame(pd.concat([merged_gdf, edges_gdf]))
+    merged_gdf.crs = {'init': 'epsg:27700'}
+    merged_gdf.to_file(f"{closure_shp_path}/full_closures.shp")
 
 def journey_time_impact_closure_shp_path(road_graph: StdRoadGraph, key_sites: gpd.GeoDataFrame, closure_shp_path: str):
     """
@@ -236,6 +250,11 @@ def _assign_proposed_graph_closures(G: netx.DiGraph, road_ids: list, closure_des
 
     for i in range(len(road_ids)):
         road_id = road_ids[i]
+
+        #Check if its empty row, if empty row then skip
+        if pd.isna(road_id):
+            continue
+
         key = f"closure_{i + 1}_{road_id}"
         closure_dict[key] = {}
 
