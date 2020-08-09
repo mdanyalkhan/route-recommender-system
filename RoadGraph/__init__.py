@@ -5,3 +5,4 @@ from RoadGraph.preprocessing.StdRoadGraphBuilder import *
 from RoadGraph.StdRoadGraph import *
 from RoadGraph.analysis.VulnerabilityAnalyser import *
 import RoadGraph.util
+import RoadGraph.graphreduce

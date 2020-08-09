@@ -6,7 +6,7 @@ import pickle
 import RoadGraph as rg
 import numpy as np
 import networkx as nx
-
+import RoadGraph.graphreduce.roadassignment as ra
 from src.utilities.aux_func import loadNetworkResults
 
 edges_path = rg.parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
@@ -99,7 +99,6 @@ def reduce_nodes_edges_dataframes_to_isotrack(edges: gpd.GeoDataFrame,
     edge_ind = list(set(edge_ind))
     edge_sel = edges.loc[edges[rg.STD_INDEX].isin(edge_ind)]
     edge_sel.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/lbb/reduced/HW_SW/isotrack_edges_raw.shp")
-    exit()
     node_ids = list(set(node_ids))
     edges.drop(['visited'], axis=1, inplace=True)
 
@@ -166,26 +165,7 @@ def extract_edge_shp_from_node_set(road_graph: rg.StdRoadGraph, node_ids):
 
 if __name__ == '__main__':
     edges_gdf = gpd.read_file(edges_path)
-    nodes_gdf = gpd.read_file(nodes_path)
-    net = loadNetworkResults(net_path)
-    road_graph = rg.StdRoadGraph(net, nodes_gdf, edges_gdf)
     isotrack_gdf = gpd.read_file(isotrack_path)
+    road_assignment = ra.RoadAssignment()
+    road_assignment.assign_node_pairs(isotrack_gdf, edges_gdf)
 
-    d = generate_point_line_dict(edges_gdf)
-    sel_edges = find_edges_corresponding_to_isotrack_data(d, edges_gdf, isotrack_gdf)
-    node_ids = reduce_nodes_edges_dataframes_to_isotrack(edges_gdf, sel_edges)
-    all_nodes = find_remaining_nodes(road_graph, node_ids, 'D_1375', 'F_2795')
-    isotrack_edges, isotrack_nodes = extract_edge_shp_from_node_set(road_graph,all_nodes)
-
-    isotrack_edges.to_file(isotrack_edge_path)
-    isotrack_nodes.to_file(isotrack_node_path)
-
-    # i = 1
-    # for path in road_graph.k_shortest_paths('D_1735', 'F_2795', 50):
-    #     print(path)
-    #     s_edges, s_nodes = road_graph.convert_path_to_gdfs(path)
-    #     s_edges.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/lbb/reduced/HW_SW/shortest_paths/"
-    #                     f"s_edges_{i}.shp")
-    #     # s_nodes.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/lbb/reduced/HW_SW/shortest_paths/"
-    #     #                 f"s_nodes_{i}.shp")
-    #     i += 1
