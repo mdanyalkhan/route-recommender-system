@@ -9,6 +9,7 @@ from RoadGraph.util import euclidean_distance
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.analysis.shortest_paths import shortest_simple_paths
 import matplotlib.pyplot as plt
+import networkx as nx
 
 class StdRoadGraph:
 
@@ -100,10 +101,7 @@ class StdRoadGraph:
         shortest distance(float), the edges and nodes GeoDataFrames depending on whether get_gdfs is set to True
         or not.
         """
-        get_weight = lambda u, v, data: data.get(STD_Nx_WEIGHT)
-        paths = {source_node: [source_node]}
-        dist, paths = self.dijkstra(source=source_node, get_weight=get_weight, paths=paths,
-                                    target=target_node)
+        dist, paths = self.dijkstra(source=source_node, target=target_node)
         shortest_path = paths[target_node]
         shortest_dist = dist[target_node]
 
@@ -123,8 +121,10 @@ class StdRoadGraph:
         shortest_nodes_gdf = gpd.GeoDataFrame()
 
         for i in range(n):
+            print(shortest_path[i])
             indices = (graph[shortest_path[i]][shortest_path[i + 1]]).get(STD_Nx_ATTR).get(STD_Nx_ROAD_IND)
-            shortest_edges_gdf = pd.concat([shortest_edges_gdf, edges_gdf.loc[indices, :]])
+            print(indices)
+            shortest_edges_gdf = pd.concat([shortest_edges_gdf, edges_gdf.loc[edges_gdf[STD_INDEX].isin(indices), :]])
             shortest_nodes_gdf = pd.concat(
                 [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf[STD_NODE_ID] == shortest_path[i]]])
             shortest_nodes_gdf = pd.concat(
@@ -135,8 +135,7 @@ class StdRoadGraph:
     def k_shortest_paths(self, source_node, target_node, k):
         return list(islice(shortest_simple_paths(self.net, source_node, target_node, weight=STD_Nx_WEIGHT), k))
 
-    def dijkstra(self, source, get_weight, pred=None, paths=None, cutoff=None,
-                 target=None):
+    def dijkstra(self, source, pred=None, cutoff=None, target=None):
         """Implementation of Dijkstra's algorithm
         Original Authors:
        Aric Hagberg <hagberg@lanl.gov>
@@ -181,6 +180,8 @@ class StdRoadGraph:
         """
         G = self.net
         G_succ = G.succ if G.is_directed() else G.adj
+        get_weight = lambda u, v, data: data.get(STD_Nx_WEIGHT)
+        paths = {source: [source]}
 
         push = heappush
         pop = heappop
