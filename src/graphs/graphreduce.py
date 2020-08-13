@@ -7,6 +7,7 @@ import RoadGraph as rg
 import numpy as np
 import networkx as nx
 import RoadGraph.graphreduce.roadassignment as ra
+import RoadGraph.graphreduce.routesgraph as routesgraph
 from src.utilities.aux_func import loadNetworkResults
 
 edges_path = rg.parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
@@ -164,8 +165,26 @@ def extract_edge_shp_from_node_set(road_graph: rg.StdRoadGraph, node_ids):
 
 
 if __name__ == '__main__':
+    net = loadNetworkResults(net_path)
+    nodes_gdf  = gpd.read_file(nodes_path)
     edges_gdf = gpd.read_file(edges_path)
-    isotrack_gdf = gpd.read_file(isotrack_path)
-    road_assignment = ra.RoadAssignment()
-    road_assignment.assign_node_pairs(isotrack_gdf, edges_gdf)
+    road_graph = rg.StdRoadGraph(net, nodes_gdf, edges_gdf)
 
+    # isotrack_data = gpd.read_file(isotrack_path)
+    # ra.RoadAssignment().assign_node_pairs(isotrack_data, edges_gdf)
+    #
+    # with open(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/isotrack_gdf_3.pickle", 'wb') as target:
+    #     pickle.dump(isotrack_data, target)
+    # fname = f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/isotrack_gdf_3.pickle"
+    # isotrack_gdf = loadNetworkResults(fname)
+    #
+    # cluster_gdfs = routesgraph.RoutesGraph().generate_routes_graph(isotrack_gdf, road_graph)
+    # edges, nodes = cluster_gdfs[1.0]
+    # edges.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_edges_{1.0}_v3.shp")
+    # nodes.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_nodes_{1.0}_v3.shp")
+
+    # for cluster_id in cluster_gdfs:
+    #     edges, nodes = cluster_gdfs[cluster_id]
+    #
+    #     edges.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_edges_{cluster_id}.shp")
+    #     nodes.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_nodes_{cluster_id}.shp")

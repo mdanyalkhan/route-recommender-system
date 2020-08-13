@@ -11,21 +11,21 @@ from RoadGraph.constants.StdKeyWords import *
 class RoadAssignment:
 
     def __init__(self):
-        self.road_threshold = 0.25
+        self.road_threshold = 100
         self.nearest_line_seg = 'line_seg'
         self.node_pairs = 'node_pairs'
         self.none_tuple = (None, None)
 
     def assign_node_pairs(self, isotrack_data: pd.DataFrame, edges: gpd.GeoDataFrame):
+        print(len(isotrack_data))
         point_map = self._generate_point_line_dict(edges)
         self._assign_nearest_line_segments(point_map, isotrack_data)
         self._assign_node_pairs(isotrack_data, edges)
-
-
+        print(len(isotrack_data))
 
     def _generate_point_line_dict(self, edges_gdf: gpd.GeoDataFrame):
 
-        sel_edges = edges_gdf.loc[edges_gdf[STD_ROAD_TYPE] != STD_ROUNDABOUT]
+        sel_edges = edges_gdf.loc[edges_gdf[STD_ROAD_TYPE] == STD_MAIN_CARRIAGEWAY]
         points = sel_edges[STD_GEOMETRY].apply(extract_list_of_coords_from_geom_object).tolist()
         std_index = sel_edges[STD_INDEX].tolist()
 
@@ -57,15 +57,21 @@ class RoadAssignment:
         dist, indices = tree.query(isotrack_coords, k=1)
 
         std_index = []
-        for index in indices:
-            sel_point = points[index]
-            std_index.append(point_map[sel_point])
+        for index, distance in zip(indices, dist):
+
+            if distance < self.road_threshold:
+                sel_point = points[index]
+                std_index.append(point_map[sel_point])
+            else:
+                std_index.append(None)
 
         isotrack_data[self.nearest_line_seg] = std_index
 
     def _assign_node_pairs(self, isotrack_data: gpd.GeoDataFrame, edges: gpd.GeoDataFrame):
 
         isotrack_data['visited'] = False
+        isotrack_data.loc[pd.isna(isotrack_data[self.nearest_line_seg]), 'visited'] = True
+
         isotrack_data[self.node_pairs] = None
         for i in range(len(isotrack_data)):
 
@@ -101,4 +107,5 @@ class RoadAssignment:
                 isotrack_data.loc[isotrack_data[self.nearest_line_seg].isin(visited_edges), 'visited'] = True
                 edges.drop(['visited'], axis=1, inplace=True)
 
+        isotrack_data.drop(isotrack_data[pd.isna(isotrack_data[self.nearest_line_seg]) == True].index, inplace=True)
         isotrack_data.drop(['visited', self.nearest_line_seg], axis=1, inplace=True)

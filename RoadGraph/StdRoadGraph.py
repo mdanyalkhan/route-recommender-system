@@ -121,9 +121,7 @@ class StdRoadGraph:
         shortest_nodes_gdf = gpd.GeoDataFrame()
 
         for i in range(n):
-            print(shortest_path[i])
             indices = (graph[shortest_path[i]][shortest_path[i + 1]]).get(STD_Nx_ATTR).get(STD_Nx_ROAD_IND)
-            print(indices)
             shortest_edges_gdf = pd.concat([shortest_edges_gdf, edges_gdf.loc[edges_gdf[STD_INDEX].isin(indices), :]])
             shortest_nodes_gdf = pd.concat(
                 [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf[STD_NODE_ID] == shortest_path[i]]])
