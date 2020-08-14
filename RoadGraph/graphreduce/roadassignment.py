@@ -22,15 +22,15 @@ class RoadAssignment:
     def assign_nearest_nodes(self, isotrack_data: pd.DataFrame, edges: gpd.GeoDataFrame, nodes: gpd.GeoDataFrame):
 
         isotrack_data[self.nearest_node] = None
-        self._assign_nearest_roundabout_nodes(nodes.loc[nodes[STD_N_TYPE] == STD_N_ROUNDABOUT], isotrack_data)
+        self._assign_nearest_roundabout_nodes(nodes, isotrack_data)
         self._assign_nearest_carriageway_nodes(edges, isotrack_data)
         isotrack_data.drop(isotrack_data[pd.isna(isotrack_data[self.nearest_node]) == True].index, inplace=True)
 
     def _assign_nearest_roundabout_nodes(self, nodes, isotrack_data):
 
-
         #Set up ckdTree of nodes
         points = [list(x.coords) for x in nodes.loc[nodes[STD_N_TYPE] == STD_ROUNDABOUT, STD_GEOMETRY].tolist()]
+        point_indices = nodes.loc[nodes[STD_N_TYPE] == STD_ROUNDABOUT].index.tolist()
         points_x = [point[0][0] for point in points]
         points_y = [point[0][1] for point in points]
 
@@ -49,12 +49,12 @@ class RoadAssignment:
 
         i = 0
         for index, distance in zip(indices, dist):
-            roundabout_extent = float(nodes.iloc[index][STD_N_ROUNDABOUT_EXTENT])
+            point_index = point_indices[index]
+            roundabout_extent = float(nodes.loc[point_index][STD_N_ROUNDABOUT_EXTENT])
             print(roundabout_extent)
             print(distance)
             if distance < roundabout_extent * self.roundabout_threshold:
-                isotrack_data.iloc[i][self.nearest_node] = nodes.iloc[index][STD_NODE_ID]
-
+                isotrack_data.iloc[i][self.nearest_node] = nodes.loc[point_index][STD_NODE_ID]
             i += 1
 
     def _assign_nearest_carriageway_nodes(self, edges, isotrack_data):
@@ -84,8 +84,8 @@ class RoadAssignment:
         points_x = [point[0] for point in points]
         points_y = [point[1] for point in points]
 
-        shortest_path_coords = np.dstack([points_x, points_y])[0]
-        tree = cKDTree(shortest_path_coords)
+        np_coords = np.dstack([points_x, points_y])[0]
+        tree = cKDTree(np_coords)
 
         isotrack_coords = []
         for _, point in isotrack_data.iterrows():

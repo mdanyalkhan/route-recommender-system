@@ -180,12 +180,15 @@ if __name__ == '__main__':
     isotrack_gdf = loadNetworkResults(fname)
 
     cluster_gdfs = routesgraph.RoutesGraph().generate_routes_graph(isotrack_gdf, road_graph)
-    edges, nodes = cluster_gdfs[1.0]
-    edges.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_edges_{1.0}_v4.shp")
-    nodes.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_nodes_{1.0}_v4.shp")
 
-    edge_merged = gpd.GeoDataFrame()
-    nodes_merged = gpd.GeoDataFrame()
+    for cluster_id in cluster_gdfs:
+
+        edges, nodes = cluster_gdfs[1.0]
+        edges.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_edges_{cluster_id}.shp")
+        nodes.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_nodes_{cluster_id}.shp")
+
+    # edge_merged = gpd.GeoDataFrame()
+    # nodes_merged = gpd.GeoDataFrame()
 
     # for cluster_id in cluster_gdfs:
     #     edge_merged = pd.concat([cluster_gdfs[cluster_id][0], edge_merged])
