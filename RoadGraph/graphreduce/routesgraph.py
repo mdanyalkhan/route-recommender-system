@@ -132,8 +132,7 @@ class RoutesGraph:
         :return: integer which is the number of legs that an entity must appear in to be considered really travelled
         """
         n_leg_ids = df[LEG_ID].nunique()
-        # return int((n_leg_ids + 1) * self.frac_to_appear_in)
-        return 1
+        return int((n_leg_ids + 1) * self.frac_to_appear_in)
 
     def _get_node_counter(self, df):
         """

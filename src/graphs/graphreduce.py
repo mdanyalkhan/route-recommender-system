@@ -174,24 +174,21 @@ if __name__ == '__main__':
     isotrack_data = gpd.read_file(isotrack_path)
     ra.RoadAssignment().assign_nearest_nodes(isotrack_data, edges_gdf, nodes_gdf)
 
-    # with open(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/isotrack_gdf_4.pickle", 'wb') as target:
-    #     pickle.dump(isotrack_data, target)
-    # fname = f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/isotrack_gdf_4.pickle"
-    # isotrack_gdf = loadNetworkResults(fname)
-    #
-    # print(isotrack_gdf.dtypes)
-    # print(isotrack_gdf.loc[(isotrack_gdf['leg_id'] == 'SWDC411C_SOUT_WEST_DC_HEAT_WORL_DC_20200124_0')
-    #                        & (isotrack_gdf['Event_Long'] == -0.94469), 'nearest_node'])
-    #
-    # cluster_gdfs = routesgraph.RoutesGraph().generate_routes_graph(isotrack_gdf, road_graph)
-    #
-    # for cluster_id in cluster_gdfs:
-    #
-    #     edges, nodes = cluster_gdfs[cluster_id]
-    #
-    #     if not edges.empty and not nodes.empty:
-    #         edges.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_edges_{cluster_id}.shp")
-    #         nodes.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_nodes_{cluster_id}.shp")
+    with open(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/isotrack_gdf_4.pickle", 'wb') as target:
+        pickle.dump(isotrack_data, target)
+    fname = f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/isotrack_gdf_4.pickle"
+    isotrack_gdf = loadNetworkResults(fname)
+
+
+    cluster_gdfs = routesgraph.RoutesGraph().generate_routes_graph(isotrack_gdf, road_graph)
+
+    for cluster_id in cluster_gdfs:
+
+        edges, nodes = cluster_gdfs[cluster_id]
+
+        if not edges.empty and not nodes.empty:
+            edges.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_edges_{cluster_id}.shp")
+            nodes.to_file(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/cluster_nodes_{cluster_id}.shp")
 
     # edge_merged = gpd.GeoDataFrame()
     # nodes_merged = gpd.GeoDataFrame()

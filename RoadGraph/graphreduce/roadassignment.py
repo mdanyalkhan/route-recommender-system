@@ -9,7 +9,6 @@ from GeoDataFrameAux import extract_list_of_coords_from_geom_object
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.constants.StdKeyWords import *
 
-
 class RoadAssignment:
 
     def __init__(self):
@@ -17,24 +16,25 @@ class RoadAssignment:
         self.nearest_line_seg = 'line_seg'
         self.node_pairs = 'node_pairs'
         self.nearest_node = 'nearest_node'
-        self.roundabout_threshold = 1.25
+        self.roundabout_threshold = 50.0
         self.none_tuple = (None, None)
 
     def assign_nearest_nodes(self, isotrack_data: pd.DataFrame, edges: gpd.GeoDataFrame, nodes: gpd.GeoDataFrame):
 
         isotrack_data[self.nearest_node] = None
-        self._assign_nearest_roundabout_nodes(nodes, isotrack_data)
+        self._assign_nearest_roundabout_nodes(nodes, edges, isotrack_data)
         self._assign_nearest_carriageway_nodes(edges, isotrack_data)
 
         isotrack_data.drop(isotrack_data[pd.isna(isotrack_data[self.nearest_node]) == True].index, inplace=True)
 
-    def _assign_nearest_roundabout_nodes(self, nodes, isotrack_data):
+    def _assign_nearest_roundabout_nodes(self, nodes, edges, isotrack_data):
 
+        roundabout_point_map = self._generate_roundabout_point_dict(nodes, edges)
+        points = list(roundabout_point_map.keys())
         # Set up ckdTree of nodes
-        points = [list(x.coords) for x in nodes.loc[nodes[STD_N_TYPE] == STD_ROUNDABOUT, STD_GEOMETRY].tolist()]
         point_indices = nodes.loc[nodes[STD_N_TYPE] == STD_ROUNDABOUT].index.tolist()
-        points_x = [point[0][0] for point in points]
-        points_y = [point[0][1] for point in points]
+        points_x = [point[0] for point in points]
+        points_y = [point[1] for point in points]
 
         shortest_path_coords = np.dstack([points_x, points_y])[0]
         tree = cKDTree(shortest_path_coords)
@@ -51,11 +51,29 @@ class RoadAssignment:
 
         i = 0
         for index, distance in zip(indices, dist):
-            point_index = point_indices[index]
-            roundabout_extent = float(nodes.loc[point_index][STD_N_ROUNDABOUT_EXTENT])
-            if distance < roundabout_extent * self.roundabout_threshold:
-                isotrack_data.loc[i, self.nearest_node] = nodes.loc[point_index][STD_NODE_ID]
+            nearest_point = points[index]
+            if distance < self.roundabout_threshold:
+                isotrack_data.loc[i, self.nearest_node] = roundabout_point_map[nearest_point]
             i += 1
+
+    def _generate_roundabout_point_dict(self, nodes, edges):
+
+        roundabout_edges = edges.loc[edges[STD_ROAD_TYPE] == STD_ROUNDABOUT]
+        roundabout_nodes = nodes.loc[nodes[STD_N_TYPE] == STD_N_ROUNDABOUT]
+
+        roundabout_point_map = {}
+
+        for _, roundabout_node in roundabout_nodes.iterrows():
+            node_id = roundabout_node[STD_NODE_ID]
+            roundabout_segments = roundabout_edges.loc[roundabout_edges[STD_FROM_NODE] == node_id]
+            points = roundabout_segments[STD_GEOMETRY].apply(extract_list_of_coords_from_geom_object).tolist()
+            points = [point for point_group in points for point in point_group]
+            for point in points:
+                roundabout_point_map[point] = node_id
+
+        return roundabout_point_map
+
+
 
     def _assign_nearest_carriageway_nodes(self, edges, isotrack_data):
 
@@ -65,7 +83,7 @@ class RoadAssignment:
 
     def _generate_point_line_dict(self, edges_gdf: gpd.GeoDataFrame):
 
-        sel_edges = edges_gdf.loc[edges_gdf[STD_ROAD_TYPE] == STD_MAIN_CARRIAGEWAY]
+        sel_edges = edges_gdf.loc[edges_gdf[STD_ROAD_TYPE] != STD_ROUNDABOUT]
         points = sel_edges[STD_GEOMETRY].apply(extract_list_of_coords_from_geom_object).tolist()
         std_index = sel_edges[STD_INDEX].tolist()
 
