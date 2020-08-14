@@ -43,10 +43,12 @@ class RoutesGraph:
             df_temp = isotrack_data[isotrack_data[CLUSTER] == cluster_id]
             df_grouped_temp = isotrack_grouped[isotrack_grouped[CLUSTER] == cluster_id]
 
+            print(f"{cluster_id}: {len(df_grouped_temp)}")
+            if cluster_id == 2.0:
+                print(df_grouped_temp[NODE_ROUTE_LIST].values[0])
             # If we only have one or two members in cluster, then don't bother with the long process below
             # If one, just take this entity list
             if len(df_grouped_temp) == 1:
-
                 cluster_map[cluster_id] = df_grouped_temp[NODE_ROUTE_LIST].values[0]
 
             # If two, take the longer one on the basis it has more information.
@@ -130,7 +132,8 @@ class RoutesGraph:
         :return: integer which is the number of legs that an entity must appear in to be considered really travelled
         """
         n_leg_ids = df[LEG_ID].nunique()
-        return int((n_leg_ids + 1) * self.frac_to_appear_in)
+        # return int((n_leg_ids + 1) * self.frac_to_appear_in)
+        return 1
 
     def _get_node_counter(self, df):
         """
