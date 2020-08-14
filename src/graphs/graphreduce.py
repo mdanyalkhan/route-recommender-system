@@ -171,11 +171,11 @@ if __name__ == '__main__':
     edges_gdf = gpd.read_file(edges_path)
     road_graph = rg.StdRoadGraph(net, nodes_gdf, edges_gdf)
 
-    isotrack_data = gpd.read_file(isotrack_path)
-    ra.RoadAssignment().assign_nearest_nodes(isotrack_data, edges_gdf, nodes_gdf)
-
-    with open(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/isotrack_gdf_4.pickle", 'wb') as target:
-        pickle.dump(isotrack_data, target)
+    # isotrack_data = gpd.read_file(isotrack_path)
+    # ra.RoadAssignment().assign_nearest_nodes(isotrack_data, edges_gdf, nodes_gdf)
+    #
+    # with open(f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/isotrack_gdf_4.pickle", 'wb') as target:
+    #     pickle.dump(isotrack_data, target)
     fname = f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp/isotrack_gdf_4.pickle"
     isotrack_gdf = loadNetworkResults(fname)
 

@@ -7,6 +7,7 @@ import pandas as pd
 from GeoDataFrameAux import extract_coord_at_index
 from RoadGraph.util import euclidean_distance
 from RoadGraph.constants.StdColNames import *
+from RoadGraph.constants.StdKeyWords import *
 from RoadGraph.analysis.shortest_paths import shortest_simple_paths
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -128,7 +129,19 @@ class StdRoadGraph:
             shortest_nodes_gdf = pd.concat(
                 [shortest_nodes_gdf, nodes_gdf.loc[nodes_gdf[STD_NODE_ID] == shortest_path[i + 1]]])
 
+        shortest_edges_gdf = self._add_roundabout_line_segments(shortest_nodes_gdf, shortest_edges_gdf)
         return shortest_edges_gdf, shortest_nodes_gdf
+
+    def _add_roundabout_line_segments(self, shortest_nodes_gdf, shortest_edges_gdf):
+        roundabout_nodes = shortest_nodes_gdf.loc[shortest_nodes_gdf[STD_N_TYPE] == STD_N_ROUNDABOUT]
+        roundabout_edges = self.edges.loc[self.edges[STD_ROAD_TYPE] == STD_ROUNDABOUT]
+
+        for _, roundabout_node in roundabout_nodes.iterrows():
+            node_id = roundabout_node[STD_NODE_ID]
+            sel_roundabout_segments = roundabout_edges.loc[roundabout_edges[STD_FROM_NODE] == node_id]
+            shortest_edges_gdf = pd.concat([shortest_edges_gdf, sel_roundabout_segments])
+
+        return shortest_edges_gdf
 
     def k_shortest_paths(self, source_node, target_node, k):
         return list(islice(shortest_simple_paths(self.net, source_node, target_node, weight=STD_Nx_WEIGHT), k))
