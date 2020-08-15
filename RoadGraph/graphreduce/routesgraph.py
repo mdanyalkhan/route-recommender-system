@@ -1,10 +1,10 @@
 from collections import Counter
 import pandas as pd
-from RoadGraph import StdRoadGraph
-from RoadGraph.constants.StdKeyWords import *
-from RoadGraph.constants.StdColNames import *
-import networkx as nx
-import numpy as np
+import geopandas as gpd
+import RoadGraph.constants.StdColNames as cn
+import RoadGraph.constants.StdKeyWords as kw
+from RoadGraph import StdRoadGraph, StdRoadGraphBuilder
+import pickle
 
 LEG_ID = "leg_id"
 CLUSTER = "cluster"
@@ -22,18 +22,94 @@ class RoutesGraph:
     def __init__(self):
         self.frac_to_appear_in = 0.2
 
-    def generate_routes_graph(self, isotrack_data: pd.DataFrame, road_graph: StdRoadGraph):
+    def generate_stdRoadGraph_from_isotrack(self, isotrack_data: pd.DataFrame, road_graph: StdRoadGraph, out_path=None):
+        shp_map = self.generate_gdfs_for_each_cluster(isotrack_data, road_graph)
 
+        nodes_merged = gpd.GeoDataFrame()
+        edges_merged = gpd.GeoDataFrame()
+
+        for cluster_id in shp_map:
+            edges_merged = pd.concat([shp_map[cluster_id][0], edges_merged])
+            nodes_merged = pd.concat([shp_map[cluster_id][1], nodes_merged])
+
+        edges_merged = edges_merged[~edges_merged.index.duplicated(keep='first')]
+        nodes_merged = nodes_merged[~nodes_merged.index.duplicated(keep='first')]
+        net = StdRoadGraphBuilder().create_graph(nodes_merged, edges_merged)
+        edges_merged, net = self._remove_redundant_roundabout_edges(edges_merged, nodes_merged, net)
+
+        if out_path:
+            edges_merged.to_file(f"{out_path}/edges_v2.shp")
+            nodes_merged.to_file(f"{out_path}/nodes_v2.shp")
+            with open(f"{out_path}/route_graph_v2.pickle", 'wb') as target:
+                pickle.dump(net, target)
+
+        return StdRoadGraph(net, nodes_merged, edges_merged)
+
+    def _remove_redundant_roundabout_edges(self, edges_merged, nodes_merged, net):
+        roundabout_nodes = nodes_merged.loc[nodes_merged[cn.STD_N_TYPE] == kw.STD_N_ROUNDABOUT]
+        edges_merged['marked'] = False
+        node_pairs_to_del = []
+
+        for _, roundabout_node in roundabout_nodes.iterrows():
+            node_id = roundabout_node[cn.STD_NODE_ID]
+            #Create empty list of second node candidate
+            second_node_cand = []
+            first_neighbours = list(net.successors(node_id))
+            #For every neighbour of roundabout node
+            for first_neighbour in first_neighbours:
+                #If number of indices is 1
+                indices = net[node_id][first_neighbour][cn.STD_Nx_ATTR][cn.STD_Nx_ROAD_IND]
+                if len(indices) == 1:
+                    #If number of neighbours of neighbour is two:
+                    sec_neighbours = list(net.successors(first_neighbour))
+                    if len(sec_neighbours) == 2:
+                        #For every neighbour of neighbour that is not a roundabout node:
+                        for sec_neighbour in sec_neighbours:
+                            #If number of indices is 1
+                            sec_indices = net[first_neighbour][sec_neighbour][cn.STD_Nx_ATTR][cn.STD_Nx_ROAD_IND]
+                            if len(sec_indices) == 1:
+                                #Add neighbour into your candidate second node list
+                                second_node_cand += [sec_neighbour]
+
+            #For every neighbour of roundaboute node
+            for first_neighbour in first_neighbours:
+                indices = net[node_id][first_neighbour][cn.STD_Nx_ATTR][cn.STD_Nx_ROAD_IND]
+                #If neighbour of roundabout node in candidate list:
+                if first_neighbour in second_node_cand and len(indices) == 1:
+                    #mark edge for deletion
+                    edges_merged.loc[edges_merged[cn.STD_INDEX] == indices[0], 'marked'] = True
+                    #record node pairs, for deletion in net
+                    node_pairs_to_del += [(node_id, first_neighbour)]
+
+        #Delete marked edges
+        edges_merged.drop(edges_merged[edges_merged.marked == True].index, inplace=True)
+        edges_merged.drop('marked', axis=1, inplace=True)
+
+        #Delete marked edges in net
+        for node_pairs in node_pairs_to_del:
+            net.remove_edge(node_pairs[0], node_pairs[1])
+            net.remove_edge(node_pairs[1], node_pairs[0])
+
+        return edges_merged, net
+
+    def generate_gdfs_for_each_cluster(self, isotrack_data: pd.DataFrame, road_graph: StdRoadGraph):
+
+        cluster_route_map = self.generate_node_routes(isotrack_data, road_graph)
+        shp_map = {}
+
+        for cluster_id in cluster_route_map:
+            edges, nodes = road_graph.convert_path_to_gdfs(cluster_route_map[cluster_id])
+            edges = edges[~edges.index.duplicated(keep='first')]
+            nodes = nodes[~nodes.index.duplicated(keep='first')]
+            shp_map[cluster_id] = (edges, nodes)
+        return shp_map
+
+    def generate_node_routes(self, isotrack_data: pd.DataFrame, road_graph: StdRoadGraph):
         isotrack_grouped = self._get_grouped_df(isotrack_data)
         cluster_map = self._assign_raw_node_route_for_each_cluster(isotrack_data, isotrack_grouped)
         cluster_route_map = self._assign_final_node_route_for_each_cluster(cluster_map, road_graph)
 
-        shp_map = {}
-
-        for cluster_id in cluster_route_map:
-            shp_map[cluster_id] = road_graph.convert_path_to_gdfs(cluster_route_map[cluster_id])
-
-        return shp_map
+        return cluster_route_map
 
     def _assign_raw_node_route_for_each_cluster(self, isotrack_data, isotrack_grouped):
         cluster_map = {}
@@ -43,9 +119,6 @@ class RoutesGraph:
             df_temp = isotrack_data[isotrack_data[CLUSTER] == cluster_id]
             df_grouped_temp = isotrack_grouped[isotrack_grouped[CLUSTER] == cluster_id]
 
-            print(f"{cluster_id}: {len(df_grouped_temp)}")
-            if cluster_id == 2.0:
-                print(df_grouped_temp[NODE_ROUTE_LIST].values[0])
             # If we only have one or two members in cluster, then don't bother with the long process below
             # If one, just take this entity list
             if len(df_grouped_temp) == 1:

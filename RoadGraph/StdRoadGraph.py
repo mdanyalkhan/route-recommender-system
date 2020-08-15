@@ -144,7 +144,7 @@ class StdRoadGraph:
         return shortest_edges_gdf
 
     def k_shortest_paths(self, source_node, target_node, k):
-        return list(islice(shortest_simple_paths(self.net, source_node, target_node, weight=STD_Nx_WEIGHT), k))
+        return list(islice(nx.shortest_simple_paths(self.net, source_node, target_node, weight=STD_Nx_WEIGHT), k))
 
     def dijkstra(self, source, pred=None, cutoff=None, target=None):
         """Implementation of Dijkstra's algorithm
