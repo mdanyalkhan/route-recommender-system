@@ -38,9 +38,9 @@ class RoutesGraph:
         edges_merged, net = self._remove_redundant_roundabout_edges(edges_merged, nodes_merged, net)
 
         if out_path:
-            edges_merged.to_file(f"{out_path}/edges_v2.shp")
-            nodes_merged.to_file(f"{out_path}/nodes_v2.shp")
-            with open(f"{out_path}/route_graph_v2.pickle", 'wb') as target:
+            edges_merged.to_file(f"{out_path}/edges.shp")
+            nodes_merged.to_file(f"{out_path}/nodes.shp")
+            with open(f"{out_path}/route_graph.pickle", 'wb') as target:
                 pickle.dump(net, target)
 
         return StdRoadGraph(net, nodes_merged, edges_merged)
@@ -157,6 +157,7 @@ class RoutesGraph:
         """
         df_grouped = df.groupby([LEG_ID, CLUSTER, FROM_DEPOT, TO_DEPOT]).agg(
             {EVENT_DTTM: ["min", "max"], NEAREST_NODE: list}).reset_index()
+
         df_grouped.columns = [LEG_ID, CLUSTER, FROM_DEPOT, TO_DEPOT, START_TIME, END_TIME, NEAREST_NODE]
         df_grouped.loc[:, NODE_ROUTE_LIST] = df_grouped[NEAREST_NODE].apply(lambda x: self._unique(x))
         del df_grouped[NEAREST_NODE]

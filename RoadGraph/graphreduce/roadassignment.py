@@ -23,8 +23,8 @@ class RoadAssignment:
 
         isotrack_data[self.nearest_node] = None
         self._assign_nearest_roundabout_nodes(nodes, edges, isotrack_data)
-        self._assign_nearest_carriageway_nodes(edges, isotrack_data)
 
+        self._assign_nearest_carriageway_nodes(edges, isotrack_data)
         isotrack_data.drop(isotrack_data[pd.isna(isotrack_data[self.nearest_node]) == True].index, inplace=True)
 
     def _assign_nearest_roundabout_nodes(self, nodes, edges, isotrack_data):

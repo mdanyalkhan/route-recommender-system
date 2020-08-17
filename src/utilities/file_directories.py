@@ -27,9 +27,13 @@ class ParentDirectories:
 
     #To be overwritten
     isotrack_list = []
-    out_path = None
+    out_path_criteria1 = None
+    out_path_criteria2 = None
+    out_path_criteria3 = None
     out_prefix = None
-    netx_path = None
+    netx_path_criteria1 = None
+    netx_path_criteria2 = None
+    netx_path_criteria3 = None
     edges_path = None
     nodes_path = None
 
@@ -44,10 +48,18 @@ class LbbDirectories(ParentDirectories):
                      isotrack_path +
                      '/20191002-20200130_isotrak_legs_excl_5km_TRAIN_SOUTH WEST DC_HEATHROW WORLDWIDE DC.csv']
 
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/compare_to_telemetry"
+    out_path_criteria1 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/compare_to_telemetry" \
+                                                                  "/criteria1"
+    out_path_criteria2 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/compare_to_telemetry" \
+                                                                  "/criteria2"
+    out_path_criteria3 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/compare_to_telemetry" \
+                                                                  "/criteria3"
+
     out_prefix = ['/MD_PR', '/PR_SW', '/ND_BM', '/HW_SW']
 
-    netx_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
+    netx_path_criteria1 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph_criteria1.pickle"
+    netx_path_criteria2 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph_criteria2.pickle"
+    netx_path_criteria3 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
     edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
     nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
 
@@ -58,10 +70,19 @@ class plcrDirectories(ParentDirectories):
                      isotrack_path +
                      '/20191002-20200130_isotrak_legs_excl_5km_TRAIN_NOTTINGHAM MC_EAST MIDLANDS AIRPORT.csv']
 
-    out_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/compare_to_telemetry"
+    out_path_criteria1 = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/compare_to_telemetry" \
+                                                                  "/criteria1"
+    out_path_criteria2 = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/compare_to_telemetry" \
+                                                                  "/criteria2"
+    out_path_criteria3 = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/compare_to_telemetry" \
+                                                                  "/criteria3"
     out_prefix = ['/ND_SH', '/NT_EM']
 
-    netx_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/netx/roadGraph.pickle"
+    netx_path_criteria1 = parent_directory_at_level(__file__,
+                                                    4) + "/Operational_Data/plcr/out/netx/roadGraph_criteria1.pickle"
+    netx_path_criteria2 = parent_directory_at_level(__file__,
+                                                    4) + "/Operational_Data/plcr/out/netx/roadGraph_criteria2.pickle"
+    netx_path_criteria3 = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/netx/roadGraph.pickle"
     edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/final/edges.shp"
     nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/final/nodes.shp"
     key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"

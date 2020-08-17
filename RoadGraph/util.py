@@ -5,6 +5,8 @@ import os
 from math import sqrt
 import geopandas as gpd
 import pandas as pd
+import RoadGraph.constants.StdColNames as cn
+import RoadGraph.constants.StdKeyWords as kw
 
 def filter_minor_roads_and_remove_duplicates_from_os_roads(in_path: str, out_path: str):
     """
@@ -69,3 +71,17 @@ def create_file_path(file_path: str) -> str:
         os.makedirs(file_path)
 
     return file_path
+
+def set_speed_limits_to_criteria2(edges_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Sets the speed limit of each road segment based on the form of way of the road
+    :param form_of_way: Effectively the road type
+    :return: Speed in int
+    """
+
+    edges_gdf.loc[edges_gdf[cn.STD_FORMOFWAY].isin(kw.STD_DUAL_CARRIAGEWAY_LIST), cn.STD_SPEED] = kw.STD_SPEED_DC
+    edges_gdf.loc[edges_gdf[cn.STD_FORMOFWAY] == kw.STD_SINGLE_CARRIAGEWAY, cn.STD_SPEED] = kw.STD_SPEED_SC
+    edges_gdf.loc[(~edges_gdf[cn.STD_FORMOFWAY].isin(kw.STD_DUAL_CARRIAGEWAY_LIST)) &
+                  (edges_gdf[cn.STD_FORMOFWAY] != kw.STD_SINGLE_CARRIAGEWAY), cn.STD_SPEED] = kw.STD_SPEED_DEFAULT
+
+    return edges_gdf

@@ -2,7 +2,6 @@ import pickle
 from os.path import *
 import pandas as pd
 import geopandas as gpd
-from shapely import wkt
 
 
 def parent_directory_at_level(current_path: str, level: int):

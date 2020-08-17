@@ -199,7 +199,7 @@ class StdRoadGraphBuilder:
             segment_index = start_segment[STD_INDEX]
             from_node = start_segment[STD_FROM_NODE]
             attr, to_node = self.merge_road_segments(edges_gdf, segment_index)
-            weight = attr[STD_Nx_TIME] if weight_type == "Time" else attr[STD_Nx_TIME]
+            weight = attr[STD_Nx_TIME] if weight_type == "Time" else attr[STD_Nx_LENGTH]
 
             net.add_edge(from_node, to_node, attr=attr, weight=weight)
             if not start_segment[STD_IS_DIREC]:

@@ -1,6 +1,7 @@
 
 #Key words used for the standard dataframe
 STD_MAIN_CARRIAGEWAY = "Main Carriageway"
+STD_SINGLE_CARRIAGEWAY = "Single Carriageway"
 STD_DUAL_CARRIAGEWAY_LIST = ["Dual Carriageway", "Collapsed Dual Carriageway"]
 STD_SLIP_ROAD = "Slip Road"
 STD_ROUNDABOUT = "Roundabout"
