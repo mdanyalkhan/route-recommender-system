@@ -25,9 +25,12 @@ def shortest_path_analysis_grouped(directories: fd.ParentDirectories, criteria =
 
     create_file_path(main_out_path)
 
-    for i in range(len(directories.isotrack_list)):
-        out_path = create_file_path(f'{main_out_path}/{directories.out_prefix[i]}')
-        sp.shortest_path_analysis(roadGraph, key_sites, 'location_n', directories.isotrack_list[i], 0, out_path)
+    isotrack_list = list(directories.isotrack_dict.keys())
+
+    for isotrack_prefix in isotrack_list:
+        out_path = create_file_path(f"{main_out_path}/{isotrack_prefix}")
+        sp.shortest_path_analysis(roadGraph, key_sites, 'location_n', directories.isotrack_dict[isotrack_prefix], 0,
+                                  out_path)
 
 if __name__ == '__main__':
     directories = fd.LbbDirectories()

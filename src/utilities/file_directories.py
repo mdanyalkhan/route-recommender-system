@@ -26,7 +26,7 @@ class ParentDirectories:
     key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/rm_sites/rm_locations.shp"
 
     #To be overwritten
-    isotrack_list = []
+    isotrack_dict = {}
     out_path_criteria1 = None
     out_path_criteria2 = None
     out_path_criteria3 = None
@@ -39,14 +39,12 @@ class ParentDirectories:
 
 class LbbDirectories(ParentDirectories):
     isotrack_path = ParentDirectories.isotrack_path
-    isotrack_list = [isotrack_path +
-                     '/20191002-20200130_isotrak_legs_excl_5km_TRAIN_MEDWAY MC_PRINCESS ROYAL DC.csv',
-                     isotrack_path +
-                     '/20191002-20200130_isotrak_legs_excl_5km_TRAIN_PRINCESS ROYAL DC_SOUTH WEST DC.csv',
-                     isotrack_path +
-                     '/20191002-20200130_isotrak_legs_excl_5km_TRAIN_NATIONAL DC_BRISTOL MC.csv',
-                     isotrack_path +
-                     '/20191002-20200130_isotrak_legs_excl_5km_TRAIN_SOUTH WEST DC_HEATHROW WORLDWIDE DC.csv']
+
+    isotrack_dict = {'MD_PR': f"{isotrack_path}/20191002-20200130_isotrak_legs_excl_5km_TRAIN_MEDWAY MC_PRINCESS ROYAL DC.csv",
+                     'PR_SW': f"{isotrack_path}/20191002-20200130_isotrak_legs_excl_5km_TRAIN_PRINCESS ROYAL DC_SOUTH WEST DC.csv",
+                     'ND_BM': f"{isotrack_path}/20191002-20200130_isotrak_legs_excl_5km_TRAIN_NATIONAL DC_BRISTOL MC.csv",
+                     'HW_SW': f"{isotrack_path}/20191002-20200130_isotrak_legs_excl_5km_TRAIN_SOUTH WEST DC_HEATHROW WORLDWIDE DC.csv",
+                     }
 
     out_path_criteria1 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/compare_to_telemetry" \
                                                                   "/criteria1"
@@ -54,9 +52,6 @@ class LbbDirectories(ParentDirectories):
                                                                   "/criteria2"
     out_path_criteria3 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/compare_to_telemetry" \
                                                                   "/criteria3"
-
-    out_prefix = ['/MD_PR', '/PR_SW', '/ND_BM', '/HW_SW']
-
     netx_path_criteria1 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph_criteria1.pickle"
     netx_path_criteria2 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph_criteria2.pickle"
     netx_path_criteria3 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
@@ -65,10 +60,9 @@ class LbbDirectories(ParentDirectories):
 
 class plcrDirectories(ParentDirectories):
     isotrack_path = ParentDirectories.isotrack_path
-    isotrack_list = [isotrack_path +
-                     '/20191002-20200130_isotrak_legs_excl_5km_TRAIN_NATIONAL DC_SHEFFIELD MC.csv',
-                     isotrack_path +
-                     '/20191002-20200130_isotrak_legs_excl_5km_TRAIN_NOTTINGHAM MC_EAST MIDLANDS AIRPORT.csv']
+    isotrack_dict = {'ND_SH': f"{isotrack_path}/20191002-20200130_isotrak_legs_excl_5km_TRAIN_NATIONAL DC_SHEFFIELD MC.csv",
+                     'NT_EM': f"{isotrack_path}/20191002-20200130_isotrak_legs_excl_5km_TRAIN_NOTTINGHAM MC_EAST MIDLANDS AIRPORT.csv"
+                     }
 
     out_path_criteria1 = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/compare_to_telemetry" \
                                                                   "/criteria1"
@@ -76,8 +70,6 @@ class plcrDirectories(ParentDirectories):
                                                                   "/criteria2"
     out_path_criteria3 = parent_directory_at_level(__file__, 4) + "/Operational_Data/plcr/out/compare_to_telemetry" \
                                                                   "/criteria3"
-    out_prefix = ['/ND_SH', '/NT_EM']
-
     netx_path_criteria1 = parent_directory_at_level(__file__,
                                                     4) + "/Operational_Data/plcr/out/netx/roadGraph_criteria1.pickle"
     netx_path_criteria2 = parent_directory_at_level(__file__,
