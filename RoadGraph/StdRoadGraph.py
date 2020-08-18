@@ -34,13 +34,25 @@ class StdRoadGraph:
         shortest distance(float), the edges and nodes GeoDataFrames depending on whether get_gdfs is set to True
         or not.
         """
-        geom_obj = key_sites_gdf.loc[key_sites_gdf[key_site_col_name] == source_site, STD_GEOMETRY].values[0]
-        source_coord = extract_coord_at_index(geom_obj, 0)
-
-        geom_obj = key_sites_gdf.loc[key_sites_gdf[key_site_col_name] == target_site, STD_GEOMETRY].values[0]
-        target_coord = extract_coord_at_index(geom_obj, 0)
+        source_coord, target_coord = self._get_coordinates(key_site_col_name, key_sites_gdf, source_site, target_site)
 
         return self.shortest_path_between_coords(source_coord, target_coord, get_gdfs)
+
+    def _get_coordinates(self, key_site_col_name: str, key_sites_gdf: gpd.GeoDataFrame,
+                         source_site: str, target_site: str) -> tuple:
+        """
+        Extracts the coordinates of the sites
+        :param key_site_col_name: name of column that stores sites
+        :param key_sites_gdf: name of geo data frame
+        :param source_site: name of source site
+        :param target_site: name of target site
+        :return: source and target coordinates
+        """
+        geom_obj = key_sites_gdf.loc[key_sites_gdf[key_site_col_name] == source_site, STD_GEOMETRY].values[0]
+        source_coord = extract_coord_at_index(geom_obj, 0)
+        geom_obj = key_sites_gdf.loc[key_sites_gdf[key_site_col_name] == target_site, STD_GEOMETRY].values[0]
+        target_coord = extract_coord_at_index(geom_obj, 0)
+        return source_coord, target_coord
 
     def shortest_path_between_coords(self, source_coord: tuple, target_coord: tuple, get_gdfs=False) \
             -> (gpd.GeoDataFrame, gpd.GeoDataFrame, float):
@@ -54,20 +66,29 @@ class StdRoadGraph:
         shortest distance(float), the edges and nodes GeoDataFrames depending on whether get_gdfs is set to True
         or not.
         """
+        nearest_source_node, nearest_target_node = self._get_nearest_node(source_coord, target_coord)
+        #TODO: Need to consider added weight from coordinates to nearest node as well.
+        return self.shortest_path_between_nodes(nearest_source_node, nearest_target_node, get_gdfs)
+
+    def _get_nearest_node(self, source_coord: tuple, target_coord: tuple) -> tuple:
+        """
+        Gets the nearest nodes based on source and target coordinates
+        :param source_coord: x-y coordinates of source
+        :param target_coord: x-y coordinates of target
+        :return: Tuple of nearest nodes to source and target
+        """
         nodes_gdf = self.nodes
         COORDINATES = "coordinates"
         nodes_gdf[COORDINATES] = nodes_gdf[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
         source_distances = nodes_gdf[COORDINATES].apply(lambda x: euclidean_distance(x, source_coord))
         min_index = source_distances.index[source_distances == source_distances.min()].values[0]
         nearest_source_node = nodes_gdf.loc[min_index][STD_NODE_ID]
-
         target_distances = nodes_gdf[COORDINATES].apply(lambda x: euclidean_distance(x, target_coord))
         min_index = source_distances.index[target_distances == target_distances.min()].values[0]
         nearest_target_node = nodes_gdf.loc[min_index][STD_NODE_ID]
-
         nodes_gdf.drop([COORDINATES], axis=1, inplace=True)
-        #TODO: Need to consider added weight from coordinates to nearest node as well.
-        return self.shortest_path_between_nodes(nearest_source_node, nearest_target_node, get_gdfs)
+
+        return nearest_source_node, nearest_target_node
 
     def set_road_closure(self, from_node: str, to_node: str):
         """
@@ -143,7 +164,24 @@ class StdRoadGraph:
 
         return shortest_edges_gdf
 
-    def k_shortest_paths(self, source_node, target_node, k):
+
+    def k_shortest_paths_from_key_sites(self, key_sites_gdf: gpd.GeoDataFrame, key_site_col_name: str,
+                                        source: str, target: str, k: int):
+        """
+        Returns k list of nodes that form the shortest path from source to target
+        :param key_sites_gdf: Key sites geo data frame
+        :param key_site_col_name: Name of column containing key sites
+        :param source: Name of source site
+        :param target: Name of target site
+        :param k: Number of shortest paths to extract
+        :return: a generator: k list of nodes forming the k shortest paths
+        """
+        source_coord, target_coord = self._get_coordinates(key_site_col_name, key_sites_gdf, source, target)
+        source_node, target_node = self._get_nearest_node(source_coord, target_coord)
+
+        return self.k_shortest_paths_from_nodes(source_node, target_node, k)
+
+    def k_shortest_paths_from_nodes(self, source_node, target_node, k):
         return list(islice(nx.shortest_simple_paths(self.net, source_node, target_node, weight=STD_Nx_WEIGHT), k))
 
     def dijkstra(self, source, pred=None, cutoff=None, target=None):

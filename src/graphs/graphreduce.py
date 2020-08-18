@@ -39,8 +39,8 @@ if __name__ == '__main__':
 
 
     out_path = f"{rg.parent_directory_at_level(__file__, 4)}/Operational_Data/temp"
-    heathrow_worldwide = 'F_2795'
-    south_west = 'D_1091'
+    heathrow_worldwide = 'HEATHROW WORLDWIDE'
+    south_west = 'SOUTH WEST DC'
     routesgraph.RoutesGraph().generate_stdRoadGraph_from_isotrack(isotrack_gdf, road_graph, out_path=out_path)
     # route_graph = rg.StdRoadGraph(loadNetworkResults(f"{out_path}/route_graph.pickle"),
     #                               gpd.read_file(f"{out_path}/nodes.shp"),gpd.read_file(f"{out_path}/edges.shp"))
