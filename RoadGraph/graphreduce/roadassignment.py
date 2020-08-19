@@ -176,3 +176,48 @@ class RoadAssignment:
                 edges.drop('visited', axis=1, inplace=True)
 
         isotrack_data.drop(['visited', self.nearest_line_seg], axis=1, inplace=True)
+
+    def find_nearest_edges(self, isotrack_data: pd.DataFrame, edges: gpd.GeoDataFrame):
+
+        point_map = self._generate_point_line_dict(edges)
+        self._find_nearest_line_segment(point_map, isotrack_data)
+        isotrack_data['visited'] = False
+        mapped_edges = gpd.GeoDataFrame()
+
+        isotrack_data.loc[pd.isna(isotrack_data[self.nearest_line_seg]), 'visited'] = True
+
+        for i in range(len(isotrack_data)):
+            if not isotrack_data.iloc[i]['visited']:
+                index = isotrack_data.iloc[i][self.nearest_line_seg]
+                que = deque()
+                que.append(index)
+                edges['visited'] = False
+
+                while que:
+                    sel_ind = que.popleft()
+                    edges.at[edges[STD_INDEX] == sel_ind, 'visited'] = True
+                    if edges.loc[edges[STD_INDEX] == sel_ind, STD_PREV_IND].values[0] is not None:
+                        prev_ind = int(edges.loc[edges[STD_INDEX] == sel_ind, STD_PREV_IND].values[0])
+                        if not edges.loc[edges[STD_INDEX] == prev_ind, 'visited'].values[0]:
+                            que.append(prev_ind)
+
+                que.append(index)
+
+                while que:
+                    sel_ind = que.popleft()
+                    edges.at[edges[STD_INDEX] == sel_ind, 'visited'] = True
+
+                    if edges.loc[edges[STD_INDEX] == sel_ind, STD_NEXT_IND].values[0] is not None:
+                        next_ind = int(edges.loc[edges[STD_INDEX] == sel_ind, STD_NEXT_IND].values[0])
+                        if not edges.loc[edges[STD_INDEX] == next_ind, 'visited'].values[0]:
+                            que.append(next_ind)
+
+                # Assign all node pairs to pings that are assigned with the line segment that forms the edge connecting
+                # both node pairs
+                visited_edges = edges.loc[edges['visited'] == True, STD_INDEX].tolist()
+                isotrack_data.loc[isotrack_data[self.nearest_line_seg].isin(visited_edges), 'visited'] = True
+                mapped_edges = pd.concat([edges.loc[edges['visited'] == True], mapped_edges])
+                edges.drop('visited', axis=1, inplace=True)
+
+        isotrack_data.drop(['visited', self.nearest_line_seg], axis=1, inplace=True)
+        return mapped_edges

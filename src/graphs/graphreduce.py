@@ -47,6 +47,8 @@ if __name__ == '__main__':
     sw = 'SOUTH WEST DC'
     k = 5
 
-    hw_sw_graph = generate_routes_graph(road_graph, hw_sw_df, out_path)
-    find_and_save_k_paths(hw_sw_graph, key_sites, key_site_col_name, hw, sw, k, out_path)
+    mapped_edges = RoadAssignment().find_nearest_edges(hw_sw_df, edges_gdf)
+    mapped_edges.to_file(f"{out_path}/sparse_edges.shp")
+    # hw_sw_graph = generate_routes_graph(road_graph, hw_sw_df, out_path)
+    # find_and_save_k_paths(hw_sw_graph, key_sites, key_site_col_name, hw, sw, k, out_path)
 
