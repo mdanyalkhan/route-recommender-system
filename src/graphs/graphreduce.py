@@ -34,6 +34,17 @@ def find_and_save_k_paths(road_graph: rg.StdRoadGraph, key_sites: gpd.GeoDataFra
         i += 1
 
 
+def extract_and_save_cluster_gdfs(isotrack_gdf, edges_gdf, nodes_gdf, out_path):
+
+    RoadAssignment().assign_nearest_nodes(isotrack_gdf, edges_gdf, nodes_gdf)
+    shp_map = RoutesGraph().generate_gdfs_for_each_cluster(isotrack_gdf, road_graph)
+    cluster_path = rg.create_file_path(f"{out_path}/cluster_gdfs")
+    for cluster_id in shp_map:
+        path = rg.create_file_path(f"{cluster_path}/{cluster_id}")
+        shp_map[cluster_id][0].to_file(f'{path}/edges.shp')
+        shp_map[cluster_id][1].to_file(f'{path}/nodes.shp')
+
+
 if __name__ == '__main__':
     net = loadNetworkResults(fd.LbbDirectories.netx_path_criteria3)
     nodes_gdf  = gpd.read_file(fd.LbbDirectories.nodes_path)
@@ -47,8 +58,7 @@ if __name__ == '__main__':
     sw = 'SOUTH WEST DC'
     k = 5
 
-    mapped_edges = RoadAssignment().find_nearest_edges(hw_sw_df, edges_gdf)
-    mapped_edges.to_file(f"{out_path}/sparse_edges.shp")
+
     # hw_sw_graph = generate_routes_graph(road_graph, hw_sw_df, out_path)
     # find_and_save_k_paths(hw_sw_graph, key_sites, key_site_col_name, hw, sw, k, out_path)
 
