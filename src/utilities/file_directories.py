@@ -57,6 +57,7 @@ class LbbDirectories(ParentDirectories):
     netx_path_criteria3 = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/netx/roadGraph.pickle"
     edges_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/edges.shp"
     nodes_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/out/final/nodes.shp"
+    key_sites_path = parent_directory_at_level(__file__, 4) + "/Operational_Data/lbb/lbb_rm_locations/lbb_rm_locations.shp"
 
 class plcrDirectories(ParentDirectories):
     isotrack_path = ParentDirectories.isotrack_path

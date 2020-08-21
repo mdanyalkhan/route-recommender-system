@@ -1,6 +1,7 @@
 from GeoDataFrameAux import extract_list_of_coords_from_geom_object
 from RoadGraph.util import *
 import RoadGraph
+from RoadGraph.analysis.closureanalysis import *
 import src.utilities.file_directories as fd
 from src.utilities.aux_func import parent_directory_at_level, loadNetworkResults
 from scipy.spatial import cKDTree
@@ -28,13 +29,19 @@ if __name__ == "__main__":
     nodes = gpd.read_file(fd.LbbDirectories.nodes_path)
     net = loadNetworkResults(fd.LbbDirectories.netx_path_criteria3)
     key_sites = gpd.read_file(fd.LbbDirectories.key_sites_path)
-    node_out_path = f"{parent_directory_at_level(__file__, 4)}/Operational_Data/lbb/vulnerability/HW_SW/nodes"
-    grid_out_path = f"{parent_directory_at_level(__file__, 4)}/Operational_Data/lbb/vulnerability/HW_SW/grids"
+    # node_out_path = f"{parent_directory_at_level(__file__, 4)}/Operational_Data/lbb/vulnerability/HW_SW/nodes"
+    # grid_out_path = f"{parent_directory_at_level(__file__, 4)}/Operational_Data/lbb/vulnerability/HW_SW/grids"
     road_graph = RoadGraph.StdRoadGraph(net, nodes, edges)
-    vuln_analyser = RoadGraph.VulnerabilityAnalyser(road_graph)
+    closure_path = f"{parent_directory_at_level(__file__, 4)}/Operational_Data/lbb/closures/200720"
 
-    # vuln_analyser.srn_vulnerability_two_sites_nodes(key_sites, 'location_n', source_site='HEATHROW WORLDWIDE DC',
-    #                                                 target_site='SOUTH WEST DC', cutoff=10, out_path=node_out_path)
-    vuln_analyser.srn_vulnerability_two_sites_grid(key_sites, 'location_n', source_site='HEATHROW WORLDWIDE DC',
-                                                    target_site='SOUTH WEST DC', dimension_km= 2.0,
-                                                   cutoff=10, out_path=grid_out_path)
+    # _, res_dict = journey_time_impact_closure_shp_path(road_graph,key_sites, closure_path)
+    # output_res_dict_shortest_path_as_shp(road_graph, res_dict, closure_path, no_of_paths=10)
+    # output_res_dict_to_csv(res_dict, closure_path)
+
+    # vuln_analyser = RoadGraph.VulnerabilityAnalyser(road_graph)
+    #
+    # # vuln_analyser.srn_vulnerability_two_sites_nodes(key_sites, 'location_n', source_site='HEATHROW WORLDWIDE DC',
+    # #                                                 target_site='SOUTH WEST DC', cutoff=10, out_path=node_out_path)
+    # vuln_analyser.srn_vulnerability_two_sites_grid(key_sites, 'location_n', source_site='HEATHROW WORLDWIDE DC',
+    #                                                 target_site='SOUTH WEST DC', dimension_km= 2.0,
+    #                                                cutoff=10, out_path=grid_out_path)
