@@ -39,8 +39,8 @@ if __name__ == "__main__":
 
     vuln_analyser = RoadGraph.VulnerabilityAnalyser(road_graph)
 
-    vuln_analyser.srn_vulnerability_two_sites_nodes(key_sites, 'location_n', source_site='HEATHROW WORLDWIDE DC',
-                                                    target_site='SOUTH WEST DC', cutoff=10, out_path=node_out_path)
-    # vuln_analyser.srn_vulnerability_two_sites_grid(key_sites, 'location_n', source_site='HEATHROW WORLDWIDE DC',
-    #                                                 target_site='SOUTH WEST DC', dimension_km= 2.0,
-    #                                                cutoff=10, out_path=grid_out_path)
+    # vuln_analyser.srn_vulnerability_two_sites_nodes(key_sites, 'location_n', source_site='HEATHROW WORLDWIDE DC',
+    #                                                 target_site='SOUTH WEST DC', cutoff=10, out_path=node_out_path)
+    vuln_analyser.srn_vulnerability_two_sites_grid(key_sites, 'location_n', source_site='HEATHROW WORLDWIDE DC',
+                                                    target_site='SOUTH WEST DC', dimension_km= 2.0,
+                                                   cutoff=10, out_path=grid_out_path)
