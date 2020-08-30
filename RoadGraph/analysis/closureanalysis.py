@@ -18,6 +18,86 @@ ROAD = 'Road'
 JUNCTION = 'Junctions'
 
 
+def generate_road_closures(road_graph: StdRoadGraph, junctions_data: gpd.GeoDataFrame,
+                           closure_data: pd.DataFrame, out_path: str = None) -> dict:
+    """
+    Generates a dictionary of edges and nodes to be closed based on each closure.
+
+    :param road_graph: StdRoadGraph object representative of a road network in the UK
+    :param junctions_data: Geo-Data Frame of points representing known junctions
+    :param closure_data: Dataframe of closure data, generally indicating the road in which the closure is proposed
+    to occur, and a description of the closure
+    :return: A dictionary with the following:
+        {<Closure number>:
+                            {'road_id' : <road id of road to be closed>,
+                             'closure description' : <Description of closure based on closure data>,
+                             'junction nodes': <The known junctions associated with this closure, based on
+                                                junction data>,
+                             'node_pairs : <The pair of nodes encasing the edge that will be closed>',
+                             'edge_indices': <Description of edges to be closed>}
+        }
+    """
+    real_junctions = junctions_data[NUMBER].tolist()
+    real_junc_coordinates = junctions_data[GEOMETRY].tolist()
+    closure_road_no = closure_data.loc[:, ROAD].tolist()
+    closure_junc_desc = closure_data.loc[:, JUNCTION].tolist()
+
+    closure_dict = _assign_proposed_graph_closures(road_graph.net, closure_road_no, closure_junc_desc, real_junctions,
+                                                   real_junc_coordinates)
+
+    if out_path:
+        _convert_closures_to_csv(closure_dict, out_path)
+        _convert_closures_to_shp(road_graph, closure_dict, out_path)
+
+    return closure_dict
+
+
+def journey_time_impact_closure_shp_path(road_graph: StdRoadGraph, key_sites: gpd.GeoDataFrame, closure_shp_path: str):
+    """
+    Examines the potential increase to journey times given the proposed closure of roads via shapefiles
+    :param road_graph: Road graph object that is representational of the UK road network
+    :param key_sites: Key sites to examine journey times between
+    :param closure_shp_path: Path where closure shapefile data is saved
+    :return:
+        A matrix of the resilience index for each site pair
+        A dictionary of the change in resilience index, as well as journey times before and after closure for impacted
+        sites.
+    """
+    list_of_files = os.listdir(closure_shp_path)
+
+    # Only consider directories with the prefix 'closure'
+    shp_full_paths_in = [closure_shp_path + "/" + x for x in list_of_files if x.startswith("closure") and not \
+        x.endswith('.csv')]
+
+    # Deduce node pairs corresponding to the proposed closure of the edges.
+    all_node_pairs = []
+    for shp_path in shp_full_paths_in:
+        print(shp_path)
+        edges_gdf = gpd.read_file(f'{shp_path}/edges.shp')
+        node_pairs = _extract_node_pairs_from_edges_shp(road_graph.edges, edges_gdf)
+        all_node_pairs.extend(node_pairs)
+
+    vuln_analyser = va.VulnerabilityAnalyser(road_graph)
+
+    return vuln_analyser.vulnerability_all_sites_by_node_pairs(key_sites, 'location_n', all_node_pairs)
+
+
+def journey_time_impact_closure_dict(road_graph: StdRoadGraph, key_sites: gpd.GeoDataFrame, closure_dict: dict):
+    """
+    Examines the potential increase in journey times given the provided closures of roads.
+    :param road_graph: Road graph object that is representational of the UK road network
+    :param key_sites: Key sites to examine journey times between
+    :param closure_dict: Data structure containing proposed closure of roads
+    :return:
+        A matrix of the resilience index for each site pair
+        A dictionary of the change in resilience index, as well as journey times before and after closure for impacted
+        sites.
+    """
+    vuln_analyser = va.VulnerabilityAnalyser(road_graph)
+    node_pairs = [node_pair for closure in closure_dict for node_pair in closure_dict[closure]['node_pairs']]
+    return vuln_analyser.vulnerability_all_sites_by_node_pairs(key_sites, 'location_n', node_pairs)
+
+
 def output_res_dict_to_csv(res_dict: dict, out_path: str):
     """
     Outputs values pertaining to variables for every site pair. In order of worst affected.
@@ -79,51 +159,6 @@ def merge_road_closure_shp_into_single_shp(closure_shp_path: str):
     merged_gdf.crs = {'init': 'epsg:27700'}
     merged_gdf.to_file(f"{closure_shp_path}/full_closures.shp")
 
-def journey_time_impact_closure_shp_path(road_graph: StdRoadGraph, key_sites: gpd.GeoDataFrame, closure_shp_path: str):
-    """
-    Examines the potential increase to journey times given the proposed closure of roads via shapefiles
-    :param road_graph: Road graph object that is representational of the UK road network
-    :param key_sites: Key sites to examine journey times between
-    :param closure_shp_path: Path where closure shapefile data is saved
-    :return:
-        A matrix of the resilience index for each site pair
-        A dictionary of the change in resilience index, as well as journey times before and after closure for impacted
-        sites.
-    """
-    list_of_files = os.listdir(closure_shp_path)
-
-    # Only consider directories with the prefix 'closure'
-    shp_full_paths_in = [closure_shp_path + "/" + x for x in list_of_files if x.startswith("closure") and not \
-        x.endswith('.csv')]
-
-    # Deduce node pairs corresponding to the proposed closure of the edges.
-    all_node_pairs = []
-    for shp_path in shp_full_paths_in:
-        print(shp_path)
-        edges_gdf = gpd.read_file(f'{shp_path}/edges.shp')
-        node_pairs = _extract_node_pairs_from_edges_shp(road_graph.edges, edges_gdf)
-        all_node_pairs.extend(node_pairs)
-
-    vuln_analyser = va.VulnerabilityAnalyser(road_graph)
-
-    return vuln_analyser.vulnerability_all_sites_by_node_pairs(key_sites, 'location_n', all_node_pairs)
-
-
-def journey_time_impact_closure_dict(road_graph: StdRoadGraph, key_sites: gpd.GeoDataFrame, closure_dict: dict):
-    """
-    Examines the potential increase in journey times given the provided closures of roads.
-    :param road_graph: Road graph object that is representational of the UK road network
-    :param key_sites: Key sites to examine journey times between
-    :param closure_dict: Data structure containing proposed closure of roads
-    :return:
-        A matrix of the resilience index for each site pair
-        A dictionary of the change in resilience index, as well as journey times before and after closure for impacted
-        sites.
-    """
-    vuln_analyser = va.VulnerabilityAnalyser(road_graph)
-    node_pairs = [node_pair for closure in closure_dict for node_pair in closure_dict[closure]['node_pairs']]
-    return vuln_analyser.vulnerability_all_sites_by_node_pairs(key_sites, 'location_n', node_pairs)
-
 
 def _extract_node_pairs_from_edges_shp(edges: gpd.GeoDataFrame, sel_edges: gpd.GeoDataFrame):
     """
@@ -162,40 +197,6 @@ def _extract_node_pairs_from_edges_shp(edges: gpd.GeoDataFrame, sel_edges: gpd.G
             all_node_pairs.append((from_node, to_node))
     edges.drop(['visited'], axis=1, inplace=True)
     return all_node_pairs
-
-
-def generate_road_closures(road_graph: StdRoadGraph, junctions_data: gpd.GeoDataFrame,
-                           closure_data: pd.DataFrame, out_path: str = None) -> dict:
-    """
-    Generates a dictionary of edges and nodes to be closed based on each closure.
-
-    :param road_graph: StdRoadGraph object representative of a road network in the UK
-    :param junctions_data: Geo-Data Frame of points representing known junctions
-    :param closure_data: Dataframe of closure data, generally indicating the road in which the closure is proposed
-    to occur, and a description of the closure
-    :return: A dictionary with the following:
-        {<Closure number>:
-                            {'road_id' : <road id of road to be closed>,
-                             'closure description' : <Description of closure based on closure data>,
-                             'junction nodes': <The known junctions associated with this closure, based on
-                                                junction data>,
-                             'node_pairs : <The pair of nodes encasing the edge that will be closed>',
-                             'edge_indices': <Description of edges to be closed>}
-        }
-    """
-    real_junctions = junctions_data[NUMBER].tolist()
-    real_junc_coordinates = junctions_data[GEOMETRY].tolist()
-    closure_road_no = closure_data.loc[:, ROAD].tolist()
-    closure_junc_desc = closure_data.loc[:, JUNCTION].tolist()
-
-    closure_dict = _assign_proposed_graph_closures(road_graph.net, closure_road_no, closure_junc_desc, real_junctions,
-                                                   real_junc_coordinates)
-
-    if out_path:
-        _convert_closures_to_csv(closure_dict, out_path)
-        _convert_closures_to_shp(road_graph, closure_dict, out_path)
-
-    return closure_dict
 
 
 def _convert_closures_to_csv(closure_dict: dict, out_path: str):
@@ -255,7 +256,7 @@ def _assign_proposed_graph_closures(G: netx.DiGraph, road_ids: list, closure_des
     for i in range(len(road_ids)):
         road_id = road_ids[i]
 
-        #Check if its empty row, if empty row then skip
+        # Check if its empty row, if empty row then skip
         if pd.isna(road_id):
             continue
 
