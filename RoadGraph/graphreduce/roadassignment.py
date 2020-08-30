@@ -9,26 +9,46 @@ from GeoDataFrameAux import extract_list_of_coords_from_geom_object
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.constants.StdKeyWords import *
 
-class RoadAssignment:
 
-    def __init__(self):
-        self.road_threshold = 100
+class RoadAssignment:
+    """
+    Class used to assign the nearest nodes to every ping in the isotrack data set.
+    Typical usage may be the following:
+
+    isotrack_data = pd.read_csv(<some_path>)
+    edges = gpd.read_file(<some_path>)
+    nodes = gpd.read_file(<some_path>)
+    RoadAssignment().assign_nearest_nodes(isotrack_data, edges, nodes)
+
+    """
+    def __init__(self, road_threshold: float = 100.0, roundabout_threshold: float = 50.0):
+        self.road_threshold = road_threshold
         self.nearest_line_seg = 'line_seg'
-        self.node_pairs = 'node_pairs'
         self.nearest_node = 'nearest_node'
-        self.roundabout_threshold = 50.0
-        self.none_tuple = (None, None)
+        self.roundabout_threshold = roundabout_threshold
 
     def assign_nearest_nodes(self, isotrack_data: pd.DataFrame, edges: gpd.GeoDataFrame, nodes: gpd.GeoDataFrame):
+        """
+        Assigns the nearest node to every ping in the isotrack_data dataset.
+
+        :param isotrack_data: Dataframe of isotrack pings
+        :param edges: Geo-Dataframe of the edges representative of the underlying road graph.
+        :param nodes: Geo-Dataframe of the nodes representative of the underlying road graph.
+        """
 
         isotrack_data[self.nearest_node] = None
         self._assign_nearest_roundabout_nodes(nodes, edges, isotrack_data)
-
         self._assign_nearest_carriageway_nodes(edges, isotrack_data)
         isotrack_data.drop(isotrack_data[pd.isna(isotrack_data[self.nearest_node]) == True].index, inplace=True)
 
-    def _assign_nearest_roundabout_nodes(self, nodes, edges, isotrack_data):
-
+    def _assign_nearest_roundabout_nodes(self, nodes: gpd.GeoDataFrame, edges: gpd.GeoDataFrame,
+                                         isotrack_data: pd.DataFrame):
+        """
+        Assigns all ping to a roundabout node
+        :param isotrack_data: Dataframe of isotrack pings
+        :param edges: Geo-Dataframe of the edges representative of the underlying road graph.
+        :param nodes: Geo-Dataframe of the nodes representative of the underlying road graph.
+        """
         roundabout_point_map = self._generate_roundabout_point_dict(nodes, edges)
         points = list(roundabout_point_map.keys())
         # Set up ckdTree of nodes
@@ -56,8 +76,14 @@ class RoadAssignment:
                 isotrack_data.loc[i, self.nearest_node] = roundabout_point_map[nearest_point]
             i += 1
 
-    def _generate_roundabout_point_dict(self, nodes, edges):
-
+    def _generate_roundabout_point_dict(self, nodes: gpd.GeoDataFrame, edges: gpd.GeoDataFrame) -> dict:
+        """
+        Extracts the list of coordinates forming every roundabout and maps every coordinate to its assigned roundabout
+        ID.
+        :param edges: Geo-Dataframe of the edges representative of the underlying road graph.
+        :param nodes: Geo-Dataframe of the nodes representative of the underlying road graph.
+        :return: Dictionary with coordinates of roundabout as keys and the corresponding roundabout ID as values
+        """
         roundabout_edges = edges.loc[edges[STD_ROAD_TYPE] == STD_ROUNDABOUT]
         roundabout_nodes = nodes.loc[nodes[STD_N_TYPE] == STD_N_ROUNDABOUT]
 
@@ -73,16 +99,22 @@ class RoadAssignment:
 
         return roundabout_point_map
 
-
-
-    def _assign_nearest_carriageway_nodes(self, edges, isotrack_data):
-
+    def _assign_nearest_carriageway_nodes(self, edges: gpd.GeoDataFrame, isotrack_data: pd.DataFrame):
+        """
+        Assigns all ping to a junction/terminal node
+        :param isotrack_data: Dataframe of isotrack pings
+        :param edges: Geo-Dataframe of the edges representative of the underlying road graph.
+        """
         point_map = self._generate_point_line_dict(edges)
         self._find_nearest_line_segment(point_map, isotrack_data)
         self._find_nearest_node(isotrack_data, edges)
 
-    def _generate_point_line_dict(self, edges_gdf: gpd.GeoDataFrame):
-
+    def _generate_point_line_dict(self, edges_gdf: gpd.GeoDataFrame) -> dict:
+        """
+        Creates a dictionary where all points of a line are the keys, with the corresponding line as values
+        :param edges: Geo-Dataframe of the edges representative of the underlying road graph.
+        :return: Dictionary of points as keys, with the corresponding line segment as values.
+        """
         sel_edges = edges_gdf.loc[edges_gdf[STD_ROAD_TYPE] != STD_ROUNDABOUT]
         points = sel_edges[STD_GEOMETRY].apply(extract_list_of_coords_from_geom_object).tolist()
         std_index = sel_edges[STD_INDEX].tolist()
@@ -98,6 +130,13 @@ class RoadAssignment:
         return d
 
     def _find_nearest_line_segment(self, point_map: dict, isotrack_data: gpd.GeoDataFrame):
+        """
+        Adds in a new column to the isotrack_data dataframe that stores the nearest line segment. Note that this
+        will only store a line segment if the distance is below some threshold.
+        :param point_map: Dictionary of points as keys, and the line segments as values (i.e. these points form
+        the line segment that are the values in the dict).
+        :param isotrack_data: Dataframe of isotrack pings
+        """
         points = list(point_map.keys())
         points_x = [point[0] for point in points]
         points_y = [point[1] for point in points]
@@ -126,7 +165,12 @@ class RoadAssignment:
         isotrack_data[self.nearest_line_seg] = std_index
 
     def _find_nearest_node(self, isotrack_data: gpd.GeoDataFrame, edges: gpd.GeoDataFrame):
+        """
+        Finds the node nearest to each ping via the assigned line segment.
 
+        :param edges: Geo-Dataframe of the edges representative of the underlying road graph.
+        :param isotrack_data: Dataframe of isotrack pings
+        """
         isotrack_data['visited'] = False
         # Do not examine those pings that are not allocated to a nearest line segment or have already been assigned
         # to a roundabout node
@@ -177,8 +221,14 @@ class RoadAssignment:
 
         isotrack_data.drop(['visited', self.nearest_line_seg], axis=1, inplace=True)
 
-    def find_nearest_edges(self, isotrack_data: pd.DataFrame, edges: gpd.GeoDataFrame):
-
+    def find_nearest_edges(self, isotrack_data: pd.DataFrame, edges: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+        """
+        Helper function for the report: Returns the dataframe of edges that are closest to each ping (if not none).
+        This function is used to generate one of the figures in the thesis.
+        :param edges: Geo-Dataframe of the edges representative of the underlying road graph.
+        :param isotrack_data: Dataframe of isotrack pings
+        :return: Geo-Dataframe of edges nearest to each ping in the isotrack data set.
+        """
         point_map = self._generate_point_line_dict(edges)
         self._find_nearest_line_segment(point_map, isotrack_data)
         isotrack_data['visited'] = False

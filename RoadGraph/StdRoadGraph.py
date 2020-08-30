@@ -8,7 +8,6 @@ from GeoDataFrameAux import extract_coord_at_index
 from RoadGraph.util import euclidean_distance
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.constants.StdKeyWords import *
-from RoadGraph.analysis.shortest_paths import shortest_simple_paths
 import matplotlib.pyplot as plt
 import networkx as nx
 

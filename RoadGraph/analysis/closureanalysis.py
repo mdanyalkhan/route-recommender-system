@@ -62,6 +62,10 @@ def output_res_dict_shortest_path_as_shp(road_graph: StdRoadGraph, res_dict: dic
 
 
 def merge_road_closure_shp_into_single_shp(closure_shp_path: str):
+    """
+    helper function that simply merges all independent closure shapfiles into one.
+    :param closure_shp_path: path where all closure folders are saved.
+    """
     list_of_files = os.listdir(closure_shp_path)
 
     # Only consider directories with the prefix 'closure'
