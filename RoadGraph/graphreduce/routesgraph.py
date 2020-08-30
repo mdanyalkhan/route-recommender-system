@@ -19,10 +19,26 @@ END_TIME = 'end_time'
 
 
 class RoutesGraph:
+
+    """
+    Class provides functionality to generate a graph that only comprises the edges and nodes corresponding with the
+    routes of the isotrack data.
+    """
     def __init__(self):
         self.frac_to_appear_in = 0.2
 
-    def generate_stdRoadGraph_from_isotrack(self, isotrack_data: pd.DataFrame, road_graph: StdRoadGraph, out_path=None):
+    def generate_stdRoadGraph_from_isotrack(self, isotrack_data: pd.DataFrame, road_graph: StdRoadGraph,
+                                            out_path=None) -> StdRoadGraph:
+        """
+        Generates an StdRoadGraph object consisting of edges and nodes of every route mapped out in the isotrack_data
+        only. The isotrack_data dataframe must have the NEAREST_NODE column added beforehand.
+
+        :param isotrack_data: Dataframe of pings, with the NEAREST_NODE column included
+        :param road_graph: The underlying road graph in which the reduced road graph will be based on.
+        :param out_path: Optional parameter to save the produced StdRoadGraph into this path.
+        :return: StdRoadGraph object representing all routes detailed in isotrack_data
+        """
+
         shp_map = self.generate_gdfs_for_each_cluster(isotrack_data, road_graph)
 
         nodes_merged = gpd.GeoDataFrame()
@@ -45,7 +61,16 @@ class RoutesGraph:
 
         return StdRoadGraph(net, nodes_merged, edges_merged)
 
-    def _remove_redundant_roundabout_edges(self, edges_merged, nodes_merged, net):
+    def _remove_redundant_roundabout_edges(self, edges_merged: gpd.GeoDataFrame, nodes_merged: gpd.GeoDataFrame,
+                                           net) -> tuple:
+        """
+        Runs through each roundabout and ensures there is only one slip road connection to the main road.
+
+        :param edges_merged: Geo-Dataframe of edges representing the routes from the isotrack data
+        :param nodes_merged: Geo-Dataframe of nodes representing the routes of the isotrack data.
+        :param net: Networkx objext representing the routes from the isotrack data.
+        :return: Updated edges and networkx object with redundant slip roads from the roundabout removed.
+        """
         roundabout_nodes = nodes_merged.loc[nodes_merged[cn.STD_N_TYPE] == kw.STD_N_ROUNDABOUT]
         edges_merged['marked'] = False
         node_pairs_to_del = []
@@ -92,26 +117,57 @@ class RoutesGraph:
 
         return edges_merged, net
 
-    def generate_gdfs_for_each_cluster(self, isotrack_data: pd.DataFrame, road_graph: StdRoadGraph):
+    def generate_gdfs_for_each_cluster(self, isotrack_data: pd.DataFrame, road_graph: StdRoadGraph) -> dict:
+        """
+        Assigns the edges and nodes geo-dataframes that correspond to each distinguished route from the isotrack_data
 
+        :param isotrack_data: Dataframe of pings, with the NEAREST_NODE column included
+        :param road_graph: The underlying road graph in which the reduced road graph will be based on.
+        :return: Dictionary of route number as key, and a tuple of the corresponding edges and nodes as the value
+        """
         cluster_route_map = self.generate_node_routes(isotrack_data, road_graph)
         shp_map = {}
 
         for cluster_id in cluster_route_map:
             edges, nodes = road_graph.convert_path_to_gdfs(cluster_route_map[cluster_id])
+            #Remove duplicate edge and node rows from the dataframes
             edges = edges[~edges.index.duplicated(keep='first')]
             nodes = nodes[~nodes.index.duplicated(keep='first')]
             shp_map[cluster_id] = (edges, nodes)
         return shp_map
 
-    def generate_node_routes(self, isotrack_data: pd.DataFrame, road_graph: StdRoadGraph):
+    def generate_node_routes(self, isotrack_data: pd.DataFrame, road_graph: StdRoadGraph) -> dict:
+        """
+        Assigns the set of connected nodes that forms the path pertaining to each distinguished route.
+        Each adjacent node are neighbours of each other. The order of the nodes correlate with the
+        chronological order of the pings that form each route.
+
+        :param isotrack_data: Dataframe of pings, with the NEAREST_NODE column included
+        :param road_graph: The underlying road graph in which the reduced road graph will be based on.
+        :return: Dictionary of route number as key, with the set of nodes for each route as value.
+        """
+
+        if NEAREST_NODE not in isotrack_data:
+            raise KeyError(f'The {NEAREST_NODE} attribute is missing within the isotracks dataframe, ensure that you '
+                           f'run through the isotrack data set through the RoadAssignment functions first.')
+
         isotrack_grouped = self._get_grouped_df(isotrack_data)
         cluster_map = self._assign_raw_node_route_for_each_cluster(isotrack_data, isotrack_grouped)
         cluster_route_map = self._assign_final_node_route_for_each_cluster(cluster_map, road_graph)
 
         return cluster_route_map
 
-    def _assign_raw_node_route_for_each_cluster(self, isotrack_data, isotrack_grouped):
+    def _assign_raw_node_route_for_each_cluster(self, isotrack_data: pd.DataFrame,
+                                                isotrack_grouped: pd.DataFrame) -> dict:
+        """
+        Finds and assigns the set of nodes pertaining to each distinguished route. The nodes are not necessarily
+        neighbours of each other. The order of the nodes correlate with the chronological order of the pings that
+        form each route.
+
+        :param isotrack_data: Dataframe of pings, with the NEAREST_NODE column included
+        :param isotrack_grouped: Isotrack Dataframe grouped by leg ID and cluster.
+        :return: Dictionary of route number as key, with the set of nodes for each route as value.
+        """
         cluster_map = {}
         cluster_ids = isotrack_data[CLUSTER].unique()
         for cluster_id in cluster_ids:
@@ -131,8 +187,15 @@ class RoutesGraph:
                 cluster_map[cluster_id] = self._get_cluster_entity_mapping(df_temp, df_grouped_temp)
         return cluster_map
 
-    def _assign_final_node_route_for_each_cluster(self, cluster_map: dict, road_graph: StdRoadGraph):
+    def _assign_final_node_route_for_each_cluster(self, cluster_map: dict, road_graph: StdRoadGraph) -> dict:
+        """
+        Pads the nodes of each route to ensure that every node is a neighbour of their adjacent node using the
+        shortest path algorithm.
 
+        :param cluster_map: Dictionary of routes as keys, with the corresponding list of nodes as the keys
+        :param road_graph: The underlying road graph where the list of missing nodes will be extracted from.
+        :return: Updated dictionary with corresponding list of nodes are all connected.
+        """
         cluster_route_map = {}
         for cluster_id in cluster_map:
 
@@ -152,25 +215,40 @@ class RoutesGraph:
     def _get_grouped_df(self, df):
         """
         Grouping so that each row is one leg_id whilst keeping the order of entities and min max dttm for that leg
-        :param df:
-        :return:
+
+        :param df: dataframe object
+        :return: Grouped version of the dataframe object, grouped by leg_id, cluster, from_depot, to_depot. Stores
+        the set of nodes pertaining to each row.
         """
         df_grouped = df.groupby([LEG_ID, CLUSTER, FROM_DEPOT, TO_DEPOT]).agg(
             {EVENT_DTTM: ["min", "max"], NEAREST_NODE: list}).reset_index()
 
         df_grouped.columns = [LEG_ID, CLUSTER, FROM_DEPOT, TO_DEPOT, START_TIME, END_TIME, NEAREST_NODE]
+
+        #Save assigned nodes of every ping into each row.
         df_grouped.loc[:, NODE_ROUTE_LIST] = df_grouped[NEAREST_NODE].apply(lambda x: self._unique(x))
         del df_grouped[NEAREST_NODE]
 
         return df_grouped
 
-    def _unique(self, sequence):
+    def _unique(self, sequence: list) -> list:
+        """
+        Updates the sequence list in a list of unique elements.
+
+        :param sequence: list of node elements
+        :return: New list of unique elements from sequence
+        """
         seen = set()
         return [x for x in sequence if not (x in seen or seen.add(x))]
 
-    def _get_best_of_two(self, df):
-        e_1 = df.iloc[0][NODE_ROUTE_LIST]
-        e_2 = df.iloc[1][NODE_ROUTE_LIST]
+    def _get_best_of_two(self, df_grouped: pd.DataFrame) -> list:
+        """
+        Returns the node route list with the greater number of nodes.
+        :param df_grouped: Dataframe object containing the list of legs pertaining to the same cluster
+        :return: Larger list of nodes that is representative of the cluster
+        """
+        e_1 = df_grouped.iloc[0][NODE_ROUTE_LIST]
+        e_2 = df_grouped.iloc[1][NODE_ROUTE_LIST]
 
         if len(e_1) > len(e_2):
             return list(e_1)
