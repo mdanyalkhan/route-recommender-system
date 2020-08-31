@@ -5,7 +5,7 @@ import os
 from RoadGraph import StdRoadGraph, create_file_path
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.constants.StdKeyWords import *
-from RoadGraph.analysis import VulnerabilityAnalyser as va
+from RoadGraph.analysis import vulnerabilityanalyser as va
 import pandas as pd
 import geopandas as gpd
 import networkx as netx

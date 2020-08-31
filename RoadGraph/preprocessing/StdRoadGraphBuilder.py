@@ -3,7 +3,6 @@ import geopandas as gpd
 import pickle
 import os
 import networkx as nx
-
 from RoadGraph import OSToStdGdfConverter, StdNodesEdgesGdfBuilder, StdNodesEdgesGdfConnector
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.constants.StdKeyWords import *

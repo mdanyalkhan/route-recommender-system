@@ -131,7 +131,13 @@ class StdRoadGraph:
 
         return shortest_path, shortest_dist, shortest_edges_gdf, shortest_nodes_gdf
 
-    def convert_path_to_gdfs(self, shortest_path):
+    def convert_path_to_gdfs(self, shortest_path: list) -> tuple:
+        """
+        Builds the corresponding nodes and edges gdfs based on the list of nodes within the shortest_path list.
+
+        :param shortest_path: List of nodes forming the shortest path
+        :return: Tuple of nodes and edges gdf corresponding to the shortest path.
+        """
         n = len(shortest_path) - 1
         graph = self.net
         edges_gdf = self.edges
@@ -150,7 +156,14 @@ class StdRoadGraph:
         shortest_edges_gdf = self._add_roundabout_line_segments(shortest_nodes_gdf, shortest_edges_gdf)
         return shortest_edges_gdf, shortest_nodes_gdf
 
-    def _add_roundabout_line_segments(self, shortest_nodes_gdf, shortest_edges_gdf):
+    def _add_roundabout_line_segments(self, shortest_nodes_gdf: gpd.GeoDataFrame, shortest_edges_gdf: gpd.GeoDataFrame):
+        """
+        Extracts all of the roundabout line segments corresponding to all roundabout nodes used in the shortest path
+        geo-Dataframes.
+        :param shortest_nodes_gdf: Geo-Dataframe of nodes forming the shortest path.
+        :param shortest_edges_gdf: Geo-Dataframe of edges forming the shortest path.
+        :return: Updated shortest path gdf with roundabout line segments included.
+        """
         roundabout_nodes = shortest_nodes_gdf.loc[shortest_nodes_gdf[STD_N_TYPE] == STD_N_ROUNDABOUT]
         roundabout_edges = self.edges.loc[self.edges[STD_ROAD_TYPE] == STD_ROUNDABOUT]
 
@@ -178,7 +191,15 @@ class StdRoadGraph:
 
         return self.k_shortest_paths_from_nodes(source_node, target_node, k)
 
-    def k_shortest_paths_from_nodes(self, source_node, target_node, k):
+    def k_shortest_paths_from_nodes(self, source_node: str, target_node: str, k: int) -> list:
+        """
+        Generator function that returns the k shortest paths from source to target.
+
+        :param source_node: Name of the source node
+        :param target_node: Name of the target node
+        :param k: Number of paths to extract
+        :return: List of k-shortest paths.
+        """
         return list(islice(nx.shortest_simple_paths(self.net, source_node, target_node, weight=STD_Nx_WEIGHT), k))
 
     def dijkstra(self, source, pred=None, cutoff=None, target=None):
@@ -289,7 +310,9 @@ class StdRoadGraph:
         return sum(degrees)/len(degrees)
 
     def degree_distribution_plot(self):
-
+        """
+        Generates a plot of the degree distribution of the network.
+        """
         net = self.net
 
         degree_sequence = sorted([d for n, d in net.out_degree()], reverse=True)  # degree sequence

@@ -286,28 +286,6 @@ class StdNodesEdgesGdfBuilder:
 
         return roads_gdf, node_dict
 
-    def _remove_redundant_roads(self, edges_gdf, nodes_gdf):
-        """
-        Function not used yet, TO BE TESTED
-        :param edges_gdf:
-        :param nodes_gdf:
-        :return:
-        """
-        roundabout_nodes = nodes_gdf.loc[nodes_gdf[STD_N_TYPE] == STD_N_ROUNDABOUT]
-
-        roundabout_nodes_list = roundabout_nodes[STD_NODE_ID].tolist()
-
-        redundant_indices = edges_gdf.index[(edges_gdf[STD_ROAD_TYPE] != STD_ROUNDABOUT) &
-                                            (edges_gdf[STD_FROM_NODE].isin(roundabout_nodes_list)) &
-                                            (edges_gdf[STD_TO_NODE].isin(roundabout_nodes_list)) &
-                                            (edges_gdf[STD_FROM_NODE] == edges_gdf[STD_TO_NODE])]
-
-        edges_gdf.drop(index=redundant_indices, inplace=True)
-
-        edges_gdf = self._reindex(edges_gdf)
-
-        return edges_gdf
-
     def _reindex(self, aux_e: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         """
         Resets indices of the dataframe aux_e, and also updates the prev_ind and next_ind columns
@@ -400,10 +378,13 @@ class StdNodesEdgesGdfBuilder:
 
         return roads_gdf
 
+    def _coords_of_roundabout(self, roundabout_gdf: gpd.GeoDataFrame) -> list:
+        """
+        Extracts the coordinates of every line segment within roundabout_gdf
 
-
-    def _coords_of_roundabout(self, roundabout_gdf):
-
+        :param roundabout_gdf: Geo-Dataframe of line segments forming the roundabout
+        :return: List of coordinates of every line segment within roundabout gdf
+        """
         coords = []
 
         for _, segment in roundabout_gdf.iterrows():

@@ -80,7 +80,7 @@ class OSToStdGdfConverter(StdGdfConverter):
         road_types = sel_gdf[OS_ROAD_TYPE].apply(self._convert_to_std_road_type)
         std_df.loc[:, STD_ROAD_TYPE] = road_types.values
 
-        #Insert Form of way
+        # Insert Form of way
         std_df.loc[:, STD_FORMOFWAY] = sel_gdf[OS_ROAD_TYPE].values
 
         # Insert length
@@ -89,11 +89,11 @@ class OSToStdGdfConverter(StdGdfConverter):
         # Insert whether is directional:
         std_df.loc[:, STD_IS_DIREC] = False
 
-        #Insert whether road segment is SRN
+        # Insert whether road segment is SRN
         if self.srn_list is not None:
             std_df.loc[:, STD_IS_SRN] = std_df.loc[:, STD_ROAD_NO].apply(lambda x: x in self.srn_list)
         else:
-            std_df.loc[:,STD_IS_SRN] = sel_gdf.loc[:, OS_IS_TRUNK].apply(lambda x: x == 'true')
+            std_df.loc[:, STD_IS_SRN] = sel_gdf.loc[:, OS_IS_TRUNK].apply(lambda x: x == 'true')
 
         # Insert geometry
         geometry_2D = self._convert_LineString_to_2D(sel_gdf[OS_GEOMETRY].values)
@@ -138,23 +138,27 @@ class OSToStdGdfConverter(StdGdfConverter):
             return STD_SPEED_DEFAULT
 
     def _set_speed_limits_complex(self, edges_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-
+        """
+        Assigns speed limits based on type of road and whether road is within built-in area or is part of the SRN.
+        :param edges_gdf: Geo-Dataframe of line segments where speed limits are assigned.
+        :return: Updated speed limits column in edges_gdf
+        """
         built_up = self._built_up_gdf
-        #Set default values
+        # Set default values
         edges_gdf.loc[:, STD_SPEED] = STD_SPEED_DEFAULT
         edges_gdf.loc[edges_gdf[STD_FORMOFWAY] == OS_SINGLE_CARRIAGEWAY, STD_SPEED] = STD_SPEED_SC
         edges_gdf.loc[edges_gdf[STD_FORMOFWAY].isin(OS_DUAL_CARRIAGEWAY_LIST), STD_SPEED] = STD_SPEED_DC
 
-        #Set all roads within built up areas with lowest speed limit
+        # Filter polygons of built-up area to just the extent of edges_gdf to accelerate overall process.
         bounds = list(edges_gdf.total_bounds)
         minx, miny, maxx, maxy = bounds[0], bounds[1], bounds[2], bounds[3]
         coordinates = [(minx, miny), (minx, maxy), (maxx, maxy), (maxx, miny), ]
         bound_poly = Polygon(coordinates)
-
         within_bounds = built_up[STD_GEOMETRY].apply(lambda x: x.intersects(bound_poly))
         filtered_built_up = built_up.drop(index=within_bounds[within_bounds == False].index)
         built_up_geom = filtered_built_up[STD_GEOMETRY].tolist()
 
+        # Set all roads within built up areas with lowest speed limit
         i = 1
         for poly in built_up_geom:
             print(f'Speed set {i}')
@@ -162,12 +166,11 @@ class OSToStdGdfConverter(StdGdfConverter):
             edges_gdf.loc[within_poly[within_poly == True].index, STD_SPEED] = STD_SPEED_BUILT_UP
             i += 1
 
-        #Set all motorways back to national speed limit
+        # Set all motorways back to national speed limit
         edges_gdf.loc[edges_gdf[STD_ROAD_NO].str.startswith('M', na=False), STD_SPEED] = STD_SPEED_DC
 
-        #Set all trunk roads to national speed limit
+        # Set all trunk roads to national speed limit
         edges_gdf.loc[edges_gdf[STD_IS_SRN] == True, STD_SPEED] = STD_SPEED_DC
-
 
         return edges_gdf
 
@@ -199,7 +202,7 @@ class OSToStdGdfConverter(StdGdfConverter):
         INDEX = "INDEX"
         IS_RENAMED = "IS_RENAMED"
 
-        #Temporarily assign  FIRST_COORD, LAST_COORD, and INDEX
+        # Temporarily assign  FIRST_COORD, LAST_COORD, and INDEX
         std_df[FIRST_COORD] = std_df[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, 0))
         std_df[LAST_COORD] = std_df[STD_GEOMETRY].apply(lambda x: extract_coord_at_index(x, -1))
         std_df.insert(loc=0, column=INDEX, value=std_df.index)
