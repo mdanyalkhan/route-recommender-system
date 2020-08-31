@@ -1,11 +1,10 @@
 from scipy.spatial.distance import directed_hausdorff
-
 import RoadGraph
 from RoadGraph.graphreduce.roadassignment import *
 from RoadGraph.graphreduce.routesgraph import *
 import geopandas as gpd
 from scipy.spatial import cKDTree
-from GeoDataFrameAux import extract_list_of_coords_from_geom_object
+from RoadGraph.util import extract_list_of_coords_from_geom_object
 from pylab import *
 
 from src.utilities.aux_func import parent_directory_at_level, loadNetworkResults
@@ -34,7 +33,7 @@ def get_key_site_pair_names(isotrack_gdf: gpd.GeoDataFrame):
 def distance_distribution(shortest_path_gdf: gpd.GeoDataFrame, isotrack_most_used_gdf: gpd.GeoDataFrame):
     points = []
     for index, line in shortest_path_gdf.iterrows():
-        points.extend(RoadGraph.extract_list_of_coords_from_geom_object(line['geometry']))
+        points.extend(RoadGraph.util.extract_list_of_coords_from_geom_object(line['geometry']))
 
     points_x = [point[0] for point in points]
     points_y = [point[1] for point in points]
@@ -69,7 +68,7 @@ def generate_distance_histogram(dist):
 
     return plt
 
-def assign_isotrack_path_to_graph_segments(roadGraph: RoadGraph.StdRoadGraph, isotrack_path_gdf: gpd.GeoDataFrame,
+def assign_isotrack_path_to_graph_segments(roadGraph: RoadGraph.stdroadgraph, isotrack_path_gdf: gpd.GeoDataFrame,
                                            out_path: str=None):
 
     if out_path:
@@ -97,7 +96,7 @@ def calculate_hausdorff(graph_path: gpd.GeoDataFrame, isotrack_path: gpd.GeoData
     return dist
 
 
-def shortest_path_analysis(roadGraph: RoadGraph.StdRoadGraph, key_sites_gdf: gpd.GeoDataFrame, key_sites_col_name: str,
+def shortest_path_analysis(roadGraph: RoadGraph.stdroadgraph, key_sites_gdf: gpd.GeoDataFrame, key_sites_col_name: str,
                            isotrack_path: str, k, out_path: str = None):
     isotrack_gdf = convert_isotrack_to_shpfile(isotrack_path)
     most_used_isotrack_path_gdf = get_kth_most_used_isotrack_path(isotrack_gdf, k)

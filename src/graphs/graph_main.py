@@ -1,4 +1,4 @@
-import RoadGraph
+import RoadGraph.preprocessing
 from RoadGraph.analysis.closureanalysis import *
 from src.utilities.aux_func import parent_directory_at_level, loadNetworkResults
 import matplotlib.pyplot as plt
@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     path = parent_directory_at_level(__file__, 4) + '/Operational_Data/testing/out/converted/toy_test_original.shp'
     out_path = parent_directory_at_level(__file__, 4) + '/Operational_Data/testing/out/converted'
-    RoadGraph.StdNodesEdgesGdfBuilder().build_nodes_and_edges_gdf_from_path(path, out_path=out_path)
+    RoadGraph.preprocessing.StdNodesEdgesGdfBuilder().build_nodes_and_edges_gdf_from_path(path, out_path=out_path)
     # generate_resilience_index_plot(f"{parent_directory_at_level(__file__, 4)}"
     #                                f"/Operational_Data/lbb/vulnerability/HW_SW_temp/nodes/resilience_values.txt",
     #                                f"{parent_directory_at_level(__file__, 4)}"

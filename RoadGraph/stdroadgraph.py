@@ -10,6 +10,7 @@ from RoadGraph.constants.StdKeyWords import *
 import matplotlib.pyplot as plt
 import networkx as nx
 
+
 class StdRoadGraph:
 
     def __init__(self, netx_graph, nodes_gdf, edges_gdf):
@@ -174,7 +175,6 @@ class StdRoadGraph:
 
         return shortest_edges_gdf
 
-
     def k_shortest_paths_from_key_sites(self, key_sites_gdf: gpd.GeoDataFrame, key_site_col_name: str,
                                         source: str, target: str, k: int):
         """
@@ -294,7 +294,7 @@ class StdRoadGraph:
             return (pred, dist)
         return dist
 
-    def average_degree(self, type: str ='out') -> float:
+    def average_degree(self, type: str = 'out') -> float:
         """
         Returns the average degree of the network
         :param type: Whether 'in' or 'out', defaults to 'out'
@@ -307,7 +307,7 @@ class StdRoadGraph:
 
         degrees = [node_degree[1] for node_degree in nodes_degrees]
 
-        return sum(degrees)/len(degrees)
+        return sum(degrees) / len(degrees)
 
     def degree_distribution_plot(self):
         """
@@ -336,8 +336,3 @@ class StdRoadGraph:
             tick.set_fontname('Charter')
 
         plt.show()
-
-
-
-
-

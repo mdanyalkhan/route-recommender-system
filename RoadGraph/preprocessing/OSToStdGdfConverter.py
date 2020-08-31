@@ -1,9 +1,7 @@
 from queue import Queue
-
 from shapely.geometry import LineString, Polygon
-
 from RoadGraph.util import extract_coord_at_index
-from RoadGraph.preprocessing.StdGdfConverter import *
+from RoadGraph.preprocessing import StdGdfConverter
 from RoadGraph.constants.StdKeyWords import *
 import pandas as pd
 import numpy as np

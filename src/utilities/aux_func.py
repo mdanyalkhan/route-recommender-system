@@ -1,7 +1,5 @@
 import pickle
 from os.path import *
-import pandas as pd
-import geopandas as gpd
 
 
 def parent_directory_at_level(current_path: str, level: int):
@@ -18,27 +16,7 @@ def parent_directory_at_level(current_path: str, level: int):
     return parent_path
 
 
-def clip(layer: gpd.geodataframe, mask: gpd.geodataframe):
-    """
-    Clips layer to mask
-    :param layer: geodataframe of shapefile
-    :param mask: geodataframe of mask
-    :return: copy of layer within boundary of mask
-    """
-    min_x = mask.bounds.minx.values[0]
-    min_y = mask.bounds.miny.values[0]
-    max_x = mask.bounds.maxx.values[0]
-    max_y = mask.bounds.maxy.values[0]
-
-    in_boundary = layer.loc[(layer.bounds['minx'] >= min_x) &
-                            (layer.bounds["miny"] >= min_y) &
-                            (layer.bounds["maxx"] <= max_x) &
-                            (layer.bounds["maxy"] <= max_y)]
-
-    return in_boundary.copy()
-
 def loadNetworkResults(file_name):
     with open(file_name, 'rb') as target:
         network_results = pickle.load(target)
     return network_results
-

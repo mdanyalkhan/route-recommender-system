@@ -2,7 +2,8 @@ from collections import deque
 
 from shapely.geometry import Point
 import os
-from RoadGraph import StdRoadGraph, create_file_path
+from RoadGraph import StdRoadGraph
+from RoadGraph.util import create_file_path
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.constants.StdKeyWords import *
 from RoadGraph.analysis import vulnerabilityanalyser as va
