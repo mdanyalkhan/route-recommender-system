@@ -3,7 +3,8 @@ import pandas as pd
 import geopandas as gpd
 import RoadGraph.constants.StdColNames as cn
 import RoadGraph.constants.StdKeyWords as kw
-from RoadGraph import StdRoadGraph, StdRoadGraphBuilder
+from RoadGraph import StdRoadGraph
+from RoadGraph.preprocessing import StdRoadGraphBuilder
 import pickle
 
 LEG_ID = "leg_id"
