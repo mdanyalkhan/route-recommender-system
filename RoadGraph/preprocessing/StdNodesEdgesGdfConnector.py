@@ -1,7 +1,6 @@
 import geopandas as gpd
 import pandas as pd
-from GeoDataFrameAux import extract_coord_at_index
-from RoadGraph import euclidean_distance
+from RoadGraph import euclidean_distance, extract_coord_at_index
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.constants.StdKeyWords import *
 

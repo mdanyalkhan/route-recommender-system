@@ -1,11 +1,6 @@
-from GeoDataFrameAux import extract_list_of_coords_from_geom_object
-from RoadGraph.util import *
 import RoadGraph
 from RoadGraph.analysis.closureanalysis import *
-import src.utilities.file_directories as fd
 from src.utilities.aux_func import parent_directory_at_level, loadNetworkResults
-from scipy.spatial import cKDTree
-import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -53,11 +48,14 @@ def generate_resilience_index_plot(fname_a: str,fname_b: str):
 
 if __name__ == "__main__":
 
-    generate_resilience_index_plot(f"{parent_directory_at_level(__file__, 4)}"
-                                   f"/Operational_Data/lbb/vulnerability/HW_SW_temp/nodes/resilience_values.txt",
-                                   f"{parent_directory_at_level(__file__, 4)}"
-                                   f"/Operational_Data/lbb/vulnerability/HW_SW_temp/grids/resilience_values.txt"
-                                   )
+    path = parent_directory_at_level(__file__, 4) + '/Operational_Data/testing/out/converted/toy_test_original.shp'
+    out_path = parent_directory_at_level(__file__, 4) + '/Operational_Data/testing/out/converted'
+    RoadGraph.StdNodesEdgesGdfBuilder().build_nodes_and_edges_gdf_from_path(path, out_path=out_path)
+    # generate_resilience_index_plot(f"{parent_directory_at_level(__file__, 4)}"
+    #                                f"/Operational_Data/lbb/vulnerability/HW_SW_temp/nodes/resilience_values.txt",
+    #                                f"{parent_directory_at_level(__file__, 4)}"
+    #                                f"/Operational_Data/lbb/vulnerability/HW_SW_temp/grids/resilience_values.txt"
+    #                                )
     # edges = gpd.read_file(fd.LbbDirectories.edges_path)
     # nodes = gpd.read_file(fd.LbbDirectories.nodes_path)
     # net = loadNetworkResults(fd.LbbDirectories.netx_path_criteria3)

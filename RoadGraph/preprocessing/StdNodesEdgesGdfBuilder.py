@@ -1,11 +1,9 @@
 from queue import Queue
-
 import geopandas as gpd
 import pandas as pd
-from shapely import wkt
+from shapely.geometry import Point
 from shapely.geometry import LineString
-
-from GeoDataFrameAux import GeoPointDataFrameBuilder, extract_list_of_coords_from_geom_object, extract_coord_at_index
+from RoadGraph.util import extract_list_of_coords_from_geom_object, extract_coord_at_index
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.constants.StdKeyWords import *
 
@@ -83,9 +81,7 @@ class StdNodesEdgesGdfBuilder:
         :return: geodataframe of points
         """
         points_df = pd.DataFrame(dict_structure)
-        points_df[STD_GEOMETRY] = points_df[STD_GEOMETRY].apply(GeoPointDataFrameBuilder()._build_geometry_object)
-        points_df[STD_GEOMETRY] = points_df[STD_GEOMETRY].apply(wkt.loads)
-
+        points_df[STD_GEOMETRY] = points_df[STD_GEOMETRY].apply(Point)
         points_gdf = gpd.GeoDataFrame(points_df, geometry=STD_GEOMETRY)
         points_gdf.crs = {'init': 'epsg:27700'}
         return points_gdf

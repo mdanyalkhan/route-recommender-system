@@ -4,8 +4,7 @@ from itertools import count, islice
 import numpy as np
 import geopandas as gpd
 import pandas as pd
-from GeoDataFrameAux import extract_coord_at_index
-from RoadGraph.util import euclidean_distance
+from RoadGraph.util import euclidean_distance, extract_coord_at_index
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.constants.StdKeyWords import *
 import matplotlib.pyplot as plt
@@ -66,7 +65,6 @@ class StdRoadGraph:
         or not.
         """
         nearest_source_node, nearest_target_node = self._get_nearest_node(source_coord, target_coord)
-        #TODO: Need to consider added weight from coordinates to nearest node as well.
         return self.shortest_path_between_nodes(nearest_source_node, nearest_target_node, get_gdfs)
 
     def _get_nearest_node(self, source_coord: tuple, target_coord: tuple) -> tuple:

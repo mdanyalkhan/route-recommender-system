@@ -1,11 +1,10 @@
 from collections import deque
 from heapq import heappush, heappop
-
 import pandas as pd
 import geopandas as gpd
 from scipy.spatial import cKDTree
 import numpy as np
-from GeoDataFrameAux import extract_list_of_coords_from_geom_object
+from RoadGraph.util import extract_list_of_coords_from_geom_object
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.constants.StdKeyWords import *
 
