@@ -2,9 +2,10 @@ from queue import Queue
 from shapely.geometry import LineString, Polygon
 from RoadGraph.util import extract_coord_at_index
 from RoadGraph.preprocessing import StdGdfConverter
-from RoadGraph.constants.StdKeyWords import *
+from RoadGraph.constants import *
 import pandas as pd
 import numpy as np
+import geopandas as gpd
 
 # Column names pertaining to the OS geodataframe
 OS_ID = "identifier"
@@ -27,10 +28,10 @@ OS_MAIN_CARRIAGEWAY_LIST = ["Single Carriageway", "Dual Carriageway",
 
 class OSToStdGdfConverter(StdGdfConverter):
 
-    def __init__(self, speed_criteria='Simple', built_up_gdf=None):
+    def __init__(self, speed_criteria='Simple', built_up_gdf=None, srn_list=None):
         self.speed_criteria = speed_criteria
         self._built_up_gdf = built_up_gdf
-        super().__init__()
+        super().__init__(srn_list=srn_list)
 
     def _build_std_gdf(self, orig_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         """
