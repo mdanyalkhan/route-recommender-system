@@ -16,7 +16,13 @@ def parent_directory_at_level(current_path: str, level: int):
     return parent_path
 
 
-def loadNetworkResults(file_name):
+def loadNetworkResults(file_name: str):
+    """
+    Loads the binary pickle data from file_name
+
+    :param file_name: Full path of pickle binary path
+    :return: object loaded from pickle binary file.
+    """
     with open(file_name, 'rb') as target:
         network_results = pickle.load(target)
     return network_results
