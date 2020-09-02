@@ -7,6 +7,7 @@ from RoadGraph.preprocessing import OSToStdGdfConverter, StdNodesEdgesGdfBuilder
 from RoadGraph.constants.StdColNames import *
 from RoadGraph.constants.StdKeyWords import *
 from RoadGraph.util import create_file_path
+from RoadGraph import StdRoadGraph
 
 
 class StdRoadGraphBuilder:
@@ -18,15 +19,15 @@ class StdRoadGraphBuilder:
         self.connector = connector
 
     def build_road_graph(self, in_path: str, target_path: str, is_conversion_required: bool = True,
-                         weight_type: str = "Time") -> nx.Graph:
+                         weight_type: str = "Time") -> StdRoadGraph:
         """
-        Constructs a Networkx Object from the original geo spatial roads dataframe, saving the intermediate
+        Constructs an StdRoadGraph Object from the original geo spatial roads dataframe, saving the intermediate
         dataframe within specified paths via target_path
         :param in_path: Path containing all roads dataframe shpfiles
         :param target_path: Path to save the Networkx object (in .pickle) and other intermediate dataframes
         :param is_conversion_required: Conversion of the original geo spatial dataframe into a standardised dataframe
         :param weight_type: type of weight to be used for the edges, either 'Time' or 'Length'
-        :return: A Networkx Graph object representing the roads geoDataFrame.
+        :return: An StdRoadGraph object representing the roads geoDataFrame.
         """
         curr_path = in_path
         out_path = create_file_path(target_path + "/out")
@@ -47,7 +48,7 @@ class StdRoadGraphBuilder:
         with open(target_file, 'wb') as target:
             pickle.dump(net, target)
 
-        return net
+        return StdRoadGraph(net, nodes_gdf, edges_gdf)
 
     def _convert_gdfs(self, in_path: str, out_path: str) -> str:
 

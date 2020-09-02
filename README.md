@@ -30,7 +30,7 @@ Operating System.
 ## Usage
 
 All classes and functions used in this project are primarily included
-within the `RoadGraph ` python package, this includes the following:
+within the `RoadGraph` python package, this includes the following:
 
 * `stdroadgraph` module
 * `util` module
@@ -38,6 +38,16 @@ within the `RoadGraph ` python package, this includes the following:
 * `graphreduce` package
 * `analysis` package
 
-### `StdRoadGraph` Module
+### `stdroadgraph` Module
 
+This module holds the `StdRoadGraph` class, which, if instantiated,
+represents a graph instant of the UK road network. The class provides
+functions designed to identify the shortest paths between any given
+node pair, and also allows the user to determine key properties
+of the graph.
 
+```
+#Instantiation of an StdRoadGraph
+edges_gdf = geopandas.read_file(<some_file_path>)
+nodes_gdf = geopandas.read_file(<some_file_path>)
+```
