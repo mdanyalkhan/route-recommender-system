@@ -73,7 +73,6 @@ def journey_time_impact_closure_shp_path(road_graph: StdRoadGraph, key_sites: gp
     # Deduce node pairs corresponding to the proposed closure of the edges.
     all_node_pairs = []
     for shp_path in shp_full_paths_in:
-        print(shp_path)
         edges_gdf = gpd.read_file(f'{shp_path}/edges.shp')
         node_pairs = _extract_node_pairs_from_edges_shp(road_graph.edges, edges_gdf)
         all_node_pairs.extend(node_pairs)

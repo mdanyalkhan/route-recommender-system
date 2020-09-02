@@ -49,7 +49,7 @@ of the graph.
 ```
 #Instantiation of an StdRoadGraph
 edges_gdf <- #Geopandas standardised DataFrame of the graph edges
-nodes_gdf <- #Some geopandas standardised DataFrame of the graph nodes
+nodes_gdf <- #Geopandas standardised DataFrame of the graph nodes
 net <- #Corresponding networkx.DiGraph object of road graph
 
 road_graph = StdRoadGraph(net, nodes_gdf, edges_gdf) 
@@ -118,7 +118,7 @@ road_graph = StdRoadGraph(net, nodes, edges)
 ```
 
 ## `graphreduce` package
-The package offers the two following classes to convert
+This package offers two following classes to convert
 the underlying road graph into the set of nodes and edges
 corresponding to the routes identified within a 
 Royal Mail telemetry data set. 
@@ -132,10 +132,39 @@ telemetry data set.
 ```
 isotrack_data <- Royal Mail telemetry data set
 edges_gdf <- #Geopandas standardised DataFrame of the graph edges
-nodes_gdf <- #Some geopandas standardised DataFrame of the graph nodes
+nodes_gdf <- #Geopandas standardised DataFrame of the graph nodes
 RoadAssignment().assign_nearest_nodes(isotrack_data, edges_gdf, nodes_gdf)
 routes_graph = RoutesGraph().generate_stdRoadGraph_from_isotrack(isotrack_data, road_graph) 
 ```
 
 ## `analysis` package
 
+This package offers the following two modules that enable us 
+to conduct vulnerability analysis of the road graph:
+
+* `vulnerabilityanalyser` - this module provides the 
+`VulnerabilityAnalyser` class, which provides
+function that actively identify critical road sections
+within the road network.
+
+```
+key_sites <- #Geopandas dataframe of Royal Mail Key sites
+vuln_analyser = VulnerabilityAnalyser(road_graph)
+node_results = vuln_analyser.srn_vulnerability_two_sites_nodes(key_sites, 'location_name', 'site_a', 'site_b')
+grid_results = vuln_analyser.srn_vulnerability_two_sites_grid(key_sites, 'location_name', 'site_a', 'site_b',
+                                                              dimension_km=2.0)
+```
+
+* `closureanalysis` - Provides the series of functions to calculate
+the impact the planned set of road closures have on the
+journey times between any given depot pair.
+
+The following is  a sample application of the functions in `closureanalysis`
+
+```
+closure_path <- path to folder containing list of shapefile edges representing
+                the set of planned road closures.
+results_mat, results_dict = journey_time_impact_closure_shp_path(road_graph, key_sites, closure_path)
+output_res_dict_to_csv(results_dict, out_path)
+output_res_dict_shortest_path_as_shp(road_graph, results_dict, out_path)
+```
