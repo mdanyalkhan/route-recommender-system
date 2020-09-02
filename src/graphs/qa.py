@@ -29,11 +29,11 @@ def shortest_path_analysis_grouped(directories: fd.ParentDirectories, criteria=3
     for isotrack_prefix in isotrack_list:
         out_path = RoadGraph.util.create_file_path(f"{main_out_path}/{isotrack_prefix}")
         sp.shortest_path_analysis(roadGraph, key_sites, 'location_n', directories.isotrack_dict[isotrack_prefix], 0,
-                                  out_path)
+                                  criteria_type=1, out_path=out_path)
 
 
 if __name__ == '__main__':
-    directories = fd.LbbDirectories()
+    directories = fd.plcrDirectories()
     shortest_path_analysis_grouped(directories, criteria=1)
     shortest_path_analysis_grouped(directories, criteria=2)
     shortest_path_analysis_grouped(directories, criteria=3)

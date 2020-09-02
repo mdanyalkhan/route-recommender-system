@@ -24,5 +24,20 @@ make use of the functions and classes developed in this project:
 
 **Note**: This project is based on the unix operating system. Although
 it is still possible to build a road graph, its full capabilities 
-will not be available if this project is downloaded onto Windows OS.
+will not be available if this project is downloaded on a Windows 
+Operating System.
+
+## Usage
+
+All classes and functions used in this project are primarily included
+within the `RoadGraph ` python package, this includes the following:
+
+* `stdroadgraph` module
+* `util` module
+* `preprocessing` package
+* `graphreduce` package
+* `analysis` package
+
+### `StdRoadGraph` Module
+
 

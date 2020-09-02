@@ -55,7 +55,7 @@ def convert_csv_to_shpfile(in_path: str, lat_name: str, long_name: str) -> gpd.G
     :param in_path:
     :return:
     """
-    df = pd.read_csv(in_path)
+    df = pd.read_csv(in_path, parse_dates=['Event_Dttm'])
     gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df[long_name], df[lat_name]))
 
     gdf.crs = "WGS84"
