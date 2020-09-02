@@ -48,6 +48,9 @@ of the graph.
 
 ```
 #Instantiation of an StdRoadGraph
-edges_gdf = geopandas.read_file(<some_file_path>)
-nodes_gdf = geopandas.read_file(<some_file_path>)
+edges_gdf <- #Geopandas standardised DataFrame of the graph edges
+nodes_gdf <- #Some geopandas standardised DataFrame of the graph nodes
+net <- #Corresponding networkx.DiGraph object of road graph
+
+road_graph = StdRoadGraph(net, nodes_gdf, edges_gdf) 
 ```
