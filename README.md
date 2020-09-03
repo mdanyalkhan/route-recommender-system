@@ -77,7 +77,7 @@ specifically for the OS Open Roads data set.
 * `StdNodesEdgesGdfBuilder` - constructs the edges and nodes 
 data frames based on the inputted standardised roads data set.
 * `StdNodesEdgesGdfConnector` - Merges multiple adjacent nodes and
-edges dataframe into a single pair of connected data frames.
+edges data frames into a single pair of connected data frames.
 * `StdRoadGraphBuilder` - Builds the `StdRoadGraph` object. 
 Also builds the `networkx.DiGraph` object based 
 on the nodes and edges data frames. 
@@ -118,7 +118,7 @@ road_graph = StdRoadGraph(net, nodes, edges)
 ```
 
 ## `graphreduce` package
-This package offers two following classes to convert
+This package offers the two following classes to convert
 the underlying road graph into the set of nodes and edges
 corresponding to the routes identified within a 
 Royal Mail telemetry data set. 
@@ -144,7 +144,7 @@ to conduct vulnerability analysis of the road graph:
 
 * `vulnerabilityanalyser` - this module provides the 
 `VulnerabilityAnalyser` class, which provides
-function that actively identify critical road sections
+functions that actively identify critical road sections
 within the road network.
 
 ```
