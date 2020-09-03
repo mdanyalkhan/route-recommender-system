@@ -74,6 +74,30 @@ class StdNodesEdgesGdfBuilder:
 
         return std_gdf, nodes_gdf
 
+    def _remove_redundant_roads(self, edges_gdf, nodes_gdf):
+        """
+        Removes certain roads that are not roundabouts but nevertheless appear to be connected to roundabout nodes.
+        These sections of road are not of any use in the road graph.
+
+        :param edges_gdf: edges geopandas dataframe
+        :param nodes_gdf: nodes geopandas dataframe
+        :return: Returns updated edges_gdf with redundant roads removed.
+        """
+        roundabout_nodes = nodes_gdf.loc[nodes_gdf[STD_N_TYPE] == STD_N_ROUNDABOUT]
+
+        roundabout_nodes_list = roundabout_nodes[STD_NODE_ID].tolist()
+
+        redundant_indices = edges_gdf.index[(edges_gdf[STD_ROAD_TYPE] != STD_ROUNDABOUT) &
+                                            (edges_gdf[STD_FROM_NODE].isin(roundabout_nodes_list)) &
+                                            (edges_gdf[STD_TO_NODE].isin(roundabout_nodes_list)) &
+                                            (edges_gdf[STD_FROM_NODE] == edges_gdf[STD_TO_NODE])]
+
+        edges_gdf.drop(index=redundant_indices, inplace=True)
+
+        edges_gdf = self._reindex(edges_gdf)
+
+        return edges_gdf
+
     def _convert_points_dict_to_gdf(self, dict_structure: dict) -> gpd.GeoDataFrame:
         """
         Converts the point dict structure into a geodataframe
