@@ -7,7 +7,7 @@ from scipy.spatial import cKDTree
 from RoadGraph.util import extract_list_of_coords_from_geom_object
 from pylab import *
 import datetime
-from src.utilities.aux_func import parent_directory_at_level, loadNetworkResults
+from src.utilities.aux_func import loadNetworkResults
 import src.utilities.file_directories as fd
 
 LAT = 'Event_Lat'
