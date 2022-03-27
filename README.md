@@ -1,7 +1,9 @@
 # Route Recommender System
 This project explores the applicability of graphs as a potential 
 means of designing a route recommender system suitable for Royal Mail
-Heavy Goods Vehicles. 
+Heavy Goods Vehicles.
+
+Note that this repo was part of a university project that I undertook during my MSc in Computing - the repo is no longer actively maintained.
 
 ## Pre-requisites
 
